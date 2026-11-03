@@ -77,7 +77,7 @@ Examples of data that must stay in tenant databases:
 - Inventory
 - Features
 - Settings
-- Tenant roles and permissions
+- Tenant roles and permissions (spatie tables in every tenant database, from `Permissions`; the central database has its own, from `CentralPermissions`; see PERMISSIONS.md)
 
 ## 3.4 Tenant Identification
 
@@ -139,6 +139,8 @@ The command must:
 9. Create default features.
 10. Create default settings.
 11. Report the final result.
+
+When permissions are set up, a "Sync permissions" step runs `Permissions` into the new tenant (after the migrations). The permission cache is isolated per tenant (key `<cache key>.tenant.<id>`, plus an in-memory reset when tenancy starts and ends), with or without the cache bootstrapper.
 
 Notes on the implementation:
 

@@ -44,6 +44,7 @@
                 <li><a href="#routes">المسارات</a></li>
                 <li><a href="#responses">الاستجابات والتحقق</a></li>
                 <li><a href="#policy">السياسة</a></li>
+                <li><a href="#permissions">الصلاحيات</a></li>
                 <li><a href="#feature">بوابة الميزة</a></li>
                 <li><a href="#tests">الاختبارات</a></li>
                 <li><a href="#add-side">إضافة جانب لاحقًا</a></li>
@@ -138,10 +139,18 @@
             <p>المتحكمان يستقبلان الطلب ويعيدان الاستجابة فقط. العمل الفعلي يجري في أصناف الطلبات (<bdi>Requests</bdi>) المشتركة، و<code>OrderData</code>، والإجراءات، و<code>ListOrders</code>. الإنشاء والتحديث والحذف تجري داخل معاملة قاعدة بيانات.</p>
 
             <h2 id="policy">السياسة</h2>
-            <p><code>OrderPolicy</code> تسمح لكل مستخدم مسجَّل دخوله بكل العمليات وترفض الزوار. يحصل الزوار على 403 في كل مسار، حتى للمعرّفات غير الموجودة، فلا يستطيعون اكتشاف السجلات الموجودة. ويحصل المستخدمون المسجَّلون على 404 للمعرّف غير الموجود.</p>
+            <p>دون <code>--permissions</code> تسمح <code>OrderPolicy</code> لكل مستخدم مسجَّل دخوله بكل العمليات وترفض الزوار. يحصل الزوار على 403 في كل مسار، حتى للمعرّفات غير الموجودة، فلا يستطيعون اكتشاف السجلات الموجودة. ويحصل المستخدمون المسجَّلون على 404 للمعرّف غير الموجود.</p>
             <div class="note">
                 <p><strong>شدّدها.</strong> كل دالة في السياسة فيها تعليق <code>// Tighten for your app.</code>. لواجهة <bdi>API</bdi> تعمل بالرموز، أضف وسيط مصادقة مثل <code>auth:sanctum</code> إلى مجموعة مسارات <bdi>API</bdi> في ملف <code>Provider.php</code> الخاص بالوحدة. صفحات <bdi>Blade</bdi> تحتاج إلى تسجيل دخول من عندك (<bdi>Breeze</bdi> أو <bdi>Jetstream</bdi> أو ما يشبههما).</p>
             </div>
+
+            <h2 id="permissions">الصلاحيات</h2>
+<pre><code><span class="prompt">$ </span>composer require spatie/laravel-permission
+<span class="prompt">$ </span>php artisan engineering:install --permissions
+<span class="prompt">$ </span>php artisan make:crud Orders Order --api --web --permissions
+<span class="prompt">$ </span>php artisan permissions:sync</code></pre>
+            <p>يجعل <code>--permissions</code> السياسة <code>OrderPolicy</code> تفحص <code>orders.view</code> و<code>orders.create</code> و<code>orders.update</code> و<code>orders.delete</code>. الصلاحية التي لا يملكها أي دور مرفوضة، فيبقى الكيان الجديد مقفلًا حتى تضيف <code>'orders.*'</code> إلى دور في <code>Permissions::roles()</code> وتشغّل <code>permissions:sync</code>. يضيف الأمر المجموعة إلى <code>Permissions::groups()</code> (وإلى <code>CentralPermissions</code> للوحدة المركزية). تبني الاختبارات المولّدة دورًا تجريبيًا خاصًا بها فتنجح دون تعديل <code>roles()</code>. والدور المسمّى في <code>blueprint.super_admin</code> يجتاز كل فحص. دون <code>spatie/laravel-permission</code> يُرفض الخيار مع أمر <bdi>composer</bdi>.</p>
+            <p>يجعل <code>--owned</code> (يحتاج إلى <code>--permissions</code>) السجلات ملكًا للمستخدم الذي أنشأها: عمود <code>user_id</code> يُضبط من المستخدم المسجَّل دخوله لا من المدخلات أبدًا، وقائمة محصورة بسجلاته. توسّع <code>orders.any</code> ما يملكه المستخدم من صلاحيات إلى كل السجلات، ولا تمنح شيئًا وحدها. السجل الذي لا يستطيع المستخدم عرضه يعيد 404 دائمًا (دون <code>orders.view</code>، أو سجل مستخدم آخر دون <code>orders.any</code>)، وسجل يستطيع عرضه ولا يستطيع تعديله يعيد 403.</p>
 
             <h2 id="feature">بوابة الميزة</h2>
 <pre><code><span class="prompt">$ </span>php artisan make:crud Orders Order --api --web --feature=orders</code></pre>
@@ -164,7 +173,7 @@
             <h2 id="add-side">إضافة جانب لاحقًا</h2>
 <pre><code><span class="prompt">$ </span>php artisan make:crud Orders Order --api
 <span class="prompt">$ </span>php artisan make:crud Orders Order --web</code></pre>
-            <p>التشغيل الثاني يكتب جانب الويب فقط. يقرأ الحقول من <code>OrderData</code>، فلا تمرّر <code>--fields</code>، وأي <code>--fields</code> مختلف يُرفض. إذا كانت المسارات الموجودة محمية ببوابة ميزة، فمرّر <code>--feature</code> نفسه.</p>
+            <p>التشغيل الثاني يكتب جانب الويب فقط. يقرأ الحقول من <code>OrderData</code>، فلا تمرّر <code>--fields</code>، وأي <code>--fields</code> مختلف يُرفض. إذا كانت المسارات الموجودة محمية ببوابة ميزة، فمرّر <code>--feature</code> نفسه، وكذلك <code>--permissions</code> و<code>--owned</code>.</p>
 
             <nav class="next" aria-label="البطاقة التالية">
                 <a href="generators.html">→ المولّدات</a>

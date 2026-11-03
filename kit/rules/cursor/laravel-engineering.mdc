@@ -30,6 +30,8 @@ php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --w
 
 To change generated code: `php artisan vendor:publish --tag=blueprint-stubs`, then edit `stubs/blueprint/*.stub`. The copy in `laravel-engineering-blueprint/stubs/` is reference only.
 
+Permissions (optional, spatie): `engineering:install --permissions`, then `make:crud ... --permissions [--owned]`. Roles and names live only in `app/Shared/Permissions/Permissions.php` (`CentralPermissions` for central); run `permissions:sync` after editing. Never create permission rows or scatter permission strings by hand. See `docs/PERMISSIONS.md`.
+
 Details: skill **leb-generate-crud**.
 
 ## Languages

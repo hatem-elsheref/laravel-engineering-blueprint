@@ -48,6 +48,7 @@ new_app() {
   run "$app" composer config minimum-stability dev || return 1
   run "$app" composer config prefer-stable true || return 1
   run "$app" composer require "best/laravel-engineering-blueprint:*" -W --no-interaction -q || return 1
+  run "$app" composer require "spatie/laravel-permission:^8.0" -W --no-interaction -q || return 1
   run "$app" composer remove phpunit/phpunit --dev --no-interaction -q || return 1
   run "$app" composer require pestphp/pest --dev -W --no-interaction -q || return 1
   (cd "$app" && ./vendor/bin/pest --init --no-interaction </dev/null >/dev/null 2>&1) || true
@@ -69,7 +70,9 @@ FIELDS='name:string,price:?float,active:bool,tags:array,releasedAt:?Carbon\Carbo
 profile_basic() {
   local app="$1"
   new_app "$app" 0 || return 1
-  run "$app" php artisan engineering:install --profile=basic -n || return 1
+  run "$app" php artisan engineering:install --profile=basic --permissions -n || return 1
+  run "$app" php artisan migrate --force || return 1
+  run "$app" php artisan permissions:sync || return 1
   run "$app" php artisan test || return 1
   check_routes "$app"
 }
@@ -77,12 +80,13 @@ profile_basic() {
 profile_modular() {
   local app="$1"
   new_app "$app" 0 || return 1
-  run "$app" php artisan engineering:install --profile=modular -n || return 1
+  run "$app" php artisan engineering:install --profile=modular --permissions -n || return 1
   run "$app" php artisan make:module Shop --api --web || return 1
-  run "$app" php artisan make:crud Shop Product --api --web "--fields=$FIELDS" || return 1
+  run "$app" php artisan make:crud Shop Product --api --web --permissions --owned "--fields=$FIELDS" || return 1
   run "$app" php artisan make:dto Shop ProductSummary --fields=name:string || return 1
   run "$app" php artisan make:action Shop PublishProduct --transaction || return 1
   run "$app" php artisan migrate --force || return 1
+  run "$app" php artisan permissions:sync || return 1
   run "$app" php artisan test || return 1
   check_routes "$app"
 }
@@ -90,12 +94,13 @@ profile_modular() {
 profile_saas() {
   local app="$1"
   new_app "$app" 0 || return 1
-  run "$app" php artisan engineering:install --profile=saas -n || return 1
+  run "$app" php artisan engineering:install --profile=saas --permissions -n || return 1
   run "$app" php artisan migrate --force || return 1
   run "$app" php artisan features:sync || return 1
   run "$app" php artisan make:module Shop --api --web || return 1
-  run "$app" php artisan make:crud Shop Product --api --web --feature=orders "--fields=$FIELDS" || return 1
+  run "$app" php artisan make:crud Shop Product --api --web --feature=orders --permissions --owned "--fields=$FIELDS" || return 1
   run "$app" php artisan migrate --force || return 1
+  run "$app" php artisan permissions:sync || return 1
   run "$app" php artisan feature:disable orders || return 1
   run "$app" php artisan feature:enable orders || return 1
   run "$app" php artisan setting:set orders.auto_confirm true || return 1
@@ -106,16 +111,18 @@ profile_saas() {
 profile_tenant_saas() {
   local app="$1"
   new_app "$app" 1 || return 1
-  run "$app" php artisan engineering:install --profile=tenant-saas -n || return 1
+  run "$app" php artisan engineering:install --profile=tenant-saas --permissions -n || return 1
   run "$app" php artisan migrate --force || return 1
   run "$app" php artisan tenant:create acme || return 1
   run "$app" php artisan tenant:create acme || return 1 # retry-safe: everything "already done"
   run "$app" php artisan make:module Shop --api --web || return 1
-  run "$app" php artisan make:crud Shop Product --api --web --feature=orders "--fields=$FIELDS" || return 1
+  run "$app" php artisan make:crud Shop Product --api --web --feature=orders --permissions --owned "--fields=$FIELDS" || return 1
   run "$app" php artisan make:module Admin --api --web --central || return 1
-  run "$app" php artisan make:crud Admin Plan --api --web --fields=title:string || return 1
+  run "$app" php artisan make:crud Admin Plan --api --web --permissions --fields=title:string || return 1
   run "$app" php artisan migrate --force || return 1
   run "$app" php artisan tenants:migrate || return 1
+  run "$app" php artisan permissions:sync || return 1
+  run "$app" php artisan permissions:sync --central || return 1
   run "$app" php artisan feature:enable orders --tenant=acme || return 1
   run "$app" php artisan test || return 1
   check_routes "$app"

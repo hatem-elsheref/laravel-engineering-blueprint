@@ -44,6 +44,7 @@
                 <li><a href="#routes">Routes</a></li>
                 <li><a href="#responses">Responses and validation</a></li>
                 <li><a href="#policy">Policy</a></li>
+                <li><a href="#permissions">Permissions</a></li>
                 <li><a href="#feature">Feature gate</a></li>
                 <li><a href="#tests">Tests</a></li>
                 <li><a href="#add-side">Adding a side later</a></li>
@@ -138,10 +139,18 @@
             <p>Both controllers only take the request and return a response. The work happens in the shared Requests, <code>OrderData</code>, the actions and <code>ListOrders</code>. Create, update and delete run inside a database transaction.</p>
 
             <h2 id="policy">Policy</h2>
-            <p><code>OrderPolicy</code> allows every signed-in user every action and denies guests. Guests get 403 on every route, also for ids that do not exist, so they cannot probe which records exist. Signed-in users get 404 for a missing id.</p>
+            <p>Without <code>--permissions</code>, <code>OrderPolicy</code> allows every signed-in user every action and denies guests (see <a href="#permissions">Permissions</a> to change that). Guests get 403 on every route, also for ids that do not exist, so they cannot probe which records exist. Signed-in users get 404 for a missing id.</p>
             <div class="note">
                 <p><strong>Tighten it.</strong> Each policy method has a <code>// Tighten for your app.</code> comment. For a token API, add auth middleware such as <code>auth:sanctum</code> to the API route group in the module's <code>Provider.php</code>. The Blade pages need a login of your own (Breeze, Jetstream or similar).</p>
             </div>
+
+            <h2 id="permissions">Permissions</h2>
+<pre><code><span class="prompt">$ </span>composer require spatie/laravel-permission
+<span class="prompt">$ </span>php artisan engineering:install --permissions
+<span class="prompt">$ </span>php artisan make:crud Orders Order --api --web --permissions
+<span class="prompt">$ </span>php artisan permissions:sync</code></pre>
+            <p><code>--permissions</code> makes <code>OrderPolicy</code> check <code>orders.view</code>, <code>orders.create</code>, <code>orders.update</code> and <code>orders.delete</code>. A permission no role holds is denied, so the new entity is locked until you add <code>'orders.*'</code> to a role in <code>Permissions::roles()</code> and run <code>permissions:sync</code>. The command adds the group to <code>Permissions::groups()</code> (<code>CentralPermissions</code> for a central module). The generated tests build their own test role, so they pass without editing <code>roles()</code>. A role named by <code>blueprint.super_admin</code> passes every check. Without <code>spatie/laravel-permission</code> the flag is refused with the composer command.</p>
+            <p><code>--owned</code> (needs <code>--permissions</code>) makes records belong to the user who creates them: a <code>user_id</code> column set from the signed-in user, never from input, and a list limited to their records. <code>orders.any</code> widens the permissions a user holds to every record; alone it grants nothing. A record the user cannot view is always 404 (no <code>orders.view</code>, or another user's record without <code>orders.any</code>); a viewable record they may not change is 403.</p>
 
             <h2 id="feature">Feature gate</h2>
 <pre><code><span class="prompt">$ </span>php artisan make:crud Orders Order --api --web --feature=orders</code></pre>
@@ -164,7 +173,7 @@
             <h2 id="add-side">Adding a side later</h2>
 <pre><code><span class="prompt">$ </span>php artisan make:crud Orders Order --api
 <span class="prompt">$ </span>php artisan make:crud Orders Order --web</code></pre>
-            <p>The second run writes only the web side. It reads the fields back from <code>OrderData</code>, so leave <code>--fields</code> out; a different <code>--fields</code> is refused. If the existing routes are gated by a feature, pass the same <code>--feature</code>.</p>
+            <p>The second run writes only the web side. It reads the fields back from <code>OrderData</code>, so leave <code>--fields</code> out; a different <code>--fields</code> is refused. If the existing routes are gated by a feature, pass the same <code>--feature</code>; pass the same <code>--permissions</code> and <code>--owned</code> too.</p>
 
             <nav class="next" aria-label="Next card">
                 <a href="generators.html">← Generators</a>

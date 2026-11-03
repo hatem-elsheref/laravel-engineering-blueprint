@@ -155,3 +155,14 @@ Added to the existing per-entity Pest file. The generated tests must pass straig
 ## Also noticed (separate, small)
 
 `docs/PHASE-0.md` ("Remaining: Phase 9, Phase 10") and `kit/skills/laravel-engineering/SKILL.md` ("Phases 0–8 shipped") are out of date compared with `README.md` (all phases done, 1.0.0). Fix alongside this work.
+
+## Amendments (implementation)
+
+Refinements made while implementing; the code follows these where they differ from the text above.
+
+- **Owned single record, 404 first.** If the user lacks `<group>.view`, or is neither the owner nor a holder of `<group>.any`, the answer is 404 (not found). Only then does a missing action permission (`update`, `delete`) give 403. A record the user cannot view is always 404, so there is no existence probing; an owner without `.view` gets 404 on their own record.
+- **`any()` policy method and Gate-based list scope.** The owned policy has a fifth ability `any()` (`<group>.any`). `List<Plural>` scopes to the user's records unless `$user->can('any', Model::class)` through the Gate, so the super-admin (via `Gate::before`) sees every record. `.any` only widens permissions the user holds; alone it grants nothing.
+- **Update request stub.** The owned update request (`request-update-owned.stub`) authorizes with `Gate::inspect()`, so non-owners get 404, not 403.
+- **`user_id`** is never fillable and never read from input; the create action associates the signed-in user.
+- **`grantPermissions()` replaces roles.** `InteractsWithPermissions::grantPermissions($user, ...$names)` replaces all of the user's roles with one test role holding exactly those names; `makeSuperAdmin($user)` is additive.
+- **Tenant cache isolation** does not depend on stancl's cache bootstrapper: the package sets the key `<cache key>.tenant.<id>` and resets spatie's in-memory permissions when tenancy starts and ends.

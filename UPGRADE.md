@@ -9,6 +9,10 @@
 
 Already generated code is never changed by an upgrade; only new `make:*` output follows the new rules.
 
+## Permissions (after 1.0.0)
+
+Optional; nothing changes unless you use `--permissions`. If you published stubs (`stubs/blueprint/`) and want `make:crud --permissions` or `--owned`, re-publish them or copy the new stubs (`policy-permissions.stub`, `policy-owned.stub`, `query-owned.stub`, `crud-create-action-owned.stub`, `request-update-owned.stub`, `permissions-definitions.stub`; `model.stub` and the test stubs gained placeholders). The generators refuse a published stub that lacks a required marker (for example `Gate::inspect(` in the owned update request) rather than generate code that leaks records.
+
 ## 0.x → 1.0
 
 Most 0.x apps upgrade without changes. Check these points:

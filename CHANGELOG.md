@@ -5,6 +5,7 @@ All notable changes to `best/laravel-engineering-blueprint`. The format follows 
 ## [Unreleased]
 
 ### Added
+- **Permissions** (optional, `spatie/laravel-permission`): `engineering:install --permissions`, definitions classes (`Permissions`, `CentralPermissions` in tenant-saas), `permissions:sync` (`--prune`, `--tenant`, `--central`), built-in super-admin, `make:crud --permissions` (policy checks named permissions, generated tests) and `--owned` (per-user records, `<group>.any`), `InteractsWithPermissions` test helper, per-tenant permission cache. See `docs/PERMISSIONS.md`.
 - Documentation site (English and Arabic) in `site/`, published with GitHub Pages.
 
 ### Fixed

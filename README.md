@@ -40,13 +40,14 @@ Builds a fresh Laravel app with this package installed, Pest set up, your profil
 | Command | Does |
 |---------|------|
 | `engineering:about` | Version and environment compatibility |
-| `engineering:install [--profile=] [--allow-downgrade] [--force]` | Set or change the project profile |
+| `engineering:install [--profile=] [--allow-downgrade] [--force] [--permissions]` | Set or change the project profile; `--permissions` sets up roles and permissions (needs spatie/laravel-permission) |
 | `make:module {name} [--api] [--web] [--central]` | Module with `Provider.php` and optional `routes/api.php`, `routes/web.php`; `--central` = platform module (tenant-saas) |
 | `make:dto {module} {name} [--fields=]` | Typed, immutable Data class |
 | `make:action {module} {name} [--data=] [--transaction]` | Action (one business operation) |
-| `make:crud {module} {entity} [--fields=] [--api] [--web] [--feature=]` | Full CRUD; neither flag = `--api` |
+| `make:crud {module} {entity} [--fields=] [--api] [--web] [--feature=] [--permissions] [--owned]` | Full CRUD; neither flag = `--api`; `--permissions` = policy checks named permissions; `--owned` = users see and change only their own records |
 | `tenant:create {name} [--domain=] [--database=] [--existing-database]` | Create a tenant (tenant-saas), safe to re-run |
 | `feature:list`, `feature:enable {key}`, `feature:disable {key}` `[--tenant=]` | Platform admin feature control |
+| `permissions:sync [--prune] [--tenant=*] [--central]` | Create the defined permissions and roles; `--tenant`/`--central` for tenant-saas |
 | `features:sync [--tenant=*]` | Add newly defined features with their defaults; without `--tenant` = all tenants |
 | `setting:list`, `setting:set {key} {value}` `[--tenant=]` | Platform admin settings (value read as JSON when it parses, otherwise plain text) |
 
@@ -67,7 +68,8 @@ Example: `php artisan make:crud Orders Order --api --web`. The entity must be si
 - Run once with one side and add the other later; it reuses the existing fields and feature gate.
 - Pages are plain Blade (no JS) and extend `config('blueprint.layout')`. The layout `resources/views/layouts/blueprint.blade.php` is created once.
 - Tests are Pest; they are skipped with a message if Pest is missing.
-- The generated policy allows every signed-in user and denies guests. Tighten it. Guests get 403 also for ids that do not exist.
+- Without `--permissions` the generated policy allows every signed-in user and denies guests: tighten it, or use `--permissions`. Guests get 403 also for ids that do not exist.
+- `--permissions` (needs `engineering:install --permissions`): the policy checks `<uri>.view/create/update/delete`, the group is added to `Permissions::groups()`, and the generated tests prove the rules. Grant it to a role in `roles()` and run `permissions:sync`. `--owned` adds `user_id`, scopes the list to the user's records and answers 404 for records they may not view; `<uri>.any` widens what they hold to every record. See [docs/PERMISSIONS.md](./docs/PERMISSIONS.md).
 - `--feature=orders` adds `->middleware('feature:orders')` to the routes (saas, tenant-saas).
 - Generated web tests fail with 419 if config is cached (`php artisan optimize`). Run `php artisan optimize:clear` before tests.
 
@@ -95,6 +97,10 @@ Put auth middleware for token APIs (e.g. `auth:sanctum`) in the module's `Provid
 | `rtl_locales` | Right-to-left languages (`ar`, `fa`, `he`, `ur`) |
 | `features` | Feature definitions class (null = `<shared_path>/Features/Features`) |
 | `settings` | Setting definitions class (null = `<shared_path>/Settings/Settings`) |
+| `permissions` | Permission definitions class (null = `<shared_path>/Permissions/Permissions`) |
+| `central_permissions` | tenant-saas: central-side definitions (null = `<shared_path>/Permissions/CentralPermissions`) |
+| `super_admin` | Role that passes every permission check (`super-admin`) |
+| `permission_guard` | Guard for permissions and roles (`web`) |
 | `tenant_seeder` | Seeder run by `tenant:create` (`Database\Seeders\TenantSeeder`) |
 | `tenant_domain` | Base tenant domain, env `BLUEPRINT_TENANT_DOMAIN`; tenants are `<name>.<base>` |
 | `support.php`, `support.laravel` | Minimum supported versions |
@@ -112,6 +118,8 @@ Stubs are copied to `stubs/blueprint/` and used automatically (or set `blueprint
 - **Tenancy** ([docs/TENANCY.md](./docs/TENANCY.md)): tenant modules use the `tenant` middleware group (subdomain); `--central` modules answer only on central domains. Tenant migrations live in `database/migrations/tenant` (`php artisan tenants:migrate`). Use `CACHE_STORE=redis` (or memcached). Test helper: `Best\Blueprint\Testing\InteractsWithTenancy`.
 - **Features** ([docs/FEATURES.md](./docs/FEATURES.md)): `Feature::enabled()`, route middleware `feature:a,b`, job middleware `RequireFeature`, Blade `@feature`. Writes only through console commands.
 - **Settings** ([docs/SETTINGS.md](./docs/SETTINGS.md)): typed `Setting::get()`; `Setting::set()` only for tenant-editable settings through their Gate ability.
+
+- **Permissions** ([docs/PERMISSIONS.md](./docs/PERMISSIONS.md)): optional, needs `composer require spatie/laravel-permission` then `engineering:install --permissions`. Roles live in `app/Shared/Permissions/Permissions.php` (`CentralPermissions` for the tenant-saas central side), written to the database by `permissions:sync`; a `super-admin` role passes every check. Test helper: `Best\Blueprint\Testing\InteractsWithPermissions`.
 
 ## Languages
 

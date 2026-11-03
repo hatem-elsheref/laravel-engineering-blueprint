@@ -79,7 +79,7 @@
 
             <section class="index-card" aria-labelledby="engineering-install">
                 <h3 class="index-card__title" id="engineering-install">engineering:install</h3>
-<pre><code><span class="prompt">$ </span>php artisan engineering:install [--profile=PROFILE] [--force] [--allow-downgrade]</code></pre>
+<pre><code><span class="prompt">$ </span>php artisan engineering:install [--profile=PROFILE] [--force] [--allow-downgrade] [--permissions]</code></pre>
                 <div class="table-wrap">
                     <table>
                         <thead><tr><th scope="col">الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
@@ -87,6 +87,7 @@
                             <tr><td><code>--profile=</code></td><td><code>basic</code> أو <code>modular</code> أو <code>saas</code> أو <code>tenant-saas</code></td><td>يُسأل عنه تفاعليًا. في الوضع غير التفاعلي: النمط المسجَّل، وإلا <code>blueprint.default_profile</code>، وإلا <code>modular</code></td></tr>
                             <tr><td><code>--force</code></td><td>يستبدل ملف الإعدادات المنشور (ويُحفظ القديم باسم <code>config/blueprint.php.bak</code>)، ويسمح أيضًا بالانتقال إلى نمط أدنى</td><td>معطّل</td></tr>
                             <tr><td><code>--allow-downgrade</code></td><td>يسمح بالانتقال إلى نمط بقدرات أقل</td><td>معطّل</td></tr>
+                            <tr><td><code>--permissions</code></td><td>يهيّئ الأدوار والصلاحيات: ينشئ صنف التعريفات <code>Permissions</code> (و<code>CentralPermissions</code> في <bdi>tenant-saas</bdi>)، وترحيل <bdi>spatie</bdi> (وفي <bdi>tenant-saas</bdi> أيضًا في <code>database/migrations/tenant</code>)، ويضيف <code>HasRoles</code> إلى <code>App\Models\User</code>. يُرفض دون <code>spatie/laravel-permission</code>، وإعادة تشغيله آمنة</td><td>معطّل</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -169,7 +170,7 @@
 
             <section class="index-card" aria-labelledby="make-crud">
                 <h3 class="index-card__title" id="make-crud">make:crud</h3>
-<pre><code><span class="prompt">$ </span>php artisan make:crud &lt;module&gt; &lt;entity&gt; [--fields=LIST] [--feature=KEY] [--api] [--web]</code></pre>
+<pre><code><span class="prompt">$ </span>php artisan make:crud &lt;module&gt; &lt;entity&gt; [--fields=LIST] [--feature=KEY] [--api] [--web] [--permissions] [--owned]</code></pre>
                 <div class="table-wrap">
                     <table>
                         <thead><tr><th scope="col">الوسيط / الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
@@ -180,6 +181,8 @@
                             <tr><td><code>--feature=</code></td><td>مفتاح الميزة الذي يجب أن يكون مفعّلًا لهذه المسارات (<bdi>saas</bdi>، <bdi>tenant-saas</bdi>)، ويضيف الوسيط <code>feature:&lt;key&gt;</code></td><td>لا شيء (بلا بوابة)</td></tr>
                             <tr><td><code>--api</code></td><td><bdi>JSON API</bdi></td><td>مفعّل عند عدم تمرير <code>--api</code> ولا <code>--web</code></td></tr>
                             <tr><td><code>--web</code></td><td>صفحات <bdi>Blade</bdi></td><td>معطّل</td></tr>
+                            <tr><td><code>--permissions</code></td><td>تفحص السياسة صلاحيات مسمّاة (<code>&lt;uri&gt;.view</code> و<code>.create</code> و<code>.update</code> و<code>.delete</code>)، وتُضاف المجموعة إلى <code>Permissions::groups()</code> (وإلى <code>CentralPermissions</code> للوحدة المركزية)، وتثبت الاختبارات القواعد. يحتاج إلى <code>engineering:install --permissions</code></td><td>معطّل</td></tr>
+                            <tr><td><code>--owned</code></td><td>السجلات ملك للمستخدم الذي أنشأها: عمود <code>user_id</code> يضبطه إجراء الإنشاء (لا من المدخلات أبدًا)، وقائمة محصورة بسجلات المستخدم، وصلاحية إضافية <code>&lt;uri&gt;.any</code> توسّع ما يملكه المستخدم من صلاحيات إلى كل السجلات. السجل الذي لا يستطيع المستخدم عرضه يعيد 404. يحتاج إلى <code>--permissions</code></td><td>معطّل</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -300,8 +303,23 @@
 
             <section class="index-card" aria-labelledby="permissions-sync">
                 <h3 class="index-card__title" id="permissions-sync">permissions:sync</h3>
-<pre><code><span class="prompt">$ </span>php artisan permissions:sync [--prune]</code></pre>
-                <p>ينشئ الصلاحيات والأدوار الناقصة من صنف التعريفات (<code>blueprint.permissions</code>) ويضبط كل دور معرّف على ما يقوله الملف بالضبط. يُنشأ دور <code>blueprint.super_admin</code> وهو يجتاز كل فحص، ويحدد <code>blueprint.permission_guard</code> الحارس. ما ليس في الملف يُعرض كقديم ولا يُحذف إلا مع <code>--prune</code>. خطأ في التعريفات ينهي الأمر برمز 1 دون كتابة شيء. <code>blueprint.central_permissions</code> هو صنف تعريفات الجهة المركزية في <bdi>tenant-saas</bdi>.</p>
+<pre><code><span class="prompt">$ </span>php artisan permissions:sync [--prune] [--tenant=ID ...] [--central]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>--prune</code></td><td>يحذف الصلاحيات والأدوار غير الموجودة في التعريفات</td><td>معطّل، وتُعرض كقديمة مع تلميح يسمّي الجهة</td></tr>
+                            <tr><td><code>--tenant=</code></td><td>في <bdi>tenant-saas</bdi>: يزامن <code>Permissions</code> إلى هؤلاء المستأجرين (قابل للتكرار)</td><td>كل المستأجرين</td></tr>
+                            <tr><td><code>--central</code></td><td>في <bdi>tenant-saas</bdi>: يزامن <code>CentralPermissions</code> إلى قاعدة البيانات المركزية. لا يُجمع مع <code>--tenant</code></td><td>معطّل</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>ينشئ الصلاحيات والأدوار الناقصة من صنف التعريفات (<code>blueprint.permissions</code>) ويضبط كل دور معرّف على ما يقوله الملف بالضبط. يُنشأ دور <code>blueprint.super_admin</code> وهو يجتاز كل فحص، ويحدد <code>blueprint.permission_guard</code> الحارس. ما ليس في الملف يُعرض كقديم ولا يُحذف إلا مع <code>--prune</code>. خطأ في التعريفات ينهي الأمر برمز 1 دون كتابة شيء. <code>blueprint.central_permissions</code> هو صنف تعريفات الجهة المركزية في <bdi>tenant-saas</bdi>. تستقبل قواعد بيانات المستأجرين <code>Permissions</code> فقط، وقاعدة البيانات المركزية <code>CentralPermissions</code> فقط، ويزامن <code>tenant:create</code> المستأجر الجديد. تُوسَّع الأنماط (<code>products.*</code> و<code>*</code>) وقت المزامنة، ونمط لا يطابق شيئًا يُعدّ خطأ. شغّله من التطبيق المركزي. راجع <a href="crud.html#permissions">CRUD</a>.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">مرفوض</span> <code>Permissions need spatie/laravel-permission. Run: composer require spatie/laravel-permission</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>--tenant and --central only apply to the tenant-saas profile.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>Tenant "&lt;id&gt;" not found.</code></li>
+                </ul>
             </section>
 
             <section class="index-card" aria-labelledby="setting-list">

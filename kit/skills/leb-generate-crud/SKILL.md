@@ -19,6 +19,8 @@ Phase 0 is approved and the package `best/laravel-engineering-blueprint` does th
 | CRUD, Blade pages | `php artisan make:crud Orders Order --fields="name:string,quantity:int" --web` |
 | CRUD, both sides | `php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web` |
 | CRUD behind a feature (saas, tenant-saas) | `php artisan make:crud Orders Order --fields="..." --feature=orders` |
+| CRUD with permissions | `php artisan make:crud Orders Order --fields="..." --permissions` (needs `engineering:install --permissions`) |
+| CRUD with permissions, records owned by the user | `php artisan make:crud Orders Order --fields="..." --permissions --owned` |
 
 Run `php artisan engineering:install --profile=modular` (or `saas`, `tenant-saas`) first if the project has no profile. Create the module with `make:module` before `make:crud`.
 
@@ -63,6 +65,13 @@ Requires `composer require stancl/tenancy:^3.10`, then `php artisan engineering:
 - Schedule tenant work with `tenants:run <command>`. The package keeps the database queue on the central connection.
 - Use `CACHE_STORE=redis` (or memcached): tenant cache isolation needs tags; `database`/`file` stores fail inside tenants.
 - Web sessions are tied to the tenant (or central app) where they started.
+
+## Permissions
+
+- `--permissions` needs spatie/laravel-permission and `engineering:install --permissions`; without them it refuses with the composer hint. The policy checks `<uri>.view/create/update/delete`; the group is added to `Permissions::groups()` (`CentralPermissions` for `--central`).
+- `--owned` (requires `--permissions`): `user_id` column set by the create action (never from input), list scoped to the user's records, `<uri>.any` widens permissions the user holds. A record the user cannot view is 404; viewable but not changeable is 403.
+- After generating: add the group to a role in `roles()`, run `php artisan permissions:sync` (tenant-saas: also `--central` for central modules). Generated tests pass without editing roles.
+- Adding a side later must use the same flags as the existing CRUD.
 
 ## Features and settings (saas, tenant-saas)
 

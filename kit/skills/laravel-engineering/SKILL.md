@@ -52,9 +52,17 @@ Follow `docs/NAMING.md`. Folder implies type (`Actions/CreateOrder.php`).
 - `docs/FEATURES.md` — `features` table (tenant DB in tenant-saas, app DB in saas), `Feature::enabled()`, `feature:` middleware, `RequireFeature` job middleware, `@feature`; writes only via `feature:*` / `features:sync` commands.
 - `docs/SETTINGS.md` — `settings` table, typed `Setting::get`, `Setting::set` for tenant-editable settings (Gate ability), `setting:set` for platform settings.
 
+## Permissions
+
+- Optional (`spatie/laravel-permission`): `php artisan engineering:install --permissions`; spec in `docs/PERMISSIONS.md`.
+- Roles and permission names live in `app/Shared/Permissions/Permissions.php` (`CentralPermissions` for the tenant-saas central side); `php artisan permissions:sync` writes them. Never write permission names as strings elsewhere; never create permission rows by hand.
+- `make:crud --permissions` generates a policy with named permissions (deny by default); add `--owned` for per-user records (`<uri>.any` widens). A record the user cannot view is 404.
+- Grant the new group to a role in `roles()` and run `permissions:sync`; the super-admin role passes every check.
+- Tests: `Best\Blueprint\Testing\InteractsWithPermissions` (`grantPermissions` replaces the user's roles; `makeSuperAdmin` adds).
+
 ## Status
 
-Phases 0–8 are shipped (specs, package, generators, tenancy, features, settings, Blade pages). Remaining: Phase 9 (starter app), Phase 10 (release).
+All phases (0–10) are done; version 1.0.0 is prepared.
 
 Full narrative: `rules.md` at kit root.
 

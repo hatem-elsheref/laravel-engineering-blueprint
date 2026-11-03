@@ -23,6 +23,7 @@ Any new decision must match this blueprint or be documented as an amendment here
 | [TENANCY.md](./TENANCY.md) | Central vs tenant, stancl/tenancy |
 | [FEATURES.md](./FEATURES.md) | Feature ON/OFF |
 | [SETTINGS.md](./SETTINGS.md) | Tenant settings |
+| [PERMISSIONS.md](./PERMISSIONS.md) | Roles, permissions, ownership |
 
 Package usage (install, commands, config): [../README.md](../README.md).
 
@@ -44,5 +45,4 @@ Phase 0 is complete (all criteria met):
 - [x] Feature cache invalidation behavior is defined.
 - [x] No unnecessary architecture layers are required.
 
-**Done:** Phases 1–8 (package foundation, install and profiles, `make:module`, `make:dto` / `make:action`, `make:crud`, tenancy, features and settings, quality and Blade pages).  
-**Remaining:** Phase 9 — starter app; Phase 10 — release.
+All phases (0–10) are done; 1.0.0 is prepared (see RELEASING.md). Permissions are specified in [PERMISSIONS.md](./PERMISSIONS.md).

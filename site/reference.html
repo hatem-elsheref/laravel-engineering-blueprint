@@ -79,7 +79,7 @@
 
             <section class="index-card" aria-labelledby="engineering-install">
                 <h3 class="index-card__title" id="engineering-install">engineering:install</h3>
-<pre><code><span class="prompt">$ </span>php artisan engineering:install [--profile=PROFILE] [--force] [--allow-downgrade]</code></pre>
+<pre><code><span class="prompt">$ </span>php artisan engineering:install [--profile=PROFILE] [--force] [--allow-downgrade] [--permissions]</code></pre>
                 <div class="table-wrap">
                     <table>
                         <thead><tr><th scope="col">Option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
@@ -87,6 +87,7 @@
                             <tr><td><code>--profile=</code></td><td><code>basic</code>, <code>modular</code>, <code>saas</code> or <code>tenant-saas</code></td><td>Asked interactively. Non-interactive: the recorded profile, else <code>blueprint.default_profile</code>, else <code>modular</code></td></tr>
                             <tr><td><code>--force</code></td><td>Overwrite the published config file (old one kept as <code>config/blueprint.php.bak</code>); also allows a downgrade</td><td>off</td></tr>
                             <tr><td><code>--allow-downgrade</code></td><td>Allow switching to a profile with fewer capabilities</td><td>off</td></tr>
+                            <tr><td><code>--permissions</code></td><td>Set up roles and permissions: creates the <code>Permissions</code> definitions class (and <code>CentralPermissions</code> in tenant-saas), spatie's migration (also in <code>database/migrations/tenant</code> in tenant-saas) and adds <code>HasRoles</code> to <code>App\Models\User</code>. Refused without <code>spatie/laravel-permission</code>; safe to re-run</td><td>off</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -169,7 +170,7 @@
 
             <section class="index-card" aria-labelledby="make-crud">
                 <h3 class="index-card__title" id="make-crud">make:crud</h3>
-<pre><code><span class="prompt">$ </span>php artisan make:crud &lt;module&gt; &lt;entity&gt; [--fields=LIST] [--feature=KEY] [--api] [--web]</code></pre>
+<pre><code><span class="prompt">$ </span>php artisan make:crud &lt;module&gt; &lt;entity&gt; [--fields=LIST] [--feature=KEY] [--api] [--web] [--permissions] [--owned]</code></pre>
                 <div class="table-wrap">
                     <table>
                         <thead><tr><th scope="col">Argument / option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
@@ -180,6 +181,8 @@
                             <tr><td><code>--feature=</code></td><td>Feature key that must be enabled for these routes (saas, tenant-saas); adds <code>feature:&lt;key&gt;</code> middleware</td><td>none (no gate)</td></tr>
                             <tr><td><code>--api</code></td><td>JSON API</td><td>on when neither <code>--api</code> nor <code>--web</code> is given</td></tr>
                             <tr><td><code>--web</code></td><td>Blade pages</td><td>off</td></tr>
+                            <tr><td><code>--permissions</code></td><td>The policy checks named permissions (<code>&lt;uri&gt;.view</code>, <code>.create</code>, <code>.update</code>, <code>.delete</code>); the group is added to <code>Permissions::groups()</code> (<code>CentralPermissions</code> for a central module) and the tests prove the rules. Needs <code>engineering:install --permissions</code></td><td>off</td></tr>
+                            <tr><td><code>--owned</code></td><td>Records belong to the user who creates them: a <code>user_id</code> column set by the create action (never from input), a list scoped to the user's records, and an extra <code>&lt;uri&gt;.any</code> permission that widens the permissions a user holds to every record. A record the user cannot view is 404. Needs <code>--permissions</code></td><td>off</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -187,6 +190,8 @@
                 <ul class="outcomes">
                     <li><span class="stamp">Refused</span> <code>Invalid entity name "&lt;entity&gt;". Use a singular name, e.g. Order.</code></li>
                     <li><span class="stamp">Refused</span> <code>Entity names must be singular, e.g. &lt;singular&gt;.</code></li>
+                    <li><span class="stamp">Refused</span> <code>--owned needs --permissions.</code></li>
+                    <li><span class="stamp">Refused</span> <code>--permissions needs spatie/laravel-permission. Run: composer require spatie/laravel-permission &amp;&amp; php artisan engineering:install --permissions</code></li>
                     <li><span class="stamp">Refused</span> <code>--feature needs the saas or tenant-saas profile.</code></li>
                     <li><span class="stamp">Refused</span> <code>Unknown feature "&lt;key&gt;". Add it to &lt;FeaturesClass&gt; first.</code></li>
                     <li><span class="stamp">Refused</span> <code>Features are per tenant; central module routes have no tenant. Drop --feature or use a tenant module.</code></li>
@@ -300,8 +305,23 @@
 
             <section class="index-card" aria-labelledby="permissions-sync">
                 <h3 class="index-card__title" id="permissions-sync">permissions:sync</h3>
-<pre><code><span class="prompt">$ </span>php artisan permissions:sync [--prune]</code></pre>
-                <p>Creates missing permissions and roles from the definitions class (<code>blueprint.permissions</code>) and sets each defined role to exactly what the file says. The <code>blueprint.super_admin</code> role is created and passes every check; <code>blueprint.permission_guard</code> sets the guard. Entries not in the file are listed as stale and deleted only with <code>--prune</code>. A definition error exits 1 and writes nothing. <code>blueprint.central_permissions</code> is the central-side definitions class for tenant-saas.</p>
+<pre><code><span class="prompt">$ </span>php artisan permissions:sync [--prune] [--tenant=ID ...] [--central]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>--prune</code></td><td>Delete permissions and roles that are not in the definitions</td><td>off; they are listed as stale, with a hint that names the side</td></tr>
+                            <tr><td><code>--tenant=</code></td><td>tenant-saas: sync <code>Permissions</code> into these tenants (repeatable)</td><td>all tenants</td></tr>
+                            <tr><td><code>--central</code></td><td>tenant-saas: sync <code>CentralPermissions</code> into the central database. Cannot be combined with <code>--tenant</code></td><td>off</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>Creates missing permissions and roles from the definitions class (<code>blueprint.permissions</code>) and sets each defined role to exactly what the file says. The <code>blueprint.super_admin</code> role is created and passes every check; <code>blueprint.permission_guard</code> sets the guard. Entries not in the file are listed as stale and deleted only with <code>--prune</code>. A definition error exits 1 and writes nothing. <code>blueprint.central_permissions</code> is the central-side definitions class for tenant-saas. Tenant databases only ever receive <code>Permissions</code> and the central database only <code>CentralPermissions</code>; <code>tenant:create</code> syncs the new tenant. Patterns (<code>products.*</code>, <code>*</code>) are expanded at sync time and a pattern that matches nothing is an error. Run it from the central app. See <a href="crud.html#permissions">CRUD</a>.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">Refused</span> <code>Permissions need spatie/laravel-permission. Run: composer require spatie/laravel-permission</code></li>
+                    <li><span class="stamp">Refused</span> <code>--tenant and --central only apply to the tenant-saas profile.</code></li>
+                    <li><span class="stamp">Refused</span> <code>Tenant "&lt;id&gt;" not found.</code></li>
+                </ul>
             </section>
 
             <section class="index-card" aria-labelledby="setting-list">

@@ -79,7 +79,7 @@ Do not create empty folders or unnecessary classes.
 | Query | Read and search data |
 | Model | Eloquent data and relationships |
 | Resource | Format API response |
-| Policy | Check user permissions |
+| Policy | Check user permissions (`make:crud --permissions`: named permissions, see PERMISSIONS.md) |
 | Job | Run background work |
 | Event | Announce something that happened |
 

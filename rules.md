@@ -4004,3 +4004,13 @@ FEATURES.md — نظام ON/OFF وSettings والصلاحيات.
 في نقطة واحدة أحب أثبتها كقاعدة: الـ Feature لها تعريف ثابت داخل الكود، لكن حالة تشغيلها محفوظة داخل قاعدة بيانات كل Tenant، والتغيير متاح فقط لإدارة المنصة. كده نقدر نتحكم في كل عميل بشكل مستقل من غير ما نعمل Deploy جديد كل مرة.
 
 ده هيكون أساس كل الـ Modules والـ Generator والـ AI Rules بعد كده.
+
+---
+
+## Permissions (spatie/laravel-permission, optional)
+
+- Policies check named permissions `<group>.<ability>` (`products.update`). Names and roles live in one definitions class, `app/Shared/Permissions/Permissions.php` (`CentralPermissions` for the central side in tenant-saas); `permissions:sync` writes them to the database.
+- Deny by default: a permission no role holds is denied. A `super-admin` role (config `blueprint.super_admin`) passes every check through `Gate::before`.
+- `make:crud --permissions` generates the policy and tests; `--owned` adds ownership: a record the user cannot view is always 404, `<group>.any` only widens permissions the user already holds.
+- tenant-saas: tenant roles live in tenant databases, central roles in the central database; they never mix, and the permission cache is per tenant.
+- Details: `docs/PERMISSIONS.md`.

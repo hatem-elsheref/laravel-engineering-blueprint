@@ -120,6 +120,10 @@ Actions/
 
 Do not add `Action` to every class name when the folder already explains its type.
 
+## 2.5.1 Permission Names
+
+Permissions are `<group>.<ability>`, all lowercase. The group is the CRUD's URI (`products`, `purchase-orders`); the abilities are `view`, `create`, `update`, `delete`, and `any` for owned records (see PERMISSIONS.md). Role patterns may use `<group>.*` and `*`. Names live in the definitions class only.
+
 ## 2.6 Route Names
 
 | Route | Name | Example |
