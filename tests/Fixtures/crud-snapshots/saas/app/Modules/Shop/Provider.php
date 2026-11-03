@@ -15,6 +15,8 @@ final class Provider extends ServiceProvider
             return;
         }
 
+        // Generated API routes use the 'api' middleware only — add auth (e.g. auth:sanctum) before production (docs/SECURITY-GENERATION.md).
+
         Route::middleware('web')->group(__DIR__.'/routes/web.php');
         Route::middleware('api')->prefix('api')->group(__DIR__.'/routes/api.php');
     }

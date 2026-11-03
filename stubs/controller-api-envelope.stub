@@ -1,0 +1,44 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+{{ imports }}
+final class {{ entity }}Controller
+{
+    public function index({{ indexParameters }}): JsonResponse
+    {
+        Gate::authorize('viewAny', {{ entity }}::class);
+
+        return ApiResponse::collection({{ entity }}Resource::collection($query->handle({{ listArguments }})));
+    }
+
+    public function store(Store{{ entity }}Request $request, Create{{ entity }} $action): JsonResponse
+    {
+        ${{ variable }} = $action->handle({{ entity }}Data::fromRequest($request){{ createArguments }});
+
+        return ApiResponse::created(new {{ entity }}Resource(${{ variable }}));
+    }
+
+    public function show({{ entity }} ${{ variable }}): JsonResponse
+    {
+        Gate::authorize('view', ${{ variable }});
+
+        return ApiResponse::resource(new {{ entity }}Resource(${{ variable }}));
+    }
+
+    public function update(Update{{ entity }}Request $request, {{ entity }} ${{ variable }}, Update{{ entity }} $action): JsonResponse
+    {
+        return ApiResponse::resource(new {{ entity }}Resource($action->handle(${{ variable }}, {{ entity }}Data::fromRequest($request))));
+    }
+
+    public function destroy({{ entity }} ${{ variable }}, Delete{{ entity }} $action): Response
+    {
+        Gate::authorize('delete', ${{ variable }});
+
+        $action->handle(${{ variable }});
+
+        return response()->noContent();
+    }
+}

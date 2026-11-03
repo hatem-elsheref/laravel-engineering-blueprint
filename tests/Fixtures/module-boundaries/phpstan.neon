@@ -1,0 +1,7 @@
+includes:
+    - ../../../phpstan/blueprint-module-boundaries.neon
+
+parameters:
+    level: 6
+    paths:
+        - app/Modules

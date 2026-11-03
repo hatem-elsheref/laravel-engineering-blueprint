@@ -6,37 +6,36 @@ namespace {{ namespace }};
 
 {{ imports }}
 /**
+ * Blueprint: deny-by-default policy.
+ *
  * Guests are always denied: every method requires a User.
+ * Authenticated users are denied until you implement authorization below,
+ * or regenerate with make:crud --permissions / use --open-policy for local demos only.
  */
 final class {{ entity }}Policy
 {
     public function viewAny(User $user): bool
     {
-        // Tighten for your app.
-        return true;
+        return false;
     }
 
     public function view(User $user, {{ entity }} ${{ variable }}): bool
     {
-        // Tighten for your app.
-        return true;
+        return false;
     }
 
     public function create(User $user): bool
     {
-        // Tighten for your app.
-        return true;
+        return false;
     }
 
     public function update(User $user, {{ entity }} ${{ variable }}): bool
     {
-        // Tighten for your app.
-        return true;
+        return false;
     }
 
     public function delete(User $user, {{ entity }} ${{ variable }}): bool
     {
-        // Tighten for your app.
-        return true;
+        return false;
     }
 }

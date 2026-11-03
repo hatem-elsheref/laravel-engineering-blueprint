@@ -26,7 +26,10 @@ php artisan make:action Orders CancelOrder --data=OrderData --transaction
 php artisan make:crud Orders Order --fields="name:string,quantity:int"          # API (default)
 php artisan make:crud Orders Order --fields="name:string,quantity:int" --web    # Blade pages
 php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web
+php artisan make:crud Orders Order --schema=orders/order.yaml --api   # SCHEMA-DSL.md; not with --fields
 ```
+
+Default `make:crud` policy is **deny-by-default**; production uses `--permissions` (optional `--owned`); demos only `--open-policy`. After module changes: `php artisan engineering:architecture`.
 
 To change generated code: `php artisan vendor:publish --tag=blueprint-stubs`, then edit `stubs/blueprint/*.stub`. The copy in `laravel-engineering-blueprint/stubs/` is reference only.
 

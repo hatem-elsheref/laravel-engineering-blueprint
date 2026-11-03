@@ -7,17 +7,21 @@ use Best\Blueprint\Permissions\CrudPermissions;
 use Best\Blueprint\Permissions\DefinitionsFile;
 use Best\Blueprint\Permissions\InvalidPermissionDefinition;
 use Best\Blueprint\Permissions\OwnedCrud;
+use Best\Blueprint\Schema\EntitySchemaMeta;
+use Best\Blueprint\Schema\SchemaException;
 use Best\Blueprint\Support\CrudField;
 use Best\Blueprint\Support\CrudFields;
 use Best\Blueprint\Support\CrudNames;
 use Best\Blueprint\Support\FieldException;
 use Best\Blueprint\Support\FileWriter;
+use Best\Blueprint\Support\GeneratedPolicy;
 use Best\Blueprint\Support\ModuleName;
 use Best\Blueprint\Support\Modules;
 use Best\Blueprint\Support\PestDetector;
 use Best\Blueprint\Support\PhpNames;
 use Best\Blueprint\Support\PhpSource;
 use Best\Blueprint\Support\Profile;
+use Best\Blueprint\Support\RouteAuth;
 use Best\Blueprint\Support\RouteFile;
 use Best\Blueprint\Support\StubException;
 use Best\Blueprint\Support\StubRenderer;
@@ -33,11 +37,16 @@ class MakeCrudCommand extends Command
         {module : Module name, e.g. Orders}
         {entity : Singular entity name, e.g. Order}
         {--fields= : Comma-separated name:type list, e.g. "name:string,quantity:int,note:?string"}
+        {--schema= : Entity schema YAML (see docs/SCHEMA-DSL.md); do not combine with --fields}
         {--feature= : Feature key that must be enabled for these routes (saas, tenant-saas)}
         {--permissions : Policies check named permissions (needs engineering:install --permissions)}
         {--owned : Records belong to the user who creates them (needs --permissions)}
+        {--open-policy : Demo policy: any signed-in user may act (not for production; default is deny-by-default)}
+        {--auth= : Auth on API (sanctum, auth) and web (auth only). Defaults to blueprint.route_auth / route_auth_web}
+        {--api-envelope : Wrap JSON API responses with Best\\Blueprint\\Http\\ApiResponse}
         {--api : JSON API (default when neither --api nor --web is given)}
-        {--web : Blade pages}';
+        {--web : Blade pages}
+        {--nested-under= : Parent entity in the same module for nested API routes (requires --api)}';
 
     protected $description = 'Create a CRUD for an entity in a module: JSON API (--api), Blade pages (--web) or both';
 
@@ -71,10 +80,8 @@ class MakeCrudCommand extends Command
             $this->line("Using entity name \"{$entity}\".");
         }
 
-        try {
-            $fields = CrudFields::parse($this->option('fields'));
-        } catch (FieldException $e) {
-            return $this->refuse($e->getMessage());
+        if ($this->option('schema') !== null && $this->option('fields') !== null) {
+            return $this->refuse('Use --schema or --fields, not both.');
         }
 
         $names = CrudNames::for(
@@ -84,11 +91,51 @@ class MakeCrudCommand extends Command
             $modules->path().'/'.$module,
             $this->moduleKind(base_path($modules->path().'/'.$module.'/Provider.php')) === 'tenant',
         );
+
+        $schemaMeta = EntitySchemaMeta::empty();
+        $addingSide = $this->sharedFilesExist($names);
+
+        if ($addingSide && $this->option('schema') !== null) {
+            return $this->refuse('Leave --schema out when adding a side; the existing fields are reused.');
+        }
+
+        try {
+            if ($addingSide) {
+                $existing = $this->existingFields($names);
+
+                if ($this->option('fields') !== null && $this->fieldSignature(CrudFields::parse($this->option('fields'))) !== $this->fieldSignature(CrudFields::parse($existing))) {
+                    return $this->refuse("--fields doesn't match the existing {$entity} CRUD ({$existing}). Leave --fields out to reuse them.");
+                }
+
+                $fields = CrudFields::parse($existing);
+            } elseif ($this->option('schema') !== null) {
+                [$fields, $schemaMeta] = CrudFields::fromSchema((string) $this->option('schema'), $module, $entity, $modules);
+            } else {
+                $fields = CrudFields::parse($this->option('fields'));
+            }
+        } catch (FieldException|SchemaException $e) {
+            return $this->refuse($e->getMessage());
+        }
         $kind = $this->moduleKind(base_path($modules->path().'/'.$module.'/Provider.php'));
         $central = $kind === 'central';
         $feature = $this->option('feature');
         $web = (bool) $this->option('web');
         $api = (bool) $this->option('api') || ! $web;
+
+        $nestedParentNames = null;
+        $nestedScopeSnippet = '';
+        $nestedExtraRelations = '';
+
+        if (($nested = $this->prepareNestedUnder($modules, $module, $entity, $names, $kind === 'tenant', $api, $web, $fields)) !== null) {
+            if (is_string($nested)) {
+                return $this->refuse($nested);
+            }
+
+            $fields = $nested['fields'];
+            $nestedParentNames = $nested['parent'];
+            $nestedScopeSnippet = $nested['scope'];
+            $nestedExtraRelations = $nested['relations'];
+        }
 
         if ($feature !== null && ($error = $this->featureError((string) $feature)) !== null) {
             return $this->refuse($error);
@@ -102,6 +149,16 @@ class MakeCrudCommand extends Command
 
         if ($owned && ! $this->option('permissions')) {
             return $this->refuse('--owned needs --permissions.');
+        }
+
+        if ($owned && $schemaMeta->hasQueryFilters) {
+            return $this->refuse('Schema query filters are not supported with --owned yet.');
+        }
+
+        $openPolicy = (bool) $this->option('open-policy');
+
+        if ($openPolicy && $this->option('permissions')) {
+            return $this->refuse('--open-policy cannot be used with --permissions.');
         }
 
         if ($owned && ($error = OwnedCrud::fieldError($fields)) !== null) {
@@ -128,20 +185,12 @@ class MakeCrudCommand extends Command
             return $this->refuse("Entity \"{$entity}\" has the same singular and plural form, which the web pages cannot tell apart. Choose another name (e.g. Article).");
         }
 
-        // Adding a side to an existing CRUD: the shared backend is reused, only the new side is written.
-        $addingSide = $this->sharedFilesExist($names);
-
         if ($addingSide) {
-            $existing = $this->existingFields($names);
+            $this->line('using the existing fields: '.$this->existingFields($names));
 
-            if ($this->option('fields') !== null && $this->fieldSignature($fields) !== $this->fieldSignature(CrudFields::parse($existing))) {
-                return $this->refuse("--fields doesn't match the existing {$entity} CRUD ({$existing}). Leave --fields out to reuse them.");
-            }
-
-            $fields = CrudFields::parse($existing);
-            $this->line("using the existing fields: {$existing}");
-
-            if (($error = $this->featureMismatch($names, $feature, $api, $web) ?? $this->permissionsMismatch($names, $permissions !== null, $owned)) !== null) {
+            if (($error = $this->featureMismatch($names, $feature, $api, $web)
+                ?? $this->permissionsMismatch($names, $permissions !== null, $owned)
+                ?? $this->openPolicyMismatch($names, $openPolicy, $permissions !== null)) !== null) {
                 return $this->refuse($error);
             }
         }
@@ -157,7 +206,16 @@ class MakeCrudCommand extends Command
 
         $routeNamePrefix = $central ? 'central.' : '';
 
-        foreach (array_keys(array_filter(["{$routeNamePrefix}api.{$names->uri}.index" => $api, "{$routeNamePrefix}{$names->uri}.index" => $web])) as $name) {
+        $routeNamesToCheck = array_filter([
+            "{$routeNamePrefix}api.{$names->uri}.index" => $api && $nestedParentNames === null,
+            "{$routeNamePrefix}{$names->uri}.index" => $web,
+        ]);
+
+        if ($nestedParentNames !== null && $api) {
+            $routeNamesToCheck["{$routeNamePrefix}api.{$nestedParentNames->uri}.{$names->uri}.index"] = true;
+        }
+
+        foreach (array_keys($routeNamesToCheck) as $name) {
             if (($taken = $this->takenRouteName($name)) !== null) {
                 return $this->refuse($taken);
             }
@@ -174,19 +232,53 @@ class MakeCrudCommand extends Command
             }
         }
 
-        $middleware = $feature === null ? '' : "\n    ->middleware('feature:{$feature}')";
+        $apiRouteAuth = $this->resolvedRouteAuth($api);
+        $webRouteAuth = $this->resolvedWebRouteAuth($web);
+
+        if ($apiRouteAuth === false || $webRouteAuth === false) {
+            return $this->refuse('Invalid --auth value. API: sanctum, auth, or auth:sanctum. Web: auth (or set blueprint.route_auth_web).');
+        }
+
+        $featureMiddleware = $feature === null ? '' : "\n    ->middleware('feature:{$feature}')";
+        $apiMiddleware = $featureMiddleware.RouteAuth::routeMiddlewareSuffix($apiRouteAuth);
+        $webMiddleware = $featureMiddleware.RouteAuth::routeMiddlewareSuffix($webRouteAuth);
+        $apiEnvelope = $api && ($this->option('api-envelope') || config('blueprint.api_envelope'));
         $routeLines = [];
 
         try {
             $selected = array_flip(array_map(fn (string $key) => $names->files()[$key], $keys));
-            $generated = array_intersect_key($this->render($stubs, $names, $fields, $feature, $routeNamePrefix, $permissions), $selected);
+            $generated = array_intersect_key($this->render(
+                $stubs,
+                $names,
+                $fields,
+                $feature,
+                $routeNamePrefix,
+                $permissions,
+                $openPolicy,
+                $schemaMeta,
+                $apiEnvelope,
+                $nestedScopeSnippet,
+                $nestedExtraRelations,
+                $apiRouteAuth,
+            ), $selected);
+
+            foreach ($schemaMeta->enumFiles as $enumFile) {
+                $generated[$enumFile['path']] = $enumFile['contents'];
+            }
 
             if ($api) {
-                $routeLines['api'] = $stubs->render('route.stub', ['uri' => $names->uri, 'controller' => "{$entity}Controller", 'middleware' => $middleware]);
+                $routeLines['api'] = $nestedParentNames === null
+                    ? $stubs->render('route.stub', ['uri' => $names->uri, 'controller' => "{$entity}Controller", 'middleware' => $apiMiddleware])
+                    : $stubs->render('route-nested-api.stub', [
+                        'uri' => $names->uri,
+                        'parentUri' => $nestedParentNames->uri,
+                        'controller' => "{$entity}Controller",
+                        'middleware' => $apiMiddleware,
+                    ]);
             }
 
             if ($web) {
-                $routeLines['web'] = $stubs->render('web-route.stub', ['uri' => $names->uri, 'controller' => "{$entity}PageController", 'middleware' => $middleware]);
+                $routeLines['web'] = $stubs->render('web-route.stub', ['uri' => $names->uri, 'controller' => "{$entity}PageController", 'middleware' => $webMiddleware]);
             }
         } catch (StubException $e) {
             return $this->refuse($this->invalidStub($e->path, $e->reason));
@@ -202,7 +294,7 @@ class MakeCrudCommand extends Command
             }
         }
 
-        foreach ($this->expectedClasses($names, $permissions !== null, $owned) as $key => [$namespace, $class, $stub]) {
+        foreach ($this->expectedClasses($names, $permissions !== null, $owned, $openPolicy) as $key => [$namespace, $class, $stub]) {
             if (in_array($key, $keys, true) && ! PhpSource::declares($generated[$names->files()[$key]], $namespace, $class)) {
                 return $this->refuse($this->invalidStub($stubs->path($stub), "no {$class} class in namespace {$namespace}"));
             }
@@ -212,8 +304,8 @@ class MakeCrudCommand extends Command
         foreach (array_keys(array_filter(['test' => $api, 'webTest' => $web])) as $key) {
             if ($feature !== null && ! str_contains($generated[$names->files()[$key]], "app(FeatureAdmin::class)->enable('{$feature}')")) {
                 $stub = $stubs->path(match ($key) {
-                    'test' => $names->tenant ? 'test-tenant.stub' : 'test.stub',
-                    default => $names->tenant ? 'test-web-tenant.stub' : 'test-web.stub',
+                    'test' => $this->apiTestStub($names, $permissions, $openPolicy),
+                    default => $this->webTestStub($names, $permissions, $openPolicy),
                 });
 
                 return $this->refuse("Stub {$stub} did not produce valid tests (no feature setup for {$feature}). Update or delete it, then re-run.");
@@ -323,12 +415,12 @@ class MakeCrudCommand extends Command
             if ($tokenNote !== null) {
                 $this->line("Note: {$tokenNote}");
             }
+        } elseif ($openPolicy) {
+            $this->line("Note: {$names->entity}Policy is open (--open-policy): every signed-in user may act. Guests get 403. Not for production.".($tokenNote !== null ? " {$tokenNote}" : ''));
+            $this->line('Tip: omit --open-policy for deny-by-default policies, or use --permissions for named permissions.');
         } else {
-            $this->line("Note: {$names->entity}Policy lets every signed-in user do everything (guests get 403). Tighten it for your app.".($tokenNote !== null ? " {$tokenNote}" : ''));
-
-            if (CrudPermissions::setupError((new CrudPermissions($names, $central))->definitionsClass()) === null) {
-                $this->line('Tip: --permissions makes the policy check named permissions.');
-            }
+            $this->line("Note: {$names->entity}Policy denies all actions until you implement it (guests and signed-in users get 403 until then).".($tokenNote !== null ? " {$tokenNote}" : ''));
+            $this->line('Tip: use --permissions for production CRUD, or --open-policy for local demos only.');
         }
 
         $written = array_filter(["{$entity}ApiTest" => $api && ! in_array($names->files()['test'], $skippedTests, true), "{$entity}WebTest" => $web && ! in_array($names->files()['webTest'], $skippedTests, true)]);
@@ -406,8 +498,9 @@ class MakeCrudCommand extends Command
                 return "Stub {$stub} did not produce a valid route (no {$controller}::class). Update or delete it, then re-run.";
             }
 
-            // API routes are named api.<uri>.* so a web resource for the same entity keeps the plain names.
-            if ($side === 'api' && ! str_contains($line, "->names('api.{$names->uri}')")) {
+            // API routes are named api.<uri>.* (or api.<parent>.<uri> when nested).
+            if ($side === 'api' && ! str_contains($line, "->names('api.{$names->uri}')")
+                && ! preg_match("/->names\\('api\\.[^']+\\.{$names->uri}'\\)/", $line)) {
                 return "Stub {$stub} did not produce a valid route (no ->names('api.{$names->uri}')). Update or delete it, then re-run.";
             }
 
@@ -465,7 +558,7 @@ class MakeCrudCommand extends Command
      *
      * @return array<string, array{string, string, string}>
      */
-    private function expectedClasses(CrudNames $names, bool $permissions = false, bool $owned = false): array
+    private function expectedClasses(CrudNames $names, bool $permissions = false, bool $owned = false, bool $openPolicy = false): array
     {
         $ns = $names->moduleNamespace;
         $e = $names->entity;
@@ -483,7 +576,7 @@ class MakeCrudCommand extends Command
             'controller' => ["{$ns}\\Controllers", "{$e}Controller", 'controller.stub'],
             'pageController' => ["{$ns}\\Controllers", "{$e}PageController", 'web-controller.stub'],
             'resource' => ["{$ns}\\Resources", "{$e}Resource", 'resource.stub'],
-            'policy' => ["{$ns}\\Policies", "{$e}Policy", $this->policyStub($permissions, $owned)],
+            'policy' => ["{$ns}\\Policies", "{$e}Policy", GeneratedPolicy::stub($permissions, $owned, $openPolicy)],
         ];
     }
 
@@ -520,7 +613,7 @@ class MakeCrudCommand extends Command
      * @param  list<CrudField>  $fields
      * @return array<string, string> base-relative path => contents
      */
-    private function render(StubRenderer $stubs, CrudNames $names, array $fields, ?string $feature = null, string $routeNamePrefix = '', ?CrudPermissions $permissions = null): array
+    private function render(StubRenderer $stubs, CrudNames $names, array $fields, ?string $feature = null, string $routeNamePrefix = '', ?CrudPermissions $permissions = null, bool $openPolicy = false, EntitySchemaMeta $schemaMeta = new EntitySchemaMeta, bool $apiEnvelope = false, string $nestedScopeSnippet = '', string $nestedExtraRelations = '', ?string $apiRouteAuth = null): array
     {
         $ns = $names->moduleNamespace;
         $e = $names->entity;
@@ -547,21 +640,64 @@ class MakeCrudCommand extends Command
         $owner = $permissions !== null && $permissions->owned ? new OwnedCrud($permissions) : null;
         $user = $owner === null ? [] : [OwnedCrud::userClass()];
         $controller = OwnedCrud::controllerValues($owner !== null, $names->plural);
+
+        if (($schemaMeta->hasQueryFilters || $nestedScopeSnippet !== '') && $owner === null) {
+            $controller['values']['indexParameters'] = "Request \$request, List{$names->plural} \$query";
+            $controller['values']['listArguments'] = '$request';
+            $controller['imports'] = [...$controller['imports'], 'Illuminate\\Http\\Request'];
+        }
+
+        $resourceFields = array_values(array_filter($fields, fn (CrudField $f): bool => ! $f->resourceHidden));
         $updateAbility = "'update', \$this->route('{$names->parameter}')";
 
+        $modelImports = [
+            $factory,
+            'Illuminate\\Database\\Eloquent\\Factories\\HasFactory',
+            'Illuminate\\Database\\Eloquent\\Model',
+            ...($owner === null ? [] : OwnedCrud::modelImports()),
+            ...$schemaMeta->modelImports,
+        ];
+
+        if ($schemaMeta->softDeletes) {
+            $modelImports[] = 'Illuminate\\Database\\Eloquent\\SoftDeletes';
+        }
+
+        if ($schemaMeta->modelRelations !== '' || $nestedExtraRelations !== '') {
+            $modelImports[] = 'Illuminate\\Database\\Eloquent\\Relations\\BelongsTo';
+        }
+
+        if ($schemaMeta->usesHasMany) {
+            $modelImports[] = 'Illuminate\\Database\\Eloquent\\Relations\\HasMany';
+        }
+
+        if ($schemaMeta->modelScopes !== '') {
+            $modelImports[] = 'Illuminate\\Database\\Eloquent\\Builder';
+        }
+
+        $enumImports = array_values(array_filter(array_map(
+            fn (CrudField $f) => $f->import,
+            array_filter($fields, fn (CrudField $f) => $f->needsEnumImport()),
+        )));
+        $needsRuleImport = $enumImports !== [] || array_reduce(
+            $fields,
+            fn (bool $carry, CrudField $f): bool => $carry || $f->columnUnique,
+            false,
+        );
+        $requestImports = $needsRuleImport ? [...$enumImports, 'Illuminate\\Validation\\Rule'] : $enumImports;
+
         $files = [
-            $paths['model'] => $render('model.stub', "{$ns}\\Models", [
-                $factory,
-                'Illuminate\\Database\\Eloquent\\Factories\\HasFactory',
-                'Illuminate\\Database\\Eloquent\\Model',
-                ...($owner === null ? [] : OwnedCrud::modelImports()),
-            ], [
+            $paths['model'] => $render('model.stub', "{$ns}\\Models", $modelImports, [
                 'fillable' => $this->lines($fields, fn (CrudField $f) => "'{$f->column}',", 8),
                 'casts' => $this->casts($fields),
-                'relations' => $owner?->modelRelation() ?? '',
+                'relations' => trim(($owner?->modelRelation() ?? '').$schemaMeta->modelRelations.$nestedExtraRelations),
+                'modelScopes' => $schemaMeta->modelScopes,
+                'softDeletesUse' => $schemaMeta->softDeletes ? "\n    use SoftDeletes;\n" : '',
+                'modelPrimaryKeyBlock' => $schemaMeta->modelPrimaryKeyBlock,
             ]),
             $paths['migration'] => $stubs->render('migration.stub', $common + [
+                'primaryKeyMigration' => $schemaMeta->primaryKeyMigrationLine === '' ? '' : $schemaMeta->primaryKeyMigrationLine."\n",
                 'columns' => ($owner?->migrationColumn() ?? '').$this->lines($fields, fn (CrudField $f) => $f->migration().';', 12),
+                'migrationExtras' => $this->migrationExtras($schemaMeta, $fields),
             ]),
             $paths['factory'] => $render('factory.stub', "Database\\Factories\\{$names->module}", [
                 $model, 'Illuminate\\Database\\Eloquent\\Factories\\Factory', ...$date, ...$user,
@@ -569,19 +705,19 @@ class MakeCrudCommand extends Command
                 'definition' => ($owner?->factoryLine() ?? '').$this->lines($fields, fn (CrudField $f) => "'{$f->column}' => {$f->factory()},", 12),
             ]),
             $paths['store'] => $render('request.stub', "{$ns}\\Requests", [
-                $model, 'Illuminate\\Foundation\\Http\\FormRequest',
+                $model, 'Illuminate\\Foundation\\Http\\FormRequest', ...$requestImports,
             ], [
                 'class' => "Store{$e}Request",
                 'ability' => "'create', {$e}::class",
-                'rules' => $this->rules($fields),
+                'rules' => $this->rules($fields, $names, false),
             ]),
             $paths['update'] => $owner === null
                 ? $render('request.stub', "{$ns}\\Requests", [
-                    'Illuminate\\Foundation\\Http\\FormRequest',
-                ], ['class' => "Update{$e}Request", 'ability' => $updateAbility, 'rules' => $this->rules($fields)])
+                    'Illuminate\\Foundation\\Http\\FormRequest', ...$requestImports,
+                ], ['class' => "Update{$e}Request", 'ability' => $updateAbility, 'rules' => $this->rules($fields, $names, true)])
                 : $render('request-update-owned.stub', "{$ns}\\Requests", [
                     'Illuminate\\Auth\\Access\\Response', 'Illuminate\\Foundation\\Http\\FormRequest', 'Illuminate\\Support\\Facades\\Gate',
-                ], ['class' => "Update{$e}Request", 'ability' => $updateAbility, 'rules' => $this->rules($fields)]),
+                ], ['class' => "Update{$e}Request", 'ability' => $updateAbility, 'rules' => $this->rules($fields, $names, true)]),
             $paths['data'] => $render('crud-data.stub', "{$ns}\\Data", [
                 "{$ns}\\Requests\\Store{$e}Request", "{$ns}\\Requests\\Update{$e}Request", ...$date,
             ], [
@@ -592,28 +728,46 @@ class MakeCrudCommand extends Command
             $paths['create'] => $render($owner === null ? 'crud-create-action.stub' : 'crud-create-action-owned.stub', "{$ns}\\Actions", [$data, $model, 'Illuminate\\Support\\Facades\\DB', ...$user]),
             $paths['updateAction'] => $render('crud-update-action.stub', "{$ns}\\Actions", [$data, $model, 'Illuminate\\Support\\Facades\\DB']),
             $paths['delete'] => $render('crud-delete-action.stub', "{$ns}\\Actions", [$model, 'Illuminate\\Support\\Facades\\DB']),
-            $paths['query'] => $render($owner === null ? 'query.stub' : 'query-owned.stub', "{$ns}\\Queries", [$model, 'Illuminate\\Contracts\\Pagination\\LengthAwarePaginator', ...$user]),
-            $paths['controller'] => $render('controller.stub', "{$ns}\\Controllers", [
+            $paths['query'] => $render(
+                $owner === null
+                    ? ($schemaMeta->hasQueryFilters || $nestedScopeSnippet !== '' ? 'query-with-filters.stub' : 'query.stub')
+                    : 'query-owned.stub',
+                "{$ns}\\Queries",
+                [
+                    $model,
+                    'Illuminate\\Contracts\\Pagination\\LengthAwarePaginator',
+                    ...($schemaMeta->hasQueryFilters || $nestedScopeSnippet !== '' ? ['Illuminate\\Http\\Request'] : []),
+                    ...$user,
+                ],
+                [
+                    'queryFilters' => $schemaMeta->queryFilterLines,
+                    'listLatestColumn' => $schemaMeta->listLatestColumn,
+                    'nestedScope' => $nestedScopeSnippet,
+                ],
+            ),
+            $paths['controller'] => $render($apiEnvelope ? 'controller-api-envelope.stub' : 'controller.stub', "{$ns}\\Controllers", [
                 "{$ns}\\Actions\\Create{$e}", "{$ns}\\Actions\\Delete{$e}", "{$ns}\\Actions\\Update{$e}",
                 $data, $model, "{$ns}\\Queries\\List{$names->plural}",
                 "{$ns}\\Requests\\Store{$e}Request", "{$ns}\\Requests\\Update{$e}Request",
                 "{$ns}\\Resources\\{$e}Resource",
                 'Illuminate\\Http\\JsonResponse', 'Illuminate\\Http\\Resources\\Json\\AnonymousResourceCollection',
-                'Illuminate\\Http\\Response', 'Illuminate\\Support\\Facades\\Gate', ...$controller['imports'],
+                'Illuminate\\Http\\Response', 'Illuminate\\Support\\Facades\\Gate',
+                ...($apiEnvelope ? ['Best\\Blueprint\\Http\\ApiResponse'] : []),
+                ...$controller['imports'],
             ], $controller['values']),
             $paths['resource'] => $render('resource.stub', "{$ns}\\Resources", [
                 $model, 'Illuminate\\Http\\Request', 'Illuminate\\Http\\Resources\\Json\\JsonResource',
             ], [
-                'attributes' => $this->lines($fields, fn (CrudField $f) => $f->kind() === 'date'
+                'attributes' => $this->lines($resourceFields, fn (CrudField $f) => $f->kind() === 'date'
                     ? "'{$f->column}' => \$this->{$f->column}?->toIso8601String(),"
                     : "'{$f->column}' => \$this->{$f->column},", 12),
             ]),
             $paths['policy'] => $permissions === null
-                ? $render('policy.stub', "{$ns}\\Policies", [$model, 'App\\Models\\User'])
-                : $render($this->policyStub(true, $owner !== null), "{$ns}\\Policies", [
+                ? $render(GeneratedPolicy::stub(false, false, $openPolicy), "{$ns}\\Policies", [$model, 'App\\Models\\User'])
+                : $render(GeneratedPolicy::stub(true, $owner !== null, false), "{$ns}\\Policies", [
                     $model, 'App\\Models\\User', ...($owner === null ? [] : ['Illuminate\\Auth\\Access\\Response']),
                 ], $permissions->policyValues()),
-            $paths['test'] => $stubs->render($names->tenant ? 'test-tenant.stub' : 'test.stub', $common + [
+            $paths['test'] => $stubs->render($this->apiTestStub($names, $permissions, $openPolicy), $common + [
                 'imports' => $this->imports([
                     ...($names->tenant
                         ? [$model, 'App\\Models\\User', 'Best\\Blueprint\\Testing\\InteractsWithTenancy', 'Illuminate\\Foundation\\Testing\\DatabaseMigrations']
@@ -625,6 +779,7 @@ class MakeCrudCommand extends Command
                 'featureSetup' => $feature === null ? '' : "    app(FeatureAdmin::class)->enable('{$feature}');\n",
                 'featureTest' => $feature === null ? '' : $this->featureTest($names, $feature),
                 'factoryOwner' => OwnedCrud::factoryOwner($owner !== null),
+                'apiSanctumSetup' => $apiRouteAuth === 'auth:sanctum' ? "    \$this->lebApiSanctum = true;\n" : '',
             ] + CrudPermissions::testValues($permissions, web: false)),
         ];
 
@@ -658,7 +813,7 @@ class MakeCrudCommand extends Command
         $files[$paths['viewForm']] = $stubs->render('view-form.stub', [
             'inputs' => implode("\n\n", array_map(fn (CrudField $f) => $f->formInput($v), $fields)).($fields === [] ? '' : "\n"),
         ]);
-        $files[$paths['webTest']] = $stubs->render($names->tenant ? 'test-web-tenant.stub' : 'test-web.stub', $common + [
+        $files[$paths['webTest']] = $stubs->render($this->webTestStub($names, $permissions, $openPolicy), $common + [
             'imports' => $this->imports([
                 ...($names->tenant
                     ? [$model, 'App\\Models\\User', 'Best\\Blueprint\\Testing\\InteractsWithTenancy', 'Illuminate\\Foundation\\Testing\\DatabaseMigrations']
@@ -699,13 +854,14 @@ class MakeCrudCommand extends Command
     /**
      * @param  list<CrudField>  $fields
      */
-    private function rules(array $fields): string
+    private function rules(array $fields, CrudNames $names, bool $forUpdate): string
     {
         $lines = '';
 
         foreach ($fields as $field) {
-            foreach ([$field->column => $field->rules()] + $field->elementRules() as $key => $rules) {
-                $lines .= str_repeat(' ', 12)."'{$key}' => ['".implode("', '", $rules)."'],\n";
+            foreach ([$field->column => $field->rules($forUpdate, $names->table, $names->parameter)] + $field->elementRules() as $key => $rules) {
+                $formatted = array_map(fn (string $rule) => str_starts_with($rule, 'Rule::') ? $rule : "'{$rule}'", $rules);
+                $lines .= str_repeat(' ', 12)."'{$key}' => [".implode(', ', $formatted)."],\n";
             }
         }
 
@@ -717,15 +873,54 @@ class MakeCrudCommand extends Command
      */
     private function casts(array $fields): string
     {
-        $cast = array_values(array_filter($fields, fn (CrudField $f) => $f->cast() !== null));
+        $cast = array_values(array_filter($fields, fn (CrudField $f) => $f->castLine() !== null));
 
         if ($cast === []) {
             return '';
         }
 
         return "\n    /**\n     * @return array<string, string>\n     */\n    protected function casts(): array\n    {\n        return [\n"
-            .$this->lines($cast, fn (CrudField $f) => "'{$f->column}' => '{$f->cast()}',", 12)
+            .$this->lines($cast, fn (CrudField $f) => $f->castLine().',', 12)
             ."        ];\n    }\n";
+    }
+
+    /**
+     * @param  list<CrudField>  $fields
+     */
+    private function migrationExtras(EntitySchemaMeta $meta, array $fields): string
+    {
+        $lines = '';
+
+        if ($meta->softDeletes) {
+            $lines .= "            \$table->softDeletes();\n";
+        }
+
+        foreach ($meta->indexes as $columns) {
+            $quoted = implode("', '", $columns);
+            $lines .= "            \$table->index(['{$quoted}']);\n";
+        }
+
+        $columnUnique = array_map(
+            fn (CrudField $f): ?string => $f->columnUnique ? $f->column : null,
+            $fields,
+        );
+        $columnUnique = array_values(array_filter($columnUnique));
+
+        foreach ($meta->unique as $columns) {
+            if (count($columns) === 1 && in_array($columns[0], $columnUnique, true)) {
+                continue;
+            }
+
+            $quoted = implode("', '", $columns);
+            $lines .= "            \$table->unique(['{$quoted}']);\n";
+        }
+
+        if ($meta->compositePrimaryKeyColumns !== []) {
+            $quoted = implode("', '", $meta->compositePrimaryKeyColumns);
+            $lines .= "            \$table->primary(['{$quoted}']);\n";
+        }
+
+        return $lines;
     }
 
     /**
@@ -740,7 +935,7 @@ class MakeCrudCommand extends Command
         }
 
         return "\nit('validates a {$names->variable}', function (): void {\n"
-            .'    $this->actingAs($this->user)->postJson('.($names->tenant ? "\$this->tenantUrl('/api/{$names->uri}')" : "'/api/{$names->uri}'").", [])\n"
+            .'    $this->actAsApiUser($this->user)->postJson('.($names->tenant ? "\$this->tenantUrl('/api/{$names->uri}')" : "'/api/{$names->uri}'").", [])\n"
             ."        ->assertUnprocessable()\n"
             .'        ->assertJsonValidationErrors(['.implode(', ', $required)."]);\n"
             ."});\n";
@@ -791,7 +986,7 @@ class MakeCrudCommand extends Command
 
         return "\nit('is blocked when the {$feature} feature is disabled', function (): void {\n"
             ."    app(FeatureAdmin::class)->disable('{$feature}');\n\n"
-            ."    \$this->actingAs(\$this->user)->getJson({$url})->assertForbidden();\n"
+            ."    \$this->actAsApiUser(\$this->user)->getJson({$url})->assertForbidden();\n"
             ."});\n";
     }
 
@@ -901,13 +1096,62 @@ class MakeCrudCommand extends Command
         };
     }
 
-    private function policyStub(bool $permissions, bool $owned): string
+    private function apiTestStub(CrudNames $names, ?CrudPermissions $permissions, bool $openPolicy): string
     {
-        return match (true) {
-            $owned => 'policy-owned.stub',
-            $permissions => 'policy-permissions.stub',
-            default => 'policy.stub',
-        };
+        if ($permissions !== null || $openPolicy) {
+            return $names->tenant ? 'test-tenant.stub' : 'test.stub';
+        }
+
+        return $names->tenant ? 'test-tenant-deny.stub' : 'test-deny.stub';
+    }
+
+    private function webTestStub(CrudNames $names, ?CrudPermissions $permissions, bool $openPolicy): string
+    {
+        if ($permissions !== null || $openPolicy) {
+            return $names->tenant ? 'test-web-tenant.stub' : 'test-web.stub';
+        }
+
+        return $names->tenant ? 'test-web-tenant-deny.stub' : 'test-web-deny.stub';
+    }
+
+    /**
+     * When adding a side, the new run must use the same policy mode as the existing CRUD.
+     */
+    private function openPolicyMismatch(CrudNames $names, bool $openPolicy, bool $permissions): ?string
+    {
+        if ($permissions) {
+            return null;
+        }
+
+        $policy = $this->existingFile($names, 'policy');
+
+        if ($policy === null) {
+            return null;
+        }
+
+        $source = (string) file_get_contents(base_path($policy));
+
+        if (GeneratedPolicy::isPermissionsMode($source)) {
+            return null;
+        }
+
+        $wasOpen = GeneratedPolicy::isOpen($source);
+        $wasDeny = GeneratedPolicy::isDenyByDefault($source);
+
+        if ($wasOpen && ! $openPolicy) {
+            return "The existing {$names->entity} CRUD uses an open policy; add --open-policy or edit {$names->entity}Policy.";
+        }
+
+        if ($wasDeny && $openPolicy) {
+            return "The existing {$names->entity} CRUD uses a deny-by-default policy; leave --open-policy out.";
+        }
+
+        // Legacy policies (return true, no marker): treat as open.
+        if (! $wasOpen && ! $wasDeny && $openPolicy === false) {
+            return "The existing {$names->entity}Policy looks like a legacy open policy; add --open-policy when adding a side, or replace the policy with a deny-by-default version.";
+        }
+
+        return null;
     }
 
     /**
@@ -953,7 +1197,7 @@ class MakeCrudCommand extends Command
         $policy = $generated[$names->files()['policy']] ?? null;
 
         if ($policy !== null && ! CrudPermissions::usedBy($policy)) {
-            return "Stub {$stubs->path($this->policyStub(true, $owned))} did not produce a valid policy (no checkPermissionTo). Update or delete it, then re-run.";
+            return "Stub {$stubs->path(GeneratedPolicy::stub(true, $owned, false))} did not produce a valid policy (no checkPermissionTo). Update or delete it, then re-run.";
         }
 
         foreach (array_keys(array_filter(['test' => $api, 'webTest' => $web])) as $key) {
@@ -968,6 +1212,136 @@ class MakeCrudCommand extends Command
         }
 
         return null;
+    }
+
+    /**
+     * @return string|null|false middleware name, null when none, false when option invalid
+     */
+    private function resolvedRouteAuth(bool $generatingApi): null|string|false
+    {
+        if (! $generatingApi) {
+            return null;
+        }
+
+        $option = $this->option('auth');
+
+        if ($option !== null && $option !== false && $option !== '') {
+            $normalized = RouteAuth::normalize((string) $option);
+
+            return $normalized ?? false;
+        }
+
+        return RouteAuth::fromConfig();
+    }
+
+    private function resolvedWebRouteAuth(bool $generatingWeb): null|string|false
+    {
+        if (! $generatingWeb) {
+            return null;
+        }
+
+        $option = $this->option('auth');
+
+        if ($option !== null && $option !== false && $option !== '') {
+            $value = trim((string) $option);
+
+            if (in_array($value, ['sanctum', 'auth:sanctum'], true)) {
+                return null;
+            }
+
+            return RouteAuth::normalizeWeb($value) ?? false;
+        }
+
+        return RouteAuth::webFromConfig();
+    }
+
+    /**
+     * @param  list<CrudField>  $fields
+     * @return null|array{fields: list<CrudField>, parent: CrudNames, scope: string, relations: string}|string
+     */
+    private function prepareNestedUnder(
+        Modules $modules,
+        string $module,
+        string $entity,
+        CrudNames $names,
+        bool $tenant,
+        bool $api,
+        bool $web,
+        array $fields,
+    ): null|array|string {
+        $parentInput = $this->option('nested-under');
+
+        if ($parentInput === null || $parentInput === false || $parentInput === '') {
+            return null;
+        }
+
+        if (! $api) {
+            return '--nested-under requires --api.';
+        }
+
+        if ($web) {
+            return '--nested-under cannot be combined with --web.';
+        }
+
+        $parentEntity = ModuleName::normalize((string) $parentInput);
+
+        if ($parentEntity === null || PhpNames::isReserved($parentEntity)) {
+            return "Invalid parent entity \"{$parentInput}\".";
+        }
+
+        $parentNames = CrudNames::for(
+            $parentEntity,
+            $module,
+            $modules->namespace().'\\'.$module,
+            $modules->path().'/'.$module,
+            $tenant,
+        );
+
+        $parentModelPath = base_path("{$parentNames->modulePath}/Models/{$parentEntity}.php");
+
+        if (! is_file($parentModelPath)) {
+            return "Parent model not found at {$parentNames->modulePath}/Models/{$parentEntity}.php — generate parent CRUD first.";
+        }
+
+        $fkColumn = Str::snake($parentEntity).'_id';
+        $hasFk = false;
+
+        foreach ($fields as $field) {
+            if ($field->column === $fkColumn) {
+                $hasFk = true;
+
+                break;
+            }
+        }
+
+        if (! $hasFk) {
+            $parentModel = "{$modules->namespace()}\\{$module}\\Models\\{$parentEntity}";
+            $fields[] = new CrudField(
+                property: Str::camel($fkColumn),
+                column: $fkColumn,
+                type: 'int',
+                nullable: false,
+                import: null,
+                extendedKind: 'foreignId',
+                referencesTable: $parentNames->table,
+                onDelete: 'cascade',
+                relatedModelFqn: $parentModel,
+                relatedModelShort: $parentEntity,
+            );
+        }
+
+        $relationMethod = Str::camel($parentEntity);
+        $parentModel = "{$modules->namespace()}\\{$module}\\Models\\{$parentEntity}";
+        $relations = "\n\n    public function {$relationMethod}(): BelongsTo\n    {\n        return \$this->belongsTo({$parentEntity}::class);\n    }\n";
+
+        $scope = "\n        \$query->where('{$fkColumn}', \$request->route('{$parentNames->parameter}'));";
+
+        return [
+            'fields' => $fields,
+            'parent' => $parentNames,
+            'scope' => $scope,
+            'relations' => $relations,
+        ];
     }
 
     private function refuse(string $message): int

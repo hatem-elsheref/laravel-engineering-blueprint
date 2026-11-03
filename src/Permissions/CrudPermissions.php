@@ -131,13 +131,13 @@ final class CrudPermissions
         return "\nit('denies users without the permission', function (): void {\n"
             ."    \$user = User::factory()->create();\n"
             ."    {$v} = {$e}::factory()->create();\n\n"
-            ."    \$this->actingAs(\$user)->getJson({$index})->assertForbidden();\n"
-            ."    \$this->actingAs(\$user)->postJson({$index}, {$e}::factory()->raw())->assertForbidden();\n"
-            ."    \$this->actingAs(\$user)->getJson({$one})->{$record}();\n"
-            ."    \$this->actingAs(\$user)->putJson({$one}, {$e}::factory()->raw())->{$record}();\n"
-            ."    \$this->actingAs(\$user)->deleteJson({$one})->{$record}();\n"
+            ."    \$this->actAsApiUser(\$user)->getJson({$index})->assertForbidden();\n"
+            ."    \$this->actAsApiUser(\$user)->postJson({$index}, {$e}::factory()->raw())->assertForbidden();\n"
+            ."    \$this->actAsApiUser(\$user)->getJson({$one})->{$record}();\n"
+            ."    \$this->actAsApiUser(\$user)->putJson({$one}, {$e}::factory()->raw())->{$record}();\n"
+            ."    \$this->actAsApiUser(\$user)->deleteJson({$one})->{$record}();\n"
             ."});\n"
-            .$this->superAdminTest('getJson', $index);
+            .$this->superAdminTest('getJson', $index, web: false);
     }
 
     private function webTests(string $formInput): string
@@ -161,7 +161,7 @@ final class CrudPermissions
             ."    \$this->actingAs(\$user)->put({$one}, {$formInput}())->{$record}();\n"
             ."    \$this->actingAs(\$user)->delete({$one})->{$record}();\n"
             ."});\n"
-            .$this->superAdminTest('get', $index);
+            .$this->superAdminTest('get', $index, web: true);
     }
 
     /** Owned: a record the user may not view (here another user's) is "not found"; otherwise 403. */
@@ -170,12 +170,14 @@ final class CrudPermissions
         return $this->owned ? 'assertNotFound' : 'assertForbidden';
     }
 
-    private function superAdminTest(string $method, string $index): string
+    private function superAdminTest(string $method, string $index, bool $web): string
     {
+        $act = $web ? '$this->actingAs' : '$this->actAsApiUser';
+
         return "\nit('lets a super-admin in', function (): void {\n"
             ."    \$user = User::factory()->create();\n"
             ."    \$this->makeSuperAdmin(\$user);\n\n"
-            ."    \$this->actingAs(\$user)->{$method}({$index})->assertOk();\n"
+            ."    {$act}(\$user)->{$method}({$index})->assertOk();\n"
             ."});\n";
     }
 

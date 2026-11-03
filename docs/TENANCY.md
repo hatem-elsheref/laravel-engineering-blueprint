@@ -2,6 +2,8 @@
 
 Part of [Phase 0 — Architecture Foundation](./PHASE-0.md).
 
+**Note:** Database-per-tenant (this doc) is the default **tenant-saas** profile, not the only tenancy strategy long-term. See [TENANCY-EXTENSIBILITY.md](./TENANCY-EXTENSIBILITY.md).
+
 ## 3.1 Package
 
 Use:

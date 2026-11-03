@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 {{ imports }}
-uses(InteractsWithTenancy::class, DatabaseMigrations::class{{ permissionUses }});
+uses(InteractsWithTenancy::class, DatabaseMigrations::class, Best\Blueprint\Testing\ActsAsApiUser::class{{ permissionUses }});
 
 beforeEach(function (): void {
     // A real tenant (database + tenant migrations); users live in the tenant database.
     $this->tenant = $this->createTestTenant();
     $this->user = User::factory()->create();
-{{ featureSetup }}{{ permissionSetup }}});
+{{ apiSanctumSetup }}{{ featureSetup }}{{ permissionSetup }}});
 
 it('denies guests', function (): void {
     ${{ variable }} = {{ entity }}::factory()->create();
@@ -23,21 +23,21 @@ it('denies guests', function (): void {
 
 it('hides which {{ uri }} exist from guests', function (): void {
     $this->getJson($this->tenantUrl('/api/{{ uri }}/999999'))->assertForbidden();
-    $this->actingAs($this->user)->getJson($this->tenantUrl('/api/{{ uri }}/999999'))->assertNotFound();
+    $this->actAsApiUser($this->user)->getJson($this->tenantUrl('/api/{{ uri }}/999999'))->assertNotFound();
 });
 
 it('is not served on the central domain', function (): void {
-    $this->actingAs($this->user)->getJson(url('/api/{{ uri }}'))->assertNotFound();
+    $this->actAsApiUser($this->user)->getJson(url('/api/{{ uri }}'))->assertNotFound();
 });
 
 it('lists {{ uri }}', function (): void {
     {{ entity }}::factory(){{ factoryOwner }}->create();
 
-    $this->actingAs($this->user)->getJson($this->tenantUrl('/api/{{ uri }}'))->assertOk()->assertJsonCount(1, 'data');
+    $this->actAsApiUser($this->user)->getJson($this->tenantUrl('/api/{{ uri }}'))->assertOk()->assertJsonCount(1, 'data');
 });
 
 it('creates a {{ variable }}', function (): void {
-    $this->actingAs($this->user)->postJson($this->tenantUrl('/api/{{ uri }}'), {{ entity }}::factory()->raw())->assertCreated();
+    $this->actAsApiUser($this->user)->postJson($this->tenantUrl('/api/{{ uri }}'), {{ entity }}::factory()->raw())->assertCreated();
 
     expect({{ entity }}::count())->toBe(1);
 });
@@ -45,7 +45,7 @@ it('creates a {{ variable }}', function (): void {
 it('shows a {{ variable }}', function (): void {
     ${{ variable }} = {{ entity }}::factory(){{ factoryOwner }}->create();
 
-    $this->actingAs($this->user)->getJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"))
+    $this->actAsApiUser($this->user)->getJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"))
         ->assertOk()
         ->assertJsonPath('data.id', ${{ variable }}->id);
 });
@@ -55,7 +55,7 @@ it('updates a {{ variable }}', function (): void {
 
     $this->travel(1)->minutes();
 
-    $this->actingAs($this->user)->putJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"), {{ entity }}::factory()->raw())->assertOk();
+    $this->actAsApiUser($this->user)->putJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"), {{ entity }}::factory()->raw())->assertOk();
 
     expect(${{ variable }}->fresh()->updated_at->gt(${{ variable }}->updated_at))->toBeTrue();
 });
@@ -63,7 +63,7 @@ it('updates a {{ variable }}', function (): void {
 it('deletes a {{ variable }}', function (): void {
     ${{ variable }} = {{ entity }}::factory(){{ factoryOwner }}->create();
 
-    $this->actingAs($this->user)->deleteJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"))->assertNoContent();
+    $this->actAsApiUser($this->user)->deleteJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"))->assertNoContent();
 
     expect({{ entity }}::count())->toBe(0);
 });

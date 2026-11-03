@@ -1,0 +1,22 @@
+profile: transactional
+softDeletes: false
+fields:
+  - name: sku
+    type: string
+    max: 64
+  - name: quantity
+    type: int
+    min: 1
+  - name: direction
+    type: enum
+    cases: [in, out, adjust]
+filters:
+  - column: sku
+    type: equals
+  - column: quantity
+    type: between
+    query_min: qty_min
+    query_max: qty_max
+  - column: direction
+    type: in
+    query: directions

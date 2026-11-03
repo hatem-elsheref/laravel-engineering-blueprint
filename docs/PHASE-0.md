@@ -24,6 +24,9 @@ Any new decision must match this blueprint or be documented as an amendment here
 | [FEATURES.md](./FEATURES.md) | Feature ON/OFF |
 | [SETTINGS.md](./SETTINGS.md) | Tenant settings |
 | [PERMISSIONS.md](./PERMISSIONS.md) | Roles, permissions, ownership |
+| [VALIDATION.md](./VALIDATION.md), [DTO.md](./DTO.md), [ACTIONS.md](./ACTIONS.md) | Request lifecycle details |
+| [API-RESPONSES.md](./API-RESPONSES.md), [TESTING.md](./TESTING.md), [IDEMPOTENCY.md](./IDEMPOTENCY.md) | API, tests, idempotency |
+| [ENGINEERING-AUDIT.md](./ENGINEERING-AUDIT.md) | Living audit of gaps vs vision |
 
 Package usage (install, commands, config): [../README.md](../README.md).
 

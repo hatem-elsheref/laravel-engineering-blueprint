@@ -53,7 +53,7 @@ it('same uri resolves per host', function () {
 
 it('serves a generated tenant crud', function () {
     $this->artisan('make:module', ['name' => 'Store', '--api' => true])->assertExitCode(0);
-    $this->artisan('make:crud', ['module' => 'Store', 'entity' => 'Product', '--fields' => 'name:string'])->assertExitCode(0);
+    $this->artisan('make:crud', ['module' => 'Store', 'entity' => 'Product', '--open-policy' => true, '--fields' => 'name:string'])->assertExitCode(0);
     app(TenantSetup::class)->run('a', 'a.localhost', 'tenant_a');
     app()->register('App\Modules\Store\Provider');
 
@@ -69,6 +69,22 @@ it('serves a generated tenant crud', function () {
 
     $this->getJson('http://localhost/api/products')->assertNotFound();
     expect(Schema::connection('testing')->hasTable('products'))->toBeFalse();
+});
+
+it('does not expose another tenant crud rows by id', function () {
+    $this->artisan('make:module', ['name' => 'Store', '--api' => true])->assertExitCode(0);
+    $this->artisan('make:crud', ['module' => 'Store', 'entity' => 'Product', '--open-policy' => true, '--fields' => 'name:string'])->assertExitCode(0);
+
+    app(TenantSetup::class)->run('a', 'a.localhost', 'tenant_a');
+    app(TenantSetup::class)->run('b', 'b.localhost', 'tenant_b');
+    app()->register('App\Modules\Store\Provider');
+
+    $userA = tenancy()->find('a')->run(fn () => User::factory()->create());
+    $idInA = $this->actingAs($userA)->postJson('http://a.localhost/api/products', ['name' => 'Tenant-A-Only'])->assertCreated()->json('data.id');
+
+    $userB = tenancy()->find('b')->run(fn () => User::factory()->create());
+    $this->actingAs($userB)->getJson('http://b.localhost/api/products')->assertOk()->assertJsonCount(0, 'data');
+    $this->actingAs($userB)->getJson("http://b.localhost/api/products/{$idInA}")->assertNotFound();
 });
 
 it('caches routes when a central and a tenant module share a resource', function () {

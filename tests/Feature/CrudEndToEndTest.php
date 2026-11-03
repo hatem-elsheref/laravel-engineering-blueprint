@@ -31,6 +31,7 @@ beforeEach(function () {
     $this->artisan('make:crud', [
         'module' => 'Shop',
         'entity' => 'PurchaseOrder',
+        '--open-policy' => true,
         '--fields' => 'name:string,quantity:int,price:?float,active:bool,tags:array,shippedAt:?Carbon\CarbonImmutable',
     ])->assertExitCode(0);
 

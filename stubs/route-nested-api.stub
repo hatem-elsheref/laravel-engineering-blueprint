@@ -1,0 +1,2 @@
+Route::apiResource('{{ parentUri }}.{{ uri }}', {{ controller }}::class)->names('api.{{ parentUri }}.{{ uri }}'){{ middleware }}
+    ->missing(fn ($request) => abort($request->user() === null ? 403 : 404));

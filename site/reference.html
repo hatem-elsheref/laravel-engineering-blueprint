@@ -56,6 +56,7 @@
                         <tr><td><a href="#make-dto"><code>make:dto</code></a></td><td>Create a Data class (typed, immutable) in a module</td></tr>
                         <tr><td><a href="#make-action"><code>make:action</code></a></td><td>Create an Action (one business operation) in a module</td></tr>
                         <tr><td><a href="#make-crud"><code>make:crud</code></a></td><td>Create a CRUD for an entity in a module: JSON API (--api), Blade pages (--web) or both</td></tr>
+                        <tr><td><a href="#make-nested-crud"><code>make:nested-crud</code></a></td><td>Nested JSON API CRUD under a parent entity (see docs/NESTED-RESOURCES.md)</td></tr>
                         <tr><td><a href="#tenant-create"><code>tenant:create</code></a></td><td>Create a tenant: records, domain, database, migrations and seed data (safe to re-run)</td></tr>
                         <tr><td><a href="#feature-list"><code>feature:list</code></a></td><td>List features and their state (platform admin)</td></tr>
                         <tr><td><a href="#feature-enable"><code>feature:enable</code></a></td><td>Enable a feature (platform admin)</td></tr>
@@ -74,6 +75,16 @@
                 <p>No arguments or options. Prints the package version, the recorded profile (or <code>not installed (run php artisan engineering:install)</code>) and a PHP and Laravel check against <code>blueprint.support</code>.</p>
                 <ul class="outcomes">
                     <li><span class="stamp">Refused</span> Exit 1 with <code>Environment is not compatible: upgrade the items marked ✗.</code></li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="engineering-architecture">
+                <h3 class="index-card__title" id="engineering-architecture">engineering:architecture</h3>
+<pre><code><span class="prompt">$ </span>php artisan engineering:architecture [--path=PATH]</code></pre>
+                <p>Scans module PHP files for cross-module imports that break <code>MODULE-BOUNDARIES.md</code> (for example another module’s Models or Controllers). Allowed cross-module paths include public Actions, Queries, Events and Jobs.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">Success</span> Exit 0 — no violations (or no module directory).</li>
+                    <li><span class="stamp">Refused</span> Exit 1 — violations listed; tune rules in <code>blueprint.architecture</code>.</li>
                 </ul>
             </section>
 
@@ -170,7 +181,7 @@
 
             <section class="index-card" aria-labelledby="make-crud">
                 <h3 class="index-card__title" id="make-crud">make:crud</h3>
-<pre><code><span class="prompt">$ </span>php artisan make:crud &lt;module&gt; &lt;entity&gt; [--fields=LIST] [--feature=KEY] [--api] [--web] [--permissions] [--owned]</code></pre>
+<pre><code><span class="prompt">$ </span>php artisan make:crud &lt;module&gt; &lt;entity&gt; [--fields=LIST] [--schema=PATH] [--feature=KEY] [--api] [--web] [--permissions] [--owned]</code></pre>
                 <div class="table-wrap">
                     <table>
                         <thead><tr><th scope="col">Argument / option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
@@ -178,6 +189,7 @@
                             <tr><td><code>module</code></td><td>Module name, e.g. <code>Orders</code></td><td>required</td></tr>
                             <tr><td><code>entity</code></td><td>Singular entity name, e.g. <code>Order</code></td><td>required</td></tr>
                             <tr><td><code>--fields=</code></td><td>Comma-separated <code>name:type</code> list, e.g. <code>"name:string,quantity:int,note:?string"</code></td><td>none; when adding a side to an existing CRUD, the existing fields are reused</td></tr>
+                            <tr><td><code>--schema=</code></td><td>Entity YAML (enums, foreign keys, indexes, soft deletes); see package <code>docs/SCHEMA-DSL.md</code>. Do not combine with <code>--fields</code></td><td>none</td></tr>
                             <tr><td><code>--feature=</code></td><td>Feature key that must be enabled for these routes (saas, tenant-saas); adds <code>feature:&lt;key&gt;</code> middleware</td><td>none (no gate)</td></tr>
                             <tr><td><code>--api</code></td><td>JSON API</td><td>on when neither <code>--api</code> nor <code>--web</code> is given</td></tr>
                             <tr><td><code>--web</code></td><td>Blade pages</td><td>off</td></tr>
@@ -200,11 +212,18 @@
                     <li><span class="stamp">Refused</span> The module has no <code>routes/api.php</code> or <code>routes/web.php</code> for the requested side.</li>
                     <li><span class="stamp">Refused</span> In tenant-saas, a module whose routes use neither the <code>tenant</code> nor the <code>central</code> group.</li>
                     <li><span class="stamp">Refused</span> An entity whose singular and plural are the same, with <code>--web</code>.</li>
+                    <li><span class="stamp">Refused</span> <code>Use --schema or --fields, not both.</code> or <code>Leave --schema out when adding a side; the existing fields are reused.</code></li>
                     <li><span class="stamp">Refused</span> <code>--fields doesn't match the existing &lt;Entity&gt; CRUD (&lt;fields&gt;). Leave --fields out to reuse them.</code></li>
                     <li><span class="stamp">Refused</span> A target file already exists, a route name is already taken, the entity clashes with a class the generated code uses, or a stub produces invalid code.</li>
                     <li><span class="stamp">Refused</span> Adding a side with a different <code>--feature</code> than the existing side's routes.</li>
                 </ul>
                 <p class="see-also">See also: <a href="#routes">Route names</a> · <a href="crud.html">CRUD: Blade &amp; API</a></p>
+            </section>
+
+            <section class="index-card" aria-labelledby="make-nested-crud">
+                <h3 class="index-card__title" id="make-nested-crud">make:nested-crud</h3>
+<pre><code><span class="prompt">$ </span>php artisan make:nested-crud &lt;module&gt; &lt;parent&gt; &lt;entity&gt; [--fields=] [--schema=] [--permissions]</code></pre>
+                <p>Same as <code>make:crud … --api --nested-under=&lt;parent&gt;</code>. Adds a parent foreign key and registers nested <code>Route::apiResource</code>.</p>
             </section>
 
             <section class="index-card" aria-labelledby="tenant-create">
@@ -386,6 +405,13 @@
                         <tr><td><code>tenant_domain</code></td><td><code>env('BLUEPRINT_TENANT_DOMAIN')</code></td><td>tenant-saas: tenants are <code>&lt;name&gt;.&lt;this&gt;</code>; <code>null</code> means the first central domain</td></tr>
                         <tr><td><code>support.php</code></td><td><code>'8.3'</code></td><td>Minimum PHP version checked by <code>engineering:about</code> and <code>engineering:install</code></td></tr>
                         <tr><td><code>support.laravel</code></td><td><code>'12'</code></td><td>Minimum Laravel major version, checked the same way</td></tr>
+                        <tr><td><code>schema_paths</code></td><td><code>['schemas']</code></td><td>App-root directories searched for <code>make:crud --schema=</code> paths</td></tr>
+                        <tr><td><code>route_auth</code></td><td><code>null</code></td><td>Auth middleware on generated API routes (<code>sanctum</code> → <code>auth:sanctum</code>); also used by <code>make:module --api</code></td></tr>
+                        <tr><td><code>route_auth_web</code></td><td><code>null</code></td><td>Session <code>auth</code> on generated web CRUD and <code>make:module --web</code> route groups</td></tr>
+                        <tr><td><code>api_envelope</code></td><td><code>false</code></td><td>When true, <code>make:crud</code> uses <code>ApiResponse</code> JSON envelope for API controllers</td></tr>
+                        <tr><td><code>idempotency.header</code>, <code>idempotency.ttl</code></td><td><code>Idempotency-Key</code>, <code>86400</code></td><td>Optional <code>idempotent</code> middleware for critical POST replay</td></tr>
+                        <tr><td><code>architecture.forbidden_cross_module_segments</code></td><td>Controllers, Requests, Models, …</td><td>Cross-module import segments blocked by <code>engineering:architecture</code></td></tr>
+                        <tr><td><code>architecture.allowed_cross_module_segments</code></td><td>Actions, Queries, Events, Jobs</td><td>Cross-module import segments allowed as public module APIs</td></tr>
                     </tbody>
                 </table>
             </div>

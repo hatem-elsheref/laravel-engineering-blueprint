@@ -21,4 +21,42 @@ return [
         'php' => '8.3',   // minimum
         'laravel' => '12', // minimum major
     ],
+
+    // Directories (under the app root) searched for make:crud --schema= paths
+    'schema_paths' => ['schemas'],
+
+    // Generated API routes: null = no extra auth middleware; "sanctum" => auth:sanctum on make:crud and make:module --api (see docs/PRODUCTION-DEFAULTS.md)
+    'route_auth' => null,
+
+    // Generated web CRUD routes: null or "auth" for session auth on Route::resource (make:crud --web)
+    'route_auth_web' => null,
+
+    // make:crud JSON API: use controller-api-envelope.stub (Best\Blueprint\Http\ApiResponse)
+    'api_envelope' => false,
+
+    // Optional ReplayIdempotentRequests middleware (alias: idempotent)
+    'idempotency' => [
+        'header' => 'Idempotency-Key',
+        'ttl' => 86400,
+    ],
+
+    // engineering:architecture — cross-module import rules (MODULE-BOUNDARIES.md)
+    'architecture' => [
+        'forbidden_cross_module_segments' => [
+            'Controllers',
+            'Requests',
+            'Models',
+            'Services',
+            'Policies',
+            'Resources',
+            'Http',
+            'Data',
+        ],
+        'allowed_cross_module_segments' => [
+            'Actions',
+            'Queries',
+            'Events',
+            'Jobs',
+        ],
+    ],
 ];

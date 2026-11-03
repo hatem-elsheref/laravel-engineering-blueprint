@@ -12,6 +12,7 @@ final class List{{ plural }}
      */
     public function handle(int $perPage = 15): LengthAwarePaginator
     {
-        return {{ entity }}::query()->latest('id')->paginate($perPage);
+        $query = {{ entity }}::query();{{ nestedScope }}
+        return $query->latest('{{ listLatestColumn }}')->paginate($perPage);
     }
 }

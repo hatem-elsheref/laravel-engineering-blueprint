@@ -8,37 +8,36 @@ use App\Models\User;
 use App\Modules\Shop\Models\PurchaseOrder;
 
 /**
+ * Blueprint: deny-by-default policy.
+ *
  * Guests are always denied: every method requires a User.
+ * Authenticated users are denied until you implement authorization below,
+ * or regenerate with make:crud --permissions / use --open-policy for local demos only.
  */
 final class PurchaseOrderPolicy
 {
     public function viewAny(User $user): bool
     {
-        // Tighten for your app.
-        return true;
+        return false;
     }
 
     public function view(User $user, PurchaseOrder $purchaseOrder): bool
     {
-        // Tighten for your app.
-        return true;
+        return false;
     }
 
     public function create(User $user): bool
     {
-        // Tighten for your app.
-        return true;
+        return false;
     }
 
     public function update(User $user, PurchaseOrder $purchaseOrder): bool
     {
-        // Tighten for your app.
-        return true;
+        return false;
     }
 
     public function delete(User $user, PurchaseOrder $purchaseOrder): bool
     {
-        // Tighten for your app.
-        return true;
+        return false;
     }
 }

@@ -38,7 +38,7 @@ afterEach(function () {
 
 it('serves tenant web pages only on tenant domains', function () {
     $this->artisan('make:module', ['name' => 'Desk', '--web' => true])->assertExitCode(0);
-    $this->artisan('make:crud', ['module' => 'Desk', 'entity' => 'Ticket', '--web' => true, '--fields' => 'subject:string'])->assertExitCode(0);
+    $this->artisan('make:crud', ['module' => 'Desk', 'entity' => 'Ticket', '--web' => true, '--open-policy' => true, '--fields' => 'subject:string'])->assertExitCode(0);
     app(TenantSetup::class)->run('a', 'a.localhost', 'tenant_a');
     app()->register('App\Modules\Desk\Provider');
     $user = tenancy()->find('a')->run(fn () => User::factory()->create());
@@ -54,7 +54,7 @@ it('serves tenant web pages only on tenant domains', function () {
 it('links central web pages with central route names', function () {
     require_once __DIR__.'/../Fixtures/User.php';
     $this->artisan('make:module', ['name' => 'Console', '--web' => true, '--central' => true])->assertExitCode(0);
-    $this->artisan('make:crud', ['module' => 'Console', 'entity' => 'Plan', '--web' => true, '--fields' => 'title:string'])->assertExitCode(0);
+    $this->artisan('make:crud', ['module' => 'Console', 'entity' => 'Plan', '--web' => true, '--open-policy' => true, '--fields' => 'title:string'])->assertExitCode(0);
     $this->artisan('migrate', ['--path' => glob(database_path('migrations/*_create_plans_table.php'))[0], '--realpath' => true])->assertExitCode(0);
     $this->loadLaravelMigrations();
     app()->register('App\Modules\Console\Provider');

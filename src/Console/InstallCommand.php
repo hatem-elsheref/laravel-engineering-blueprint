@@ -302,6 +302,10 @@ class InstallCommand extends Command
             $this->line('Define the manage-settings Gate ability to let tenant owners change settings.');
         }
 
+        if ($profile->usesModules()) {
+            $this->line('Production defaults: docs/PRODUCTION-DEFAULTS.md (route_auth, --permissions on CRUD, api_envelope only if needed).');
+        }
+
         if ($profile->usesFeatures() && ! $profile->usesTenancy()) {
             $this->line('Next: php artisan migrate && php artisan features:sync');
 

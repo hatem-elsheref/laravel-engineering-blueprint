@@ -4,14 +4,11 @@ This project uses the **Laravel Engineering Blueprint (LEB)**: the package `best
 
 ## Required reading (in order)
 
-1. `laravel-engineering-blueprint/docs/PHASE-0.md`
-2. `laravel-engineering-blueprint/docs/ARCHITECTURE.md`
-3. `laravel-engineering-blueprint/docs/NAMING.md`
-4. `laravel-engineering-blueprint/docs/TENANCY.md`
-5. `laravel-engineering-blueprint/docs/FEATURES.md`
-6. `laravel-engineering-blueprint/docs/SETTINGS.md`
+1. `laravel-engineering-blueprint/docs/DOCUMENT-HIERARCHY.md`
+2. `laravel-engineering-blueprint/docs/CONSTITUTION.md`
+3. `laravel-engineering-blueprint/docs/AI-WORKFLOW.md` (agent loop)
 
-Quick index: `laravel-engineering-blueprint/docs/CONSTITUTION.md`
+Specs: ARCHITECTURE, MODULE-BOUNDARIES, NAMING, TENANCY, TENANCY-EXTENSIBILITY, FEATURES, SETTINGS, PERMISSIONS, SECURITY-GENERATION, SCHEMA-DSL.
 
 If the bundle path differs, search for `CONSTITUTION.md` under `laravel-engineering-blueprint/`.
 
@@ -31,6 +28,7 @@ When working on Laravel backend modules, CRUD, tenancy, or features:
 - Tenant data only inside tenant context; central DB is registry-only.
 - Feature off = backend enforcement, not UI-only hiding.
 - Simple English names; folders imply class role.
+- Cross-module boundaries: run `php artisan engineering:architecture` after changing module imports.
 
 ## Generate with the commands
 
@@ -42,8 +40,11 @@ php artisan make:dto Orders OrderData --fields="name:string,quantity:int"
 php artisan make:action Orders CancelOrder --data=OrderData --transaction
 php artisan make:crud Orders Order --fields="name:string,quantity:int"          # JSON API (default)
 php artisan make:crud Orders Order --fields="name:string,quantity:int" --web    # Blade pages
-php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web
+php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web --permissions
+php artisan make:crud Orders Order --schema=orders/order.yaml --api
 ```
+
+Default CRUD policy denies all abilities until implemented; use `--permissions` in production or `--open-policy` for local demos only.
 
 Run `php artisan engineering:install --profile=...` first if the project has no profile. To change generated code, run `php artisan vendor:publish --tag=blueprint-stubs` and edit `stubs/blueprint/*.stub`. `laravel-engineering-blueprint/stubs/` is a reference copy only.
 

@@ -8,14 +8,14 @@ namespace {{ namespace }};
 final class {{ entity }} extends Model
 {
     /** @use HasFactory<{{ entity }}Factory> */
-    use HasFactory;
+    use HasFactory;{{ softDeletesUse }}{{ modelPrimaryKeyBlock }}
 
     /**
      * @var list<string>
      */
     protected $fillable = [
 {{ fillable }}    ];
-{{ casts }}{{ relations }}
+{{ casts }}{{ relations }}{{ modelScopes }}
     protected static function newFactory(): {{ entity }}Factory
     {
         return {{ entity }}Factory::new();

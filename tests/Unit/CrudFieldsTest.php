@@ -85,10 +85,10 @@ it('exposes property, column and type', function () {
 it('refuses fields make:crud cannot handle', function (string $spec, string $reason) {
     expect(fn () => CrudFields::parse($spec))->toThrow(FieldException::class, $reason);
 })->with([
-    ['x:App\Status', 'make:crud supports string, int, float, bool, array and Carbon\CarbonImmutable'],
-    ['id:int', 'id is created automatically'],
-    ['createdAt:Carbon\CarbonImmutable', 'created_at is created automatically'],
-    ['updated_at:Carbon\CarbonImmutable', 'updated_at is created automatically'],
+    ['x:App\Status', 'make:crud supports string, int, float, bool, array and Carbon\\CarbonImmutable (use --schema= for enums and foreign keys)'],
+    ['id:int', 'is created automatically'],
+    ['createdAt:Carbon\CarbonImmutable', 'is created automatically'],
+    ['updated_at:Carbon\CarbonImmutable', 'is created automatically'],
     ['name:text', 'unknown type text'],
 ]);
 

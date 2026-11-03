@@ -53,7 +53,7 @@ it('generates every file', function () {
         ->expectsOutputToContain('created app/Modules/Orders/Models/Order.php')
         ->expectsOutputToContain('created tests/Feature/Modules/Orders/OrderApiTest.php')
         ->expectsOutputToContain('added route to app/Modules/Orders/routes/api.php')
-        ->expectsOutputToContain('Note: OrderPolicy lets every signed-in user do everything (guests get 403). Tighten it for your app. For token APIs add auth middleware (e.g. auth:sanctum) to the api routes in app/Modules/Orders/Provider.php.')
+        ->expectsOutputToContain('Note: OrderPolicy denies all actions until you implement it')
         ->expectsOutputToContain('Next: php artisan migrate && php artisan test --filter=OrderApiTest')
         ->assertExitCode(0)
         ->run();
@@ -183,8 +183,8 @@ it('refuses bad fields', function (string $fields, string $message) {
 
     assertNothingWritten($this);
 })->with([
-    ['x:App\Status', 'Invalid field "x:App\Status": make:crud supports string, int, float, bool, array and Carbon\CarbonImmutable.'],
-    ['id:int', 'Invalid field "id:int": id is created automatically.'],
+    ['x:App\Status', 'Invalid field "x:App\Status": make:crud supports string, int, float, bool, array and Carbon\\CarbonImmutable (use --schema= for enums and foreign keys).'],
+    ['id:int', 'Invalid field "id": is created automatically.'],
     ['name:text', 'Invalid field "name:text": unknown type text.'],
 ]);
 
@@ -298,10 +298,13 @@ it('refuses a route stub without the controller', function () {
     assertNothingWritten($this);
 });
 
-it('marks every policy method to tighten', function () {
+it('generates a deny-by-default policy', function () {
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])->assertExitCode(0);
 
-    expect(substr_count(file_get_contents(app_path('Modules/Orders/Policies/OrderPolicy.php')), '// Tighten for your app.'))->toBe(5);
+    $policy = file_get_contents(app_path('Modules/Orders/Policies/OrderPolicy.php'));
+
+    expect($policy)->toContain('Blueprint: deny-by-default policy.')
+        ->and(substr_count($policy, 'return false;'))->toBe(5);
 });
 
 it('generates guest checks for every endpoint', function () {
@@ -320,7 +323,7 @@ it('generates a guest check for missing records', function () {
 
     expect(file_get_contents(base_path('tests/Feature/Modules/Orders/OrderApiTest.php')))
         ->toContain("\$this->getJson('/api/orders/999999')->assertForbidden();")
-        ->toContain("\$this->actingAs(\$this->user)->getJson('/api/orders/999999')->assertNotFound();");
+        ->toContain("\$this->actAsApiUser(\$this->user)->getJson('/api/orders/999999')->assertNotFound();");
 });
 
 it('refuses an api route stub without route names', function () {
@@ -343,4 +346,35 @@ it('refuses a route name that is already taken', function () {
         ->assertExitCode(1);
 
     assertNothingWritten($this);
+});
+
+it('adds auth middleware to generated api routes', function (): void {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--auth' => 'sanctum'])->assertExitCode(0);
+
+    expect(file_get_contents(app_path('Modules/Orders/routes/api.php')))
+        ->toContain("->middleware('auth:sanctum')");
+});
+
+it('generates api tests that authenticate via sanctum when routes use auth:sanctum', function (): void {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--auth' => 'sanctum'])->assertExitCode(0);
+
+    $test = file_get_contents(base_path('tests/Feature/Modules/Orders/OrderApiTest.php'));
+
+    expect($test)->toContain('ActsAsApiUser::class')
+        ->and($test)->toContain('actAsApiUser($this->user)')
+        ->and($test)->toContain('$this->lebApiSanctum = true');
+});
+
+it('wraps api responses when api envelope is requested', function (): void {
+    $this->artisan('make:crud', [
+        'module' => 'Orders',
+        'entity' => 'Order',
+        '--open-policy' => true,
+        '--api-envelope' => true,
+    ])->assertExitCode(0);
+
+    $controller = file_get_contents(app_path('Modules/Orders/Controllers/OrderController.php'));
+    expect($controller)->toContain('use Best\\Blueprint\\Http\\ApiResponse;')
+        ->and($controller)->toContain('ApiResponse::collection')
+        ->and($controller)->toContain('ApiResponse::created');
 });

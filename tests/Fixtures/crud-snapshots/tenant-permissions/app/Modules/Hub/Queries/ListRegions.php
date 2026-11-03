@@ -14,6 +14,7 @@ final class ListRegions
      */
     public function handle(int $perPage = 15): LengthAwarePaginator
     {
-        return Region::query()->latest('id')->paginate($perPage);
+        $query = Region::query();
+        return $query->latest('id')->paginate($perPage);
     }
 }

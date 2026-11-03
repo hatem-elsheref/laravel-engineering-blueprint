@@ -24,11 +24,13 @@ The copy of this folder that `bin/leb-install` puts in `laravel-engineering-blue
 | `crud-update-action.stub` | `make:crud` — Update action |
 | `crud-delete-action.stub` | `make:crud` — Delete action |
 | `query.stub` | `make:crud` — paginated list query |
+| `query-with-filters.stub` | `make:crud --schema=` when the schema defines `filters` — list query applying request filters |
 | `query-owned.stub` | `make:crud --owned` — list query taking the `User`: only their records unless the policy's `any` ability allows all; must keep `whereBelongsTo(` |
-| `policy.stub` | `make:crud` — policy (signed-in users allowed, guests denied) |
+| `policy.stub` | `make:crud` — **deny-by-default** policy (all abilities `false` until you implement it or use `--permissions` / demo `--open-policy`); guests and signed-in users get 403 |
 | `policy-permissions.stub` | `make:crud --permissions` — policy whose methods call `checkPermissionTo()` on `<uri>.view/create/update/delete` (`{{ definitions }}`: the definitions class name, `{{ sync }}`: the sync command); must keep the `checkPermissionTo(` calls |
 | `policy-owned.stub` | `make:crud --permissions --owned` — as `policy-permissions.stub`, plus `<uri>.any`: `view`/`update`/`delete` return `Response::denyAsNotFound()` for a record the user may not view (no `<uri>.view`, or another user's without `<uri>.any`) and `Response::deny()` when they may view it but lack the ability; must keep `denyAsNotFound(` |
 | `controller.stub` | `make:crud --api` — API resource controller (`{{ indexParameters }}`, `{{ listArguments }}`, `{{ createArguments }}`: see below) |
+| `controller-api-envelope.stub` | `make:crud --api --api-envelope` (or `blueprint.api_envelope`) — same actions via `Best\Blueprint\Http\ApiResponse` |
 | `route.stub` | `make:crud --api` — route added to the module's `routes/api.php`; must keep `->names('api.{{ uri }}')`; its `->missing()` gives guests 403 for unknown ids so they can't probe which records exist (you may add e.g. `->middleware('auth:sanctum')` here, or on the module's `Provider.php` API group) |
 | `resource.stub` | `make:crud --api` — API resource |
 | `test.stub` | `make:crud --api` — Pest API tests |

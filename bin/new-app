@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Create a ready-to-work Laravel app that uses this package.
 #
-#   bin/new-app <path> [--profile=modular] [--locales=en,ar] [--laravel=^13.0] [--source=path] [--no-example]
+#   bin/new-app <path> [--profile=modular] [--locales=en,ar] [--laravel=^13.0] [--source=path] [--no-example] [--demo]
 #
 #   --profile     basic | modular | saas | tenant-saas            (default: modular)
 #   --locales     languages the app serves, first = default        (default: en)
 #   --laravel     laravel/laravel version constraint               (default: ^13.0)
 #   --source      path = this repository (default) | packagist = the released package
 #   --no-example  skip the example Catalog module (Product CRUD, Blade + JSON API)
+#   --demo        example Catalog uses --open-policy (no spatie); default is --permissions
 #
 # With --source=path the package comes from this repository (a Composer path repository), so changes
 # here are picked up by the app; --source=packagist installs the published release. Every generated test runs at the end; the script fails if any test fails.
@@ -19,6 +20,7 @@ PROFILE="modular"
 LOCALES="en"
 LARAVEL="^13.0"
 EXAMPLE=1
+DEMO=0
 SOURCE="path"
 
 for arg in "$@"; do
@@ -27,8 +29,9 @@ for arg in "$@"; do
     --locales=*) LOCALES="${arg#*=}" ;;
     --laravel=*) LARAVEL="${arg#*=}" ;;
     --no-example) EXAMPLE=0 ;;
+    --demo) DEMO=1 ;;
     --source=*) SOURCE="${arg#*=}" ;;
-    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     -*) echo "new-app: unknown option $arg" >&2; exit 2 ;;
     *) if [[ -z "$TARGET" ]]; then TARGET="$arg"; else echo "new-app: unexpected argument $arg" >&2; exit 2; fi ;;
   esac
@@ -37,7 +40,7 @@ done
 say() { printf 'new-app: %s\n' "$*"; }
 fail() { say "✗ $*"; exit 1; }
 
-[[ -n "$TARGET" ]] || { sed -n '2,14p' "$0"; exit 2; }
+[[ -n "$TARGET" ]] || { sed -n '2,16p' "$0"; exit 2; }
 [[ "$SOURCE" == "path" || "$SOURCE" == "packagist" ]] || fail "--source must be path or packagist"
 case "$PROFILE" in basic|modular|saas|tenant-saas) ;; *) fail "unknown profile \"$PROFILE\" (basic, modular, saas, tenant-saas)" ;; esac
 [[ "$LOCALES" =~ ^[a-z]{2}(_[A-Z]{2})?(,[a-z]{2}(_[A-Z]{2})?)*$ ]] || fail "--locales must look like en or en,ar"
@@ -74,12 +77,31 @@ if [[ "$PROFILE" == "tenant-saas" ]]; then
   sed -i.bak 's/^CACHE_STORE=.*/CACHE_STORE=array/' "$TARGET/.env" && rm -f "$TARGET/.env.bak"
 fi
 
-step "engineering:install --profile=$PROFILE" artisan engineering:install "--profile=$PROFILE" -n
+WANT_PRODUCTION_EXAMPLE=0
+[[ "$EXAMPLE" == 1 && "$PROFILE" != "basic" && "$DEMO" == 0 ]] && WANT_PRODUCTION_EXAMPLE=1
+
+if [[ "$WANT_PRODUCTION_EXAMPLE" == 1 ]]; then
+  step "install spatie/laravel-permission (example CRUD uses --permissions)" bash -c "cd '$TARGET' && composer require 'spatie/laravel-permission:^8.0' -W --no-interaction -q"
+fi
+
+if [[ "$DEMO" == 0 ]]; then
+  step "install laravel/sanctum (API route_auth)" bash -c "cd '$TARGET' && composer require 'laravel/sanctum:^4.0 || ^5.0' -W --no-interaction -q"
+fi
+
+INSTALL_FLAGS=(--profile="$PROFILE" -n)
+[[ "$WANT_PRODUCTION_EXAMPLE" == 1 ]] && INSTALL_FLAGS+=(--permissions)
+step "engineering:install --profile=$PROFILE" artisan engineering:install "${INSTALL_FLAGS[@]}"
 
 LOCALES_PHP="'${LOCALES//,/', '}'"
 DEFAULT_LOCALE="${LOCALES%%,*}"
 step "languages: $LOCALES" bash -c "cd '$TARGET' && sed -i.bak \"s/'locales' => \\['en'\\]/'locales' => [$LOCALES_PHP]/\" config/blueprint.php && rm -f config/blueprint.php.bak && sed -i.bak 's/^APP_LOCALE=.*/APP_LOCALE=$DEFAULT_LOCALE/' .env && rm -f .env.bak"
 grep -q "'locales' => \[$LOCALES_PHP\]" "$TARGET/config/blueprint.php" || fail "could not set blueprint.locales in config/blueprint.php"
+
+if [[ "$DEMO" == 0 ]]; then
+  step "production-oriented blueprint config (route_auth, route_auth_web)" bash -c "cd '$TARGET' && sed -i.bak \"s/'route_auth' => null/'route_auth' => 'sanctum'/\" config/blueprint.php && sed -i.bak \"s/'route_auth_web' => null/'route_auth_web' => 'auth'/\" config/blueprint.php && rm -f config/blueprint.php.bak"
+  grep -q "'route_auth' => 'sanctum'" "$TARGET/config/blueprint.php" || fail "could not set blueprint.route_auth in config/blueprint.php"
+  grep -q "'route_auth_web' => 'auth'" "$TARGET/config/blueprint.php" || fail "could not set blueprint.route_auth_web in config/blueprint.php"
+fi
 
 step "migrate" artisan migrate --force
 
@@ -91,13 +113,17 @@ esac
 if [[ "$EXAMPLE" == 1 && "$PROFILE" != "basic" ]]; then
   FEATURE=()
   [[ "$PROFILE" == "saas" || "$PROFILE" == "tenant-saas" ]] && FEATURE=(--feature=orders)
+  POLICY_FLAG=(--permissions)
+  [[ "$DEMO" == 1 ]] && POLICY_FLAG=(--open-policy)
   step "example module Catalog (Blade + JSON API)" artisan make:module Catalog --api --web
-  step "example CRUD Catalog/Product" artisan make:crud Catalog Product --api --web ${FEATURE[@]+"${FEATURE[@]}"} '--fields=name:string,price:float,active:bool,tags:array'
+  step "example CRUD Catalog/Product" artisan make:crud Catalog Product --api --web "${POLICY_FLAG[@]}" ${FEATURE[@]+"${FEATURE[@]}"} '--fields=name:string,price:float,active:bool,tags:array'
   if [[ "$PROFILE" == "tenant-saas" ]]; then
     step "tenants:migrate" artisan tenants:migrate
+    [[ "$DEMO" == 0 ]] && step "permissions:sync (tenants)" artisan permissions:sync
     step "enable the orders feature for tenant demo" artisan feature:enable orders --tenant=demo
   else
     step "migrate example tables" artisan migrate --force
+    [[ "$DEMO" == 0 ]] && step "permissions:sync" artisan permissions:sync
   fi
 fi
 
@@ -114,7 +140,13 @@ case "$PROFILE" in
   basic) say "  http://localhost:8000" ;;
   *) [[ "$EXAMPLE" == 1 ]] && say "  pages: http://localhost:8000/products   API: http://localhost:8000/api/products" ;;
 esac
-[[ "$EXAMPLE" == 1 && "$PROFILE" != "basic" ]] && say "  the example pages need a signed-in user (the generated policy denies guests); add a starter kit (Breeze/Jetstream) or your own login"
+if [[ "$EXAMPLE" == 1 && "$PROFILE" != "basic" ]]; then
+  if [[ "$DEMO" == 1 ]]; then
+    say "  example CRUD uses --open-policy (demo only); re-run without --demo for --permissions + route_auth_web"
+  else
+    say "  example CRUD uses --permissions; API auth:sanctum + web auth (add Breeze/Jetstream for sessions) — docs/PRODUCTION-DEFAULTS.md"
+  fi
+fi
 [[ "$PROFILE" == "saas" || "$PROFILE" == "tenant-saas" ]] && say "  define the manage-settings Gate ability to let tenant owners change settings"
 [[ "$LOCALES" == *,* ]] && say "  translate the strings in lang/*.json (entity and field names were added for you)"
 exit 0

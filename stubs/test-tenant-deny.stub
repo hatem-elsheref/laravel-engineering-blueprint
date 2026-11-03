@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+{{ imports }}
+uses(InteractsWithTenancy::class, DatabaseMigrations::class, Best\Blueprint\Testing\ActsAsApiUser::class{{ permissionUses }});
+
+beforeEach(function (): void {
+    $this->tenant = $this->createTestTenant();
+    $this->user = User::factory()->create();
+{{ apiSanctumSetup }}{{ featureSetup }}{{ permissionSetup }}});
+
+it('denies guests', function (): void {
+    ${{ variable }} = {{ entity }}::factory()->create();
+
+    $this->getJson($this->tenantUrl('/api/{{ uri }}'))->assertForbidden();
+    $this->postJson($this->tenantUrl('/api/{{ uri }}'), {{ entity }}::factory()->raw())->assertForbidden();
+    $this->getJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"))->assertForbidden();
+    $this->putJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"), {{ entity }}::factory()->raw())->assertForbidden();
+    $this->deleteJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"))->assertForbidden();
+});
+
+it('denies authenticated users until {{ entity }}Policy allows access', function (): void {
+    {{ entity }}::factory()->create();
+
+    $this->actAsApiUser($this->user)->getJson($this->tenantUrl('/api/{{ uri }}'))->assertForbidden();
+});
+
+it('hides which {{ uri }} exist from guests', function (): void {
+    $this->getJson($this->tenantUrl('/api/{{ uri }}/999999'))->assertForbidden();
+    $this->actAsApiUser($this->user)->getJson($this->tenantUrl('/api/{{ uri }}/999999'))->assertNotFound();
+});
+
+it('is not served on the central domain', function (): void {
+    $this->actAsApiUser($this->user)->getJson(url('/api/{{ uri }}'))->assertNotFound();
+});
+{{ featureTest }}{{ permissionTest }}

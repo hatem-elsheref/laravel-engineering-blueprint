@@ -15,6 +15,8 @@ final class Provider extends ServiceProvider
             return;
         }
 
+        // Generated API routes use the 'api' middleware only — add auth (e.g. auth:sanctum) before production (docs/SECURITY-GENERATION.md).
+
         $domains = implode('|', array_map('preg_quote', config('tenancy.central_domains', [])));
 
         Route::domain('{central_domain}')->where(['central_domain' => $domains])->middleware(['api', 'central'])->prefix('api')->name('central.')->group(__DIR__.'/routes/api.php');

@@ -1,0 +1,19 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+{{ imports }}
+final class List{{ plural }}
+{
+    /**
+     * @return LengthAwarePaginator<int, {{ entity }}>
+     */
+    public function handle(Request $request, int $perPage = 15): LengthAwarePaginator
+    {
+        $query = {{ entity }}::query();
+{{ nestedScope }}{{ queryFilters }}
+        return $query->latest('{{ listLatestColumn }}')->paginate($perPage);
+    }
+}

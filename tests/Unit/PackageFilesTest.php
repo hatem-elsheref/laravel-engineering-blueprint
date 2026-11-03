@@ -46,6 +46,6 @@ it('ships only what an app needs', function () {
     $process->mustRun();
     $shipped = array_values(array_filter(explode("\n", trim($process->getOutput()))));
 
-    expect($shipped)->toContain('src', 'config', 'stubs', 'lang', 'routes', 'composer.json', 'README.md', 'CHANGELOG.md', 'UPGRADE.md')
+    expect($shipped)->toContain('src', 'config', 'stubs', 'lang', 'routes', 'phpstan', 'composer.json', 'README.md', 'CHANGELOG.md', 'UPGRADE.md')
         ->not->toContain('tests', 'docs', 'kit', 'bin', '.github', 'phpstan.neon', 'pint.json', 'rules.md');
 });

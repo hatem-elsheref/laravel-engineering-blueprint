@@ -4,7 +4,7 @@ Status: implemented (`spatie/laravel-permission`, optional). Design record: `doc
 
 ## 6.1 Purpose
 
-Without permissions, a generated policy lets every signed-in user act on every record. With `make:crud --permissions` each policy method checks a named permission, and a permission no role holds is denied. A new entity is locked until an app grants access.
+Without `--permissions`, the default generated policy **denies everyone** until you implement it (use `--open-policy` for demo-only open access). With `make:crud --permissions` each policy method checks a named permission, and a permission no role holds is denied. A new entity is locked until an app grants access.
 
 The package does not pick an app's roles. It supplies names, one definitions file, a sync command, a super-admin, optional ownership and tests. Each app fills in its own roles.
 

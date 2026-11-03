@@ -27,7 +27,7 @@ beforeEach(function () {
 
     $this->artisan('make:module', ['name' => 'Library', '--api' => true, '--web' => true])->assertExitCode(0);
     $this->artisan('make:crud', [
-        'module' => 'Library', 'entity' => 'Book', '--api' => true, '--web' => true, '--feature' => 'orders',
+        'module' => 'Library', 'entity' => 'Book', '--api' => true, '--web' => true, '--open-policy' => true, '--feature' => 'orders',
         '--fields' => 'title:string,pages:int,price:?float,available:bool,tags:array,publishedAt:?Carbon\CarbonImmutable',
     ])->assertExitCode(0);
 

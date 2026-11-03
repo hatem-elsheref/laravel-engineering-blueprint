@@ -85,6 +85,8 @@ Do not create empty folders or unnecessary classes.
 
 ## 1.4 Module Rules
 
+See [MODULE-BOUNDARIES.md](./MODULE-BOUNDARIES.md) for dependency direction, allowed cross-module communication, and enforcement plans.
+
 - Every module owns its business logic.
 - Every module owns its models.
 - Every module owns its routes when needed.

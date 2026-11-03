@@ -51,11 +51,13 @@
                     <thead><tr><th scope="col">الأمر</th><th scope="col">الوصف</th></tr></thead>
                     <tbody>
                         <tr><td><a href="#engineering-about"><code>engineering:about</code></a></td><td>يعرض إصدار <bdi lang="en">Laravel Engineering Blueprint</bdi> وتوافق البيئة</td></tr>
+                        <tr><td><a href="#engineering-architecture"><code>engineering:architecture</code></a></td><td>يفحص استيرادات الحدود بين الوحدات (<bdi lang="en">MODULE-BOUNDARIES</bdi>)</td></tr>
                         <tr><td><a href="#engineering-install"><code>engineering:install</code></a></td><td>يجهّز التطبيق بأحد أنماط <bdi lang="en">Laravel Engineering Blueprint</bdi></td></tr>
                         <tr><td><a href="#make-module"><code>make:module</code></a></td><td>ينشئ وحدة أعمال في <code>app/Modules</code> ويسجّل مزوّد الخدمة الخاص بها</td></tr>
                         <tr><td><a href="#make-dto"><code>make:dto</code></a></td><td>ينشئ صنف بيانات (محدد الأنواع، غير قابل للتغيير) في وحدة</td></tr>
                         <tr><td><a href="#make-action"><code>make:action</code></a></td><td>ينشئ إجراء (عملية أعمال واحدة) في وحدة</td></tr>
                         <tr><td><a href="#make-crud"><code>make:crud</code></a></td><td>ينشئ <bdi>CRUD</bdi> لكيان في وحدة: <bdi>JSON API</bdi> (<code>--api</code>)، أو صفحات <bdi>Blade</bdi> (<code>--web</code>)، أو كليهما</td></tr>
+                        <tr><td><a href="#make-nested-crud"><code>make:nested-crud</code></a></td><td><bdi>CRUD</bdi> متداخل تحت كيان أب (<bdi>API</bdi> فقط)</td></tr>
                         <tr><td><a href="#tenant-create"><code>tenant:create</code></a></td><td>ينشئ مستأجرًا: السجلات، والنطاق، وقاعدة البيانات، والترحيلات، والبيانات الأولية (إعادة تشغيله آمنة)</td></tr>
                         <tr><td><a href="#feature-list"><code>feature:list</code></a></td><td>يسرد الميزات وحالتها (مدير المنصة)</td></tr>
                         <tr><td><a href="#feature-enable"><code>feature:enable</code></a></td><td>يفعّل ميزة (مدير المنصة)</td></tr>
@@ -74,6 +76,16 @@
                 <p>بلا وسائط أو خيارات. يطبع إصدار الحزمة، والنمط المسجَّل (أو <code>not installed (run php artisan engineering:install)</code>)، وفحصًا لـ <bdi>PHP</bdi> و<bdi>Laravel</bdi> مقابل <code>blueprint.support</code>.</p>
                 <ul class="outcomes">
                     <li><span class="stamp">مرفوض</span> رمز الخروج 1 مع <code>Environment is not compatible: upgrade the items marked ✗.</code> (البيئة غير متوافقة: رقِّ العناصر المعلَّمة بـ ✗.)</li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="engineering-architecture">
+                <h3 class="index-card__title" id="engineering-architecture">engineering:architecture</h3>
+<pre><code><span class="prompt">$ </span>php artisan engineering:architecture [--path=PATH]</code></pre>
+                <p>يفحص ملفات PHP داخل الوحدات بحثًا عن <code>use</code> يخترق حدود الوحدات (مثل Models أو Controllers لوحدة أخرى). المسموح: Actions وQueries وEvents وJobs عبر الوحدات.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">نجاح</span> رمز الخروج 0 — لا مخالفات.</li>
+                    <li><span class="stamp">مرفوض</span> رمز الخروج 1 — قائمة المخالفات؛ عدّل <code>blueprint.architecture</code>.</li>
                 </ul>
             </section>
 
@@ -203,6 +215,12 @@
                     <li><span class="stamp">مرفوض</span> إضافة جانب بقيمة <code>--feature</code> مختلفة عن مسارات الجانب الموجود.</li>
                 </ul>
                 <p class="see-also">انظر أيضًا: <a href="#routes">أسماء المسارات</a> · <a href="crud.html"><bdi>CRUD</bdi>: <bdi>Blade</bdi> و<bdi>API</bdi></a></p>
+            </section>
+
+            <section class="index-card" aria-labelledby="make-nested-crud">
+                <h3 class="index-card__title" id="make-nested-crud">make:nested-crud</h3>
+<pre><code><span class="prompt">$ </span>php artisan make:nested-crud &lt;module&gt; &lt;parent&gt; &lt;entity&gt; [--fields=] [--schema=]</code></pre>
+                <p>مكافئ لـ <code>make:crud … --api --nested-under=&lt;parent&gt;</code>.</p>
             </section>
 
             <section class="index-card" aria-labelledby="tenant-create">
@@ -384,6 +402,13 @@
                         <tr><td><code>tenant_domain</code></td><td><code>env('BLUEPRINT_TENANT_DOMAIN')</code></td><td>في <bdi>tenant-saas</bdi>: نطاقات المستأجرين على الشكل <code>&lt;name&gt;.&lt;this&gt;</code>، و<code>null</code> يعني أول نطاق مركزي</td></tr>
                         <tr><td><code>support.php</code></td><td><code>'8.3'</code></td><td>أدنى إصدار من <bdi>PHP</bdi> يفحصه <code>engineering:about</code> و<code>engineering:install</code></td></tr>
                         <tr><td><code>support.laravel</code></td><td><code>'12'</code></td><td>أدنى إصدار رئيسي من <bdi>Laravel</bdi>، ويُفحص بالطريقة نفسها</td></tr>
+                        <tr><td><code>schema_paths</code></td><td><code>['schemas']</code></td><td>مجلدات تحت جذر التطبيق يُبحث فيها عن مسارات <code>make:crud --schema=</code></td></tr>
+                        <tr><td><code>route_auth</code></td><td><code>null</code></td><td>وسيط المصادقة لمسارات API المُولَّدة (<code>sanctum</code> → <code>auth:sanctum</code>)</td></tr>
+                        <tr><td><code>route_auth_web</code></td><td><code>null</code></td><td>وسيط <code>auth</code> للجلسة على مسارات الويب المُولَّدة</td></tr>
+                        <tr><td><code>api_envelope</code></td><td><code>false</code></td><td>عند <code>true</code> يستخدم <code>make:crud</code> غلاف JSON عبر <code>ApiResponse</code></td></tr>
+                        <tr><td><code>idempotency.header</code>, <code>idempotency.ttl</code></td><td><code>Idempotency-Key</code>, <code>86400</code></td><td>وسيط اختياري <code>idempotent</code> لإعادة تشغيل طلبات POST الحرجة</td></tr>
+                        <tr><td><code>architecture.forbidden_cross_module_segments</code></td><td>Controllers, Requests, Models, …</td><td>أجزاء الاستيراد بين الوحدات التي يمنعها <code>engineering:architecture</code></td></tr>
+                        <tr><td><code>architecture.allowed_cross_module_segments</code></td><td>Actions, Queries, Events, Jobs</td><td>أجزاء مسموح استيرادها كواجهة عامة بين الوحدات</td></tr>
                     </tbody>
                 </table>
             </div>

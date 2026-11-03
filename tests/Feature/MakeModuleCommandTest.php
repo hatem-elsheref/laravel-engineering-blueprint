@@ -42,6 +42,8 @@ final class Provider extends ServiceProvider
             return;
         }
 
+        // Generated API routes use the 'api' middleware only — add auth (e.g. auth:sanctum) before production (docs/SECURITY-GENERATION.md).
+
         Route::middleware('web')->group(__DIR__.'/routes/web.php');
         Route::middleware('api')->prefix('api')->group(__DIR__.'/routes/api.php');
     }
@@ -72,6 +74,22 @@ final class Provider extends ServiceProvider
 PHP)
         ->and(is_dir(app_path('Modules/Orders/routes')))->toBeFalse()
         ->and(file_get_contents($this->providersPath))->toContain('App\Modules\Orders\Provider::class');
+});
+
+it('adds configured auth middleware to api route groups', function (): void {
+    config()->set('blueprint.route_auth', 'sanctum');
+
+    $this->artisan('make:module', ['name' => 'Orders', '--api' => true])->assertExitCode(0);
+
+    expect(moduleFile('Orders/Provider.php'))->toContain("['api', 'auth:sanctum']");
+});
+
+it('adds configured session auth to web route groups', function (): void {
+    config()->set('blueprint.route_auth_web', 'auth');
+
+    $this->artisan('make:module', ['name' => 'Orders', '--web' => true])->assertExitCode(0);
+
+    expect(moduleFile('Orders/Provider.php'))->toContain("['web', 'auth']");
 });
 
 it('creates api and web routes', function () {

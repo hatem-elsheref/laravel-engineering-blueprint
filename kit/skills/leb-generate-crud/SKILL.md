@@ -21,6 +21,11 @@ Phase 0 is approved and the package `best/laravel-engineering-blueprint` does th
 | CRUD behind a feature (saas, tenant-saas) | `php artisan make:crud Orders Order --fields="..." --feature=orders` |
 | CRUD with permissions | `php artisan make:crud Orders Order --fields="..." --permissions` (needs `engineering:install --permissions`) |
 | CRUD with permissions, records owned by the user | `php artisan make:crud Orders Order --fields="..." --permissions --owned` |
+| CRUD from YAML schema (enums, FKs, indexes, field rules) | `php artisan make:crud Orders Order --schema=orders/order.yaml` (see `docs/SCHEMA-DSL.md`; not with `--fields`) |
+| Nested child API under a parent | `php artisan make:nested-crud Orders Order OrderLine --fields="sku:string,quantity:int"` or `make:crud ... --api --nested-under=Order` (`docs/NESTED-RESOURCES.md`) |
+| Demo policy (any signed-in user) | `make:crud ... --open-policy` — not for production |
+
+Schema v5+: `id: uuid|ulid`, `primaryKey.columns`, filters `in` / `between`, field `rules: [App\\Rules\\…]`, profiles e.g. `profile: transactional`.
 
 Run `php artisan engineering:install --profile=modular` (or `saas`, `tenant-saas`) first if the project has no profile. Create the module with `make:module` before `make:crud`.
 
@@ -40,7 +45,7 @@ Run `php artisan engineering:install --profile=modular` (or `saas`, `tenant-saas
 
 - Module name (PascalCase): `Orders`
 - Entity name (PascalCase, singular; for `--web` not uncountable like `Equipment`): `Order`
-- Fields: `--fields="name:string,quantity:int,price:?float,active:bool,tags:array,shippedAt:?Carbon\CarbonImmutable"` (types: string, int, float, bool, array, Carbon\CarbonImmutable; `?` = nullable)
+- Fields: `--fields="name:string,quantity:int,price:?float,active:bool,tags:array,shippedAt:?Carbon\CarbonImmutable"` (types: string, int, float, bool, array, Carbon\CarbonImmutable; `?` = nullable). For enums, foreign keys, decimals, soft deletes, indexes, field `min`/`max`/`regex`/`unique`/`default`/`cast`, and entity `relations`/`scopes` use **`--schema=`** (`docs/SCHEMA-DSL.md`).
 
 ## Routes
 
@@ -51,8 +56,8 @@ Run `php artisan engineering:install --profile=modular` (or `saas`, `tenant-saas
 | Central module | `central.api.<uri>.*`, `central.<uri>.*` |
 
 - `make:crud` adds `Route::apiResource(...)` (API) or `Route::resource(...)` (web) to the module's route file.
-- The generated policy allows every signed-in user and denies guests. Tighten it. Guests get 403 also for missing ids.
-- Auth middleware for token APIs (e.g. `auth:sanctum`): add it to the API route group in the module's `Provider.php`.
+- **Default policy** denies all abilities until you implement it (or use `--permissions` / demo `--open-policy`). Guests are denied; missing records follow policy/tests (403 vs 404).
+- Auth for token APIs: `make:crud --auth=sanctum` or `config('blueprint.route_auth')` (module `Provider.php` picks it up for `--api`). Generated API tests use `Best\Blueprint\Testing\ActsAsApiUser` (`actAsApiUser()` → `Sanctum::actingAs` when routes use `auth:sanctum`; requires `laravel/sanctum`). Optional JSON envelope: `--api-envelope` / `blueprint.api_envelope`.
 
 ## tenant-saas profile (multi-tenancy)
 
@@ -89,7 +94,7 @@ To change generated code, run `php artisan vendor:publish --tag=blueprint-stubs`
 
 ## After scaffold
 
-Tighten the policy, run migrations (`migrate` / `tenants:migrate`), then Pint and the tests. Match the **laravel-engineering** skill for review.
+Implement or replace the policy (`--permissions` / `--open-policy`), run migrations (`migrate` / `tenants:migrate`), run `php artisan engineering:architecture`, then Pint and the tests. Match the **laravel-engineering** skill for review.
 
 ## Languages (interface translations)
 

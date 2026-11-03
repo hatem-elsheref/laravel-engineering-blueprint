@@ -31,7 +31,7 @@ beforeEach(function () {
     File::copy(__DIR__.'/../../stubs/settings-migration.stub', database_path('migrations/tenant/2026_01_01_000200_create_settings_table.php'));
 
     $this->artisan('make:module', ['name' => 'Depot', '--api' => true])->assertExitCode(0);
-    $this->artisan('make:crud', ['module' => 'Depot', 'entity' => 'Crate', '--fields' => 'name:string', '--feature' => 'reports'])->assertExitCode(0);
+    $this->artisan('make:crud', ['module' => 'Depot', 'entity' => 'Crate', '--open-policy' => true, '--fields' => 'name:string', '--feature' => 'reports'])->assertExitCode(0);
     app(TenantSetup::class)->run('a', 'a.localhost', 'tenant_a');
     app()->register('App\Modules\Depot\Provider');
     $this->user = tenancy()->find('a')->run(fn () => User::factory()->create());

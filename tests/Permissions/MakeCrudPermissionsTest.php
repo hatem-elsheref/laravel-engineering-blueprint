@@ -80,7 +80,9 @@ it('writes the permission tests', function () {
 
         expect($test)->toContain("    \$this->grantPermissions(\$this->user, 'orders.view', 'orders.create', 'orders.update', 'orders.delete');\n})")
             ->toContain('use Best\Blueprint\Testing\InteractsWithPermissions;')
-            ->toContain('uses(RefreshDatabase::class, InteractsWithPermissions::class);')
+            ->toContain($name === 'OrderApiTest'
+                ? 'uses(RefreshDatabase::class, Best\\Blueprint\\Testing\\ActsAsApiUser::class, InteractsWithPermissions::class);'
+                : 'uses(RefreshDatabase::class, InteractsWithPermissions::class);')
             ->toContain("it('denies users without the permission'")
             ->toContain("it('lets a super-admin in'")
             ->toContain('$this->makeSuperAdmin($user);');
@@ -92,18 +94,27 @@ it('writes the permission tests', function () {
 it('prints the next step', function () {
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--permissions' => true])
         ->expectsOutputToContain("Next: add 'orders.*' (or single permissions) to a role in app/Shared/Permissions/Permissions.php, then php artisan permissions:sync")
-        ->doesntExpectOutputToContain('lets every signed-in user do everything')
+        ->doesntExpectOutputToContain('denies all actions until you implement it')
         ->assertExitCode(0);
 });
 
 it('reminds about --permissions when permissions are set up', function () {
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])
-        ->expectsOutputToContain('Tip: --permissions makes the policy check named permissions.')
-        ->expectsOutputToContain('lets every signed-in user do everything')
+        ->expectsOutputToContain('Tip: use --permissions for production CRUD')
+        ->expectsOutputToContain('denies all actions until you implement it')
         ->assertExitCode(0);
 
-    expect(file_get_contents(app_path('Modules/Orders/Policies/OrderPolicy.php')))->not->toContain('checkPermissionTo(')
+    expect(file_get_contents(app_path('Modules/Orders/Policies/OrderPolicy.php')))->toContain('Blueprint: deny-by-default policy.')
+        ->and(file_get_contents(app_path('Modules/Orders/Policies/OrderPolicy.php')))->not->toContain('checkPermissionTo(')
         ->and(file_get_contents($this->definitions))->not->toContain("'orders'");
+});
+
+it('generates an open policy with --open-policy', function () {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--open-policy' => true])
+        ->expectsOutputToContain('open (--open-policy)')
+        ->assertExitCode(0);
+
+    expect(file_get_contents(app_path('Modules/Orders/Policies/OrderPolicy.php')))->toContain('Blueprint: open policy');
 });
 
 it('refuses when spatie is not loaded', function () {

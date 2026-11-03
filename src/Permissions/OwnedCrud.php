@@ -162,18 +162,18 @@ final class OwnedCrud
                 ."    \$this->actingAs(\$this->user)->put({$one}, {$formInput}())->assertForbidden();\n"
                 ."    \$this->actingAs(\$this->user)->delete({$one})->assertForbidden();\n";
         } else {
-            $hidden = "    \$this->actingAs(\$this->user)->getJson({$one})->assertNotFound();\n"
-                ."    \$this->actingAs(\$this->user)->putJson({$one}, {$e}::factory()->raw())->assertNotFound();\n"
-                ."    \$this->actingAs(\$this->user)->deleteJson({$one})->assertNotFound();\n"
-                ."    \$this->actingAs(\$this->user)->getJson({$index})->assertOk()->assertJsonCount(0, 'data');\n";
-            $anyHolder = "    \$this->actingAs(\$this->user)->getJson({$one})->assertOk();\n"
-                ."    \$this->actingAs(\$this->user)->getJson({$index})->assertOk()->assertJsonCount(1, 'data');\n"
-                ."    \$this->actingAs(\$this->user)->deleteJson({$one})->assertNoContent();\n";
-            $update = "    \$this->actingAs(\$this->user)->putJson({$one}, {$e}::factory()->raw(['user_id' => \$this->user->id]))->assertOk();\n";
-            $superAdmin = "    \$this->actingAs(\$user)->getJson({$index})->assertOk()->assertJsonCount(2, 'data');\n";
-            $ownerOnly = "    \$this->actingAs(\$this->user)->getJson({$one})->assertOk();\n"
-                ."    \$this->actingAs(\$this->user)->putJson({$one}, {$e}::factory()->raw())->assertForbidden();\n"
-                ."    \$this->actingAs(\$this->user)->deleteJson({$one})->assertForbidden();\n";
+            $hidden = "    \$this->actAsApiUser(\$this->user)->getJson({$one})->assertNotFound();\n"
+                ."    \$this->actAsApiUser(\$this->user)->putJson({$one}, {$e}::factory()->raw())->assertNotFound();\n"
+                ."    \$this->actAsApiUser(\$this->user)->deleteJson({$one})->assertNotFound();\n"
+                ."    \$this->actAsApiUser(\$this->user)->getJson({$index})->assertOk()->assertJsonCount(0, 'data');\n";
+            $anyHolder = "    \$this->actAsApiUser(\$this->user)->getJson({$one})->assertOk();\n"
+                ."    \$this->actAsApiUser(\$this->user)->getJson({$index})->assertOk()->assertJsonCount(1, 'data');\n"
+                ."    \$this->actAsApiUser(\$this->user)->deleteJson({$one})->assertNoContent();\n";
+            $update = "    \$this->actAsApiUser(\$this->user)->putJson({$one}, {$e}::factory()->raw(['user_id' => \$this->user->id]))->assertOk();\n";
+            $superAdmin = "    \$this->actAsApiUser(\$user)->getJson({$index})->assertOk()->assertJsonCount(2, 'data');\n";
+            $ownerOnly = "    \$this->actAsApiUser(\$this->user)->getJson({$one})->assertOk();\n"
+                ."    \$this->actAsApiUser(\$this->user)->putJson({$one}, {$e}::factory()->raw())->assertForbidden();\n"
+                ."    \$this->actAsApiUser(\$this->user)->deleteJson({$one})->assertForbidden();\n";
         }
 
         return "\nit('denies an owner without the ability', function (): void {\n"

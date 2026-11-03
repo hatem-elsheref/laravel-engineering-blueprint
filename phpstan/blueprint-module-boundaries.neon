@@ -1,0 +1,40 @@
+services:
+    blueprintModuleBoundaryPolicy:
+        class: Best\Blueprint\Architecture\ModuleBoundaryPolicy
+        arguments:
+            - 'App\Modules\'
+            - 'app/Modules'
+            -
+                - Controllers
+                - Requests
+                - Models
+                - Services
+                - Policies
+                - Resources
+                - Http
+                - Data
+            -
+                - Actions
+                - Queries
+                - Events
+                - Jobs
+
+    -
+        class: Best\Blueprint\PhpStan\CrossModuleNewRule
+        arguments: [@blueprintModuleBoundaryPolicy]
+        tags: [phpstan.rules.rule]
+
+    -
+        class: Best\Blueprint\PhpStan\CrossModuleStaticCallRule
+        arguments: [@blueprintModuleBoundaryPolicy]
+        tags: [phpstan.rules.rule]
+
+    -
+        class: Best\Blueprint\PhpStan\CrossModuleClassConstFetchRule
+        arguments: [@blueprintModuleBoundaryPolicy]
+        tags: [phpstan.rules.rule]
+
+    -
+        class: Best\Blueprint\PhpStan\CrossModuleClassHierarchyRule
+        arguments: [@blueprintModuleBoundaryPolicy]
+        tags: [phpstan.rules.rule]

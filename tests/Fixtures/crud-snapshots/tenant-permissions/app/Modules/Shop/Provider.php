@@ -15,8 +15,11 @@ final class Provider extends ServiceProvider
             return;
         }
 
+        // Generated API routes use the 'api' middleware only — add auth (e.g. auth:sanctum) before production (docs/SECURITY-GENERATION.md).
+
         // Registered after central routes, so central (domain-bound) routes win on central hosts.
         $this->app->booted(function (): void {
+            // Add auth (e.g. auth:sanctum) on tenant API routes before production (docs/SECURITY-GENERATION.md).
             Route::middleware(['web', 'tenant'])->group(__DIR__.'/routes/web.php');
             Route::middleware(['api', 'tenant'])->prefix('api')->group(__DIR__.'/routes/api.php');
         });

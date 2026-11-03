@@ -36,6 +36,35 @@ it('isolates data', function () {
         ->and(Schema::hasTable('records'))->toBeFalse();
 });
 
+it('processes consecutive tenant jobs without cross-database writes', function () {
+    require_once __DIR__.'/../Fixtures/RecordTenantJob.php';
+
+    Schema::create('jobs', function (Blueprint $table) {
+        $table->id();
+        $table->string('queue')->index();
+        $table->longText('payload');
+        $table->unsignedTinyInteger('attempts');
+        $table->unsignedInteger('reserved_at')->nullable();
+        $table->unsignedInteger('available_at');
+        $table->unsignedInteger('created_at');
+    });
+    config()->set('queue.default', 'database');
+
+    foreach (['a', 'b'] as $id) {
+        tenancy()->initialize(tenancy()->find($id));
+        RecordTenantJob::dispatch();
+        tenancy()->end();
+    }
+
+    expect(DB::table('jobs')->count())->toBe(2);
+
+    $this->artisan('queue:work', ['--once' => true, '--stop-when-empty' => true])->assertExitCode(0);
+    $this->artisan('queue:work', ['--once' => true, '--stop-when-empty' => true])->assertExitCode(0);
+
+    expect(recordsOf('a'))->toBe(['a'])
+        ->and(recordsOf('b'))->toBe(['b']);
+});
+
 it('runs queued jobs in their tenant', function () {
     require_once __DIR__.'/../Fixtures/RecordTenantJob.php';
 

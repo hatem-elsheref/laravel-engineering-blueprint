@@ -45,3 +45,19 @@ jobs:
 
       - name: Build and test generated apps
         run: bin/e2e
+
+  e2e-laravel-12:
+    name: Real apps (Laravel 12)
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php: '8.4'
+          extensions: sqlite3, pdo_sqlite
+          coverage: none
+
+      - name: Build and test generated apps on Laravel 12
+        run: bin/e2e --laravel=^12.0

@@ -7,6 +7,7 @@ use Best\Blueprint\Support\ModuleName;
 use Best\Blueprint\Support\Modules;
 use Best\Blueprint\Support\PhpSource;
 use Best\Blueprint\Support\Profile;
+use Best\Blueprint\Support\RouteAuth;
 use Best\Blueprint\Support\StubException;
 use Best\Blueprint\Support\StubRenderer;
 use Best\Blueprint\Tenancy\TenancyDetector;
@@ -177,8 +178,8 @@ class MakeModuleCommand extends Command
             'tenant' => $this->tenantRoutes($routes),
             'central' => $this->centralRoutes($routes),
             default => implode("\n", array_intersect_key([
-                'web' => "        Route::middleware('web')->group(__DIR__.'/routes/web.php');",
-                'api' => "        Route::middleware('api')->prefix('api')->group(__DIR__.'/routes/api.php');",
+                'web' => '        Route::middleware('.$this->webMiddlewareExpression().")->group(__DIR__.'/routes/web.php');",
+                'api' => '        Route::middleware('.$this->apiMiddlewareExpression().")->prefix('api')->group(__DIR__.'/routes/api.php');",
             ], $routes)),
         };
 
@@ -187,8 +188,55 @@ class MakeModuleCommand extends Command
             ."        if (\$this->app->routesAreCached()) {\n"
             ."            return;\n"
             ."        }\n\n"
+            .$this->apiAuthComment($routes)
             .$statements."\n"
             ."    }\n";
+    }
+
+    /**
+     * @param  array<string, bool>  $routes
+     */
+    private function apiAuthComment(array $routes): string
+    {
+        if (! isset($routes['api'])) {
+            return '';
+        }
+
+        if (RouteAuth::fromConfig() !== null) {
+            return '';
+        }
+
+        return "        // Generated API routes use the 'api' middleware only — add auth (e.g. auth:sanctum) before production (docs/SECURITY-GENERATION.md).\n\n";
+    }
+
+    private function apiMiddlewareExpression(): string
+    {
+        return RouteAuth::middlewareExpression(RouteAuth::mergeMiddleware(['api'], RouteAuth::fromConfig()));
+    }
+
+    private function webMiddlewareExpression(bool $withTenant = false, bool $withCentral = false): string
+    {
+        $base = ['web'];
+
+        if ($withTenant) {
+            $base[] = 'tenant';
+        }
+
+        if ($withCentral) {
+            $base[] = 'central';
+        }
+
+        return RouteAuth::middlewareExpression(RouteAuth::mergeMiddleware($base, RouteAuth::webFromConfig()));
+    }
+
+    private function tenantApiMiddlewareExpression(): string
+    {
+        return RouteAuth::middlewareExpression(RouteAuth::mergeMiddleware(['api', 'tenant'], RouteAuth::fromConfig()));
+    }
+
+    private function centralApiMiddlewareExpression(): string
+    {
+        return RouteAuth::middlewareExpression(RouteAuth::mergeMiddleware(['api', 'central'], RouteAuth::fromConfig()));
     }
 
     /**
@@ -199,12 +247,17 @@ class MakeModuleCommand extends Command
     private function tenantRoutes(array $routes): string
     {
         $lines = array_intersect_key([
-            'web' => "            Route::middleware(['web', 'tenant'])->group(__DIR__.'/routes/web.php');",
-            'api' => "            Route::middleware(['api', 'tenant'])->prefix('api')->group(__DIR__.'/routes/api.php');",
+            'web' => '            Route::middleware('.$this->webMiddlewareExpression(withTenant: true).")->group(__DIR__.'/routes/web.php');",
+            'api' => '            Route::middleware('.$this->tenantApiMiddlewareExpression().")->prefix('api')->group(__DIR__.'/routes/api.php');",
         ], $routes);
+
+        $comment = isset($routes['api'])
+            ? "            // Add auth (e.g. auth:sanctum) on tenant API routes before production (docs/SECURITY-GENERATION.md).\n"
+            : '';
 
         return "        // Registered after central routes, so central (domain-bound) routes win on central hosts.\n"
             ."        \$this->app->booted(function (): void {\n"
+            .$comment
             .implode("\n", $lines)."\n"
             .'        });';
     }
@@ -219,8 +272,8 @@ class MakeModuleCommand extends Command
     {
         $domain = "Route::domain('{central_domain}')->where(['central_domain' => \$domains])";
         $lines = array_intersect_key([
-            'web' => "        {$domain}->middleware(['web', 'central'])->name('central.')->group(__DIR__.'/routes/web.php');",
-            'api' => "        {$domain}->middleware(['api', 'central'])->prefix('api')->name('central.')->group(__DIR__.'/routes/api.php');",
+            'web' => "        {$domain}->middleware(".$this->webMiddlewareExpression(withCentral: true).")->name('central.')->group(__DIR__.'/routes/web.php');",
+            'api' => "        {$domain}->middleware(".$this->centralApiMiddlewareExpression().")->prefix('api')->name('central.')->group(__DIR__.'/routes/api.php');",
         ], $routes);
 
         return "        \$domains = implode('|', array_map('preg_quote', config('tenancy.central_domains', [])));\n\n"

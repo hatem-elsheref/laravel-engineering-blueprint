@@ -11,8 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('{{ table }}', function (Blueprint $table): void {
-            $table->id();
-{{ columns }}            $table->timestamps();
+{{ primaryKeyMigration }}{{ columns }}{{ migrationExtras }}            $table->timestamps();
         });
     }
 

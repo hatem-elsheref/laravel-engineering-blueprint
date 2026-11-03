@@ -7,18 +7,19 @@ description: Use when building or reviewing Laravel modules, actions, DTOs, tena
 
 ## Authority
 
-Phase 0 constitution lives in the project bundle:
+Follow `docs/DOCUMENT-HIERARCHY.md`. Core specs:
 
-1. `docs/PHASE-0.md`
-2. `docs/ARCHITECTURE.md`
-3. `docs/NAMING.md`
-4. `docs/TENANCY.md`
-5. `docs/FEATURES.md`
-6. `docs/SETTINGS.md`
+1. `docs/PHASE-0.md`, `docs/ARCHITECTURE.md`, `docs/MODULE-BOUNDARIES.md`
+2. `docs/NAMING.md`
+3. `docs/TENANCY.md`, `docs/TENANCY-EXTENSIBILITY.md`
+4. `docs/FEATURES.md`, `docs/SETTINGS.md`, `docs/PERMISSIONS.md`
+5. `docs/SECURITY-GENERATION.md`, `docs/AI-WORKFLOW.md`, `docs/ROADMAP.md`
 
-Phase 0 is approved. The package `best/laravel-engineering-blueprint` implements it; package usage is in the bundle's `README.md`.
+Phase 0 is approved. Package usage: bundle `README.md`.
 
 ## Use the commands
+
+After module changes run `php artisan engineering:architecture` and PHPStan with `vendor/best/laravel-engineering-blueprint/phpstan/blueprint-module-boundaries.neon` (catches FQCN/static references without `use`).
 
 Never hand-fill or copy stubs. Generate code with:
 
@@ -27,8 +28,10 @@ php artisan engineering:install --profile=modular   # basic | modular | saas | t
 php artisan make:module Orders --api --web
 php artisan make:dto Orders OrderData --fields="name:string,quantity:int"
 php artisan make:action Orders CancelOrder --data=OrderData --transaction
-php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web
+php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web --permissions
 ```
+
+Register auth middleware on the module `Provider.php`. Default `make:crud` policy is **deny-by-default**; use `--permissions` in production or `--open-policy` for demos only.
 
 For CRUD details use skill **leb-generate-crud**. To change generated code, run `php artisan vendor:publish --tag=blueprint-stubs` and edit `stubs/blueprint/*.stub`.
 
@@ -63,9 +66,9 @@ Follow `docs/NAMING.md`. Folder implies type (`Actions/CreateOrder.php`).
 
 ## Status
 
-All phases (0–10) are done; version 1.0.0 is prepared.
+Phase 0 architecture is approved and the 1.0 toolkit is shipped; runtime extras (API envelope, idempotency middleware) remain in `docs/STANDARDS-BACKLOG.md`. See `docs/ENGINEERING-AUDIT.md` for gaps.
 
-Full narrative: `rules.md` at kit root.
+Full narrative: repository root `rules.md` (specs in `docs/` win on conflict — `docs/DOCUMENT-HIERARCHY.md`).
 
 ## Languages (interface translations)
 

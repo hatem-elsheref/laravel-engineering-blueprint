@@ -1,0 +1,9 @@
+# Reusable catalog entity fields — use: profile: catalog in your entity schema
+fields:
+  - name: name
+    type: string
+    max: 255
+  - name: sku
+    type: string
+    max: 64
+    unique: true

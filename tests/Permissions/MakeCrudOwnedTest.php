@@ -171,7 +171,7 @@ it('writes the owned tests', function () {
         expect($test)->toContain("    \$this->grantPermissions(\$this->user, 'orders.view', 'orders.create', 'orders.update', 'orders.delete');\n})")
             ->toContain('Order::factory()->for($this->user)->create();')
             ->toContain($name === 'OrderApiTest'
-                ? "    \$this->actingAs(\$user)->getJson('/api/orders')->assertForbidden();\n    \$this->actingAs(\$user)->postJson('/api/orders', Order::factory()->raw())->assertForbidden();\n    \$this->actingAs(\$user)->getJson(\"/api/orders/{\$order->id}\")->assertNotFound();\n    \$this->actingAs(\$user)->putJson(\"/api/orders/{\$order->id}\", Order::factory()->raw())->assertNotFound();\n    \$this->actingAs(\$user)->deleteJson(\"/api/orders/{\$order->id}\")->assertNotFound();"
+                ? "    \$this->actAsApiUser(\$user)->getJson('/api/orders')->assertForbidden();\n    \$this->actAsApiUser(\$user)->postJson('/api/orders', Order::factory()->raw())->assertForbidden();\n    \$this->actAsApiUser(\$user)->getJson(\"/api/orders/{\$order->id}\")->assertNotFound();\n    \$this->actAsApiUser(\$user)->putJson(\"/api/orders/{\$order->id}\", Order::factory()->raw())->assertNotFound();\n    \$this->actAsApiUser(\$user)->deleteJson(\"/api/orders/{\$order->id}\")->assertNotFound();"
                 : '    $this->actingAs($user)->get(url("/orders/{$order->id}/edit"))->assertNotFound();')
             ->toContain("it(\"hides other users' orders\"")
             ->toContain("it('lets an any-holder act on every order'")

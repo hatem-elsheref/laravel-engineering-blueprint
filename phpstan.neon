@@ -14,3 +14,6 @@ parameters:
         -
             identifier: trait.unused
             path: src/Testing/InteractsWithPermissions.php
+        -
+            identifier: trait.unused
+            path: src/Testing/ActsAsApiUser.php

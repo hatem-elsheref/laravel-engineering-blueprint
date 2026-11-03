@@ -2,6 +2,7 @@
     "preset": "laravel",
     "exclude": [
         "tests/Fixtures/crud",
-        "tests/Fixtures/crud-snapshots"
+        "tests/Fixtures/crud-snapshots",
+        "tests/Fixtures/module-boundaries"
     ]
 }

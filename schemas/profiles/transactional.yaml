@@ -1,0 +1,12 @@
+# Money, inventory, and ledger-style entities — merge with profile: transactional
+id: uuid
+fields:
+  - name: amount
+    type: decimal
+    precision: 14
+    scale: 4
+  - name: currency
+    type: string
+    max: 3
+  - name: occurred_at
+    type: timestamp

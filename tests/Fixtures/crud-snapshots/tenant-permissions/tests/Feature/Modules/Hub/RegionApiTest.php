@@ -7,7 +7,7 @@ use App\Modules\Hub\Models\Region;
 use Best\Blueprint\Testing\InteractsWithPermissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class, InteractsWithPermissions::class);
+uses(RefreshDatabase::class, Best\Blueprint\Testing\ActsAsApiUser::class, InteractsWithPermissions::class);
 
 beforeEach(function (): void {
     $this->user = User::factory()->create();
@@ -26,23 +26,23 @@ it('denies guests', function (): void {
 
 it('hides which regions exist from guests', function (): void {
     $this->getJson('/api/regions/999999')->assertForbidden();
-    $this->actingAs($this->user)->getJson('/api/regions/999999')->assertNotFound();
+    $this->actAsApiUser($this->user)->getJson('/api/regions/999999')->assertNotFound();
 });
 
 it('lists regions', function (): void {
     Region::factory()->create();
 
-    $this->actingAs($this->user)->getJson('/api/regions')->assertOk()->assertJsonCount(1, 'data');
+    $this->actAsApiUser($this->user)->getJson('/api/regions')->assertOk()->assertJsonCount(1, 'data');
 });
 
 it('creates a region', function (): void {
-    $this->actingAs($this->user)->postJson('/api/regions', Region::factory()->raw())->assertCreated();
+    $this->actAsApiUser($this->user)->postJson('/api/regions', Region::factory()->raw())->assertCreated();
 
     expect(Region::count())->toBe(1);
 });
 
 it('validates a region', function (): void {
-    $this->actingAs($this->user)->postJson('/api/regions', [])
+    $this->actAsApiUser($this->user)->postJson('/api/regions', [])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['name']);
 });
@@ -50,7 +50,7 @@ it('validates a region', function (): void {
 it('shows a region', function (): void {
     $region = Region::factory()->create();
 
-    $this->actingAs($this->user)->getJson("/api/regions/{$region->id}")
+    $this->actAsApiUser($this->user)->getJson("/api/regions/{$region->id}")
         ->assertOk()
         ->assertJsonPath('data.id', $region->id);
 });
@@ -60,7 +60,7 @@ it('updates a region', function (): void {
 
     $this->travel(1)->minutes();
 
-    $this->actingAs($this->user)->putJson("/api/regions/{$region->id}", Region::factory()->raw())->assertOk();
+    $this->actAsApiUser($this->user)->putJson("/api/regions/{$region->id}", Region::factory()->raw())->assertOk();
 
     expect($region->fresh()->updated_at->gt($region->updated_at))->toBeTrue();
 });
@@ -68,7 +68,7 @@ it('updates a region', function (): void {
 it('deletes a region', function (): void {
     $region = Region::factory()->create();
 
-    $this->actingAs($this->user)->deleteJson("/api/regions/{$region->id}")->assertNoContent();
+    $this->actAsApiUser($this->user)->deleteJson("/api/regions/{$region->id}")->assertNoContent();
 
     expect(Region::count())->toBe(0);
 });
@@ -77,16 +77,16 @@ it('denies users without the permission', function (): void {
     $user = User::factory()->create();
     $region = Region::factory()->create();
 
-    $this->actingAs($user)->getJson('/api/regions')->assertForbidden();
-    $this->actingAs($user)->postJson('/api/regions', Region::factory()->raw())->assertForbidden();
-    $this->actingAs($user)->getJson("/api/regions/{$region->id}")->assertForbidden();
-    $this->actingAs($user)->putJson("/api/regions/{$region->id}", Region::factory()->raw())->assertForbidden();
-    $this->actingAs($user)->deleteJson("/api/regions/{$region->id}")->assertForbidden();
+    $this->actAsApiUser($user)->getJson('/api/regions')->assertForbidden();
+    $this->actAsApiUser($user)->postJson('/api/regions', Region::factory()->raw())->assertForbidden();
+    $this->actAsApiUser($user)->getJson("/api/regions/{$region->id}")->assertForbidden();
+    $this->actAsApiUser($user)->putJson("/api/regions/{$region->id}", Region::factory()->raw())->assertForbidden();
+    $this->actAsApiUser($user)->deleteJson("/api/regions/{$region->id}")->assertForbidden();
 });
 
 it('lets a super-admin in', function (): void {
     $user = User::factory()->create();
     $this->makeSuperAdmin($user);
 
-    $this->actingAs($user)->getJson('/api/regions')->assertOk();
+    $this->actAsApiUser($user)->getJson('/api/regions')->assertOk();
 });

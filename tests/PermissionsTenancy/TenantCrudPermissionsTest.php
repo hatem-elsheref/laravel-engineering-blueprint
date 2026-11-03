@@ -83,7 +83,9 @@ it('writes tenant tests that set up permissions inside the tenant', function () 
         $path = base_path("tests/Feature/Modules/Kiosk/{$name}.php");
         $test = file_get_contents($path);
 
-        expect($test)->toContain('uses(InteractsWithTenancy::class, DatabaseMigrations::class, InteractsWithPermissions::class);')
+        expect($test)->toContain($name === 'BadgeApiTest'
+            ? 'uses(InteractsWithTenancy::class, DatabaseMigrations::class, Best\\Blueprint\\Testing\\ActsAsApiUser::class, InteractsWithPermissions::class);'
+            : 'uses(InteractsWithTenancy::class, DatabaseMigrations::class, InteractsWithPermissions::class);')
             ->toContain("    \$this->tenant = \$this->createTestTenant();\n    \$this->user = User::factory()->create();\n    \$this->grantPermissions(\$this->user, 'badges.view', 'badges.create', 'badges.update', 'badges.delete');\n})")
             ->toContain("it('denies users without the permission'")
             ->toContain("it('lets a super-admin in'")

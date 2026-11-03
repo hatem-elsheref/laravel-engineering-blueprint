@@ -44,6 +44,7 @@ class BlueprintServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->app['router']->aliasMiddleware('feature', Http\Middleware\EnsureFeatureEnabled::class);
+        $this->app['router']->aliasMiddleware('idempotent', Http\Middleware\ReplayIdempotentRequests::class);
 
         // Interface translations: package strings, the language switch route, per-request locale.
         $this->loadJsonTranslationsFrom(__DIR__.'/../lang');
@@ -128,11 +129,13 @@ class BlueprintServiceProvider extends ServiceProvider
 
         $this->commands([
             Console\AboutCommand::class,
+            Console\ArchitectureCheckCommand::class,
             Console\InstallCommand::class,
             Console\MakeModuleCommand::class,
             Console\MakeDtoCommand::class,
             Console\MakeActionCommand::class,
             Console\MakeCrudCommand::class,
+            Console\MakeNestedCrudCommand::class,
             Console\TenantCreateCommand::class,
             Console\FeatureListCommand::class,
             Console\FeatureEnableCommand::class,

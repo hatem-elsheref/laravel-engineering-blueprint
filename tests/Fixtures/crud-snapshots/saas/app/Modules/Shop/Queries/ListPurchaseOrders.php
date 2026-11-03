@@ -14,6 +14,7 @@ final class ListPurchaseOrders
      */
     public function handle(int $perPage = 15): LengthAwarePaginator
     {
-        return PurchaseOrder::query()->latest('id')->paginate($perPage);
+        $query = PurchaseOrder::query();
+        return $query->latest('id')->paginate($perPage);
     }
 }

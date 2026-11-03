@@ -1,3 +1,46 @@
+# Laravel Engineering Blueprint — narrative rules
+
+> **Authority:** If anything below disagrees with **`docs/`**, the specs win. Read [docs/DOCUMENT-HIERARCHY.md](docs/DOCUMENT-HIERARCHY.md) and [docs/CONSTITUTION.md](docs/CONSTITUTION.md) before implementing. Agents should treat [docs/CONSTITUTION.md](docs/CONSTITUTION.md) as the entry point, not this file alone.
+
+## Current standard (synced with Phase 0, 2026-11)
+
+Phase 0 is **approved** and implemented in package **`best/laravel-engineering-blueprint`**. Package phases 0–10 are complete (see [docs/PHASE-0.md](docs/PHASE-0.md)).
+
+| Topic | Spec |
+|-------|------|
+| Structure, layers, CRUD shape | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Cross-module imports | [docs/MODULE-BOUNDARIES.md](docs/MODULE-BOUNDARIES.md) · enforce with `php artisan engineering:architecture` |
+| Names | [docs/NAMING.md](docs/NAMING.md) |
+| Tenancy | [docs/TENANCY.md](docs/TENANCY.md) · [docs/TENANCY-EXTENSIBILITY.md](docs/TENANCY-EXTENSIBILITY.md) |
+| Features / settings / permissions | [docs/FEATURES.md](docs/FEATURES.md) · [docs/SETTINGS.md](docs/SETTINGS.md) · [docs/PERMISSIONS.md](docs/PERMISSIONS.md) |
+| Generated security defaults | [docs/SECURITY-GENERATION.md](docs/SECURITY-GENERATION.md) |
+| Schema-first CRUD | [docs/SCHEMA-DSL.md](docs/SCHEMA-DSL.md) · [docs/GENERATOR-ROADMAP.md](docs/GENERATOR-ROADMAP.md) |
+| Agent loop | [docs/AI-WORKFLOW.md](docs/AI-WORKFLOW.md) |
+
+### Generate code (never hand-copy stubs)
+
+```bash
+php artisan engineering:install --profile=modular   # basic | modular | saas | tenant-saas
+php artisan make:module Orders --api --web
+php artisan make:dto Orders OrderData --fields="name:string,quantity:int"
+php artisan make:action Orders CancelOrder --data=OrderData --transaction
+php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web --permissions
+php artisan make:crud Orders Order --schema=orders/order.yaml --api    # enums, FKs, indexes — see SCHEMA-DSL.md
+# Local demo without permissions: add --open-policy (not for production)
+```
+
+- **`--fields=`** — `string`, `int`, `float`, `bool`, `array`, `Carbon\CarbonImmutable`; do not mix with **`--schema=`**.
+- **Default `make:crud` policy** — deny-by-default for all abilities until you implement the policy or use **`--permissions`** / demo **`--open-policy`**.
+- **Migrations** — only `database/migrations/` and `database/migrations/tenant/`; never inside module folders.
+- **Quality (this repo)** — `composer check` (Pint, PHPStan 6, Pest); `bin/e2e` after generator/tenancy changes.
+- **PHPStan in apps** — include `vendor/best/laravel-engineering-blueprint/phpstan/blueprint-module-boundaries.neon` (`new`, static calls, `::class`, extends/implements; pair with `engineering:architecture` for `use` imports).
+
+### Historical content below
+
+The Arabic/English sections that follow are **design-session narrative** (2024–2026). They may mention unshipped ideas (`--parent=`, nested CRUD flags, migrations inside modules, future roadmap phases). **Ignore those** when they conflict with Phase 0 specs above.
+
+---
+
 طب انا حاليا شغال لوحدي غالبا بشتغل لارافيل بس انا عاوز ابني الكود بسيط جدا بس ادفانسيد ازاي 
 اولا الكلاسات عندي لازم كل حاجه تبقي ماشي بدورها ماينفعش اعمل كل حاجه ف كلاس لا لازم كل امكانيات الفريم ورك تستخدم
 
@@ -3989,21 +4032,11 @@ Approved
 Simple English naming
 
 Approved
-الخطوة التالية: Phase 0
-قبل كتابة الكود، هنثبت 4 مستندات أساسية:
+## Phase 0 — completed (see specs)
 
-ARCHITECTURE.md — شكل المشروع وحدود الـ Modules.
+Phase 0 documents are **approved** and live under `docs/` (ARCHITECTURE, NAMING, TENANCY, FEATURES, SETTINGS, PERMISSIONS, plus MODULE-BOUNDARIES, SCHEMA-DSL, SECURITY-GENERATION). The package implements them; ongoing work is in [docs/ROADMAP.md](docs/ROADMAP.md) (generator depth, enforcement), not a redo of Phase 0.
 
-NAMING.md — قواعد الأسماء البسيطة.
-
-TENANCY.md — Central/Tenant DB وstancl/tenancy.
-
-FEATURES.md — نظام ON/OFF وSettings والصلاحيات.
-
-وبعد اعتمادهم نبدأ Phase 1: تجهيز Laravel وTenancy وربط الـ Providers والـ Routes والـ Migrations وإنشاء أول Tenant من Command.
-في نقطة واحدة أحب أثبتها كقاعدة: الـ Feature لها تعريف ثابت داخل الكود، لكن حالة تشغيلها محفوظة داخل قاعدة بيانات كل Tenant، والتغيير متاح فقط لإدارة المنصة. كده نقدر نتحكم في كل عميل بشكل مستقل من غير ما نعمل Deploy جديد كل مرة.
-
-ده هيكون أساس كل الـ Modules والـ Generator والـ AI Rules بعد كده.
+**Features:** definition is fixed in code (`Features.php`); **on/off state** is per tenant in the tenant database; platform admins change it via console commands — no redeploy per customer.
 
 ---
 
@@ -4011,6 +4044,17 @@ FEATURES.md — نظام ON/OFF وSettings والصلاحيات.
 
 - Policies check named permissions `<group>.<ability>` (`products.update`). Names and roles live in one definitions class, `app/Shared/Permissions/Permissions.php` (`CentralPermissions` for the central side in tenant-saas); `permissions:sync` writes them to the database.
 - Deny by default: a permission no role holds is denied. A `super-admin` role (config `blueprint.super_admin`) passes every check through `Gate::before`.
-- `make:crud --permissions` generates the policy and tests; `--owned` adds ownership: a record the user cannot view is always 404, `<group>.any` only widens permissions the user already holds.
+- **`make:crud` without `--permissions`:** generated policy **denies all abilities** until implemented; use **`--open-policy`** for demos only.
+- **`make:crud --permissions`** generates the policy and tests; **`--owned`** adds ownership: a record the user cannot view is always 404, `<group>.any` only widens permissions the user already holds.
 - tenant-saas: tenant roles live in tenant databases, central roles in the central database; they never mix, and the permission cache is per tenant.
-- Details: `docs/PERMISSIONS.md`.
+- Details: [docs/PERMISSIONS.md](docs/PERMISSIONS.md) · [docs/SECURITY-GENERATION.md](docs/SECURITY-GENERATION.md).
+
+## Schema DSL (`make:crud --schema=`)
+
+- YAML entity schema: enums, foreign keys, decimals, soft deletes, indexes — [docs/SCHEMA-DSL.md](docs/SCHEMA-DSL.md).
+- Example: `schemas/examples/orders/order.yaml` in this repo.
+- Do not combine `--schema` and `--fields`; omit `--schema` when adding `--api` or `--web` to an existing CRUD.
+
+## Architecture enforcement
+
+- `php artisan engineering:architecture` — scans cross-module `use` statements against [docs/MODULE-BOUNDARIES.md](docs/MODULE-BOUNDARIES.md) and `config('blueprint.architecture')`.

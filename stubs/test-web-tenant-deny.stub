@@ -1,0 +1,45 @@
+<?php
+
+declare(strict_types=1);
+
+{{ imports }}
+uses(InteractsWithTenancy::class, DatabaseMigrations::class{{ permissionUses }});
+
+beforeEach(function (): void {
+    $this->tenant = $this->createTestTenant();
+    $this->user = User::factory()->create();
+{{ featureSetup }}{{ permissionSetup }}});
+
+function {{ formInput }}(array $overrides = []): array
+{
+    return array_map(
+        fn ($value) => $value instanceof DateTimeInterface ? $value->format('Y-m-d\TH:i') : (is_bool($value) ? (int) $value : $value),
+        array_merge({{ entity }}::factory()->raw(), $overrides),
+    );
+}
+
+it('denies guests', function (): void {
+    ${{ variable }} = {{ entity }}::factory()->create();
+
+    $this->get({{ url }}('/{{ uri }}'))->assertForbidden();
+    $this->get({{ url }}('/{{ uri }}/create'))->assertForbidden();
+    $this->post({{ url }}('/{{ uri }}'), {{ formInput }}())->assertForbidden();
+    $this->get({{ url }}("/{{ uri }}/{${{ variable }}->id}"))->assertForbidden();
+    $this->get({{ url }}("/{{ uri }}/{${{ variable }}->id}/edit"))->assertForbidden();
+    $this->put({{ url }}("/{{ uri }}/{${{ variable }}->id}"), {{ formInput }}())->assertForbidden();
+    $this->delete({{ url }}("/{{ uri }}/{${{ variable }}->id}"))->assertForbidden();
+});
+
+it('denies authenticated users until {{ entity }}Policy allows access', function (): void {
+    $this->actingAs($this->user)->get({{ url }}('/{{ uri }}'))->assertForbidden();
+});
+
+it('hides which {{ uri }} exist from guests', function (): void {
+    $this->get({{ url }}('/{{ uri }}/999999'))->assertForbidden();
+    $this->actingAs($this->user)->get({{ url }}('/{{ uri }}/999999'))->assertNotFound();
+});
+
+it('is not served on the central domain', function (): void {
+    $this->actingAs($this->user)->get(url('/{{ uri }}'))->assertNotFound();
+});
+{{ featureTest }}{{ permissionTest }}

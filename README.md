@@ -1,8 +1,12 @@
 # Laravel Engineering Blueprint (LEB)
 
-A Laravel package, `best/laravel-engineering-blueprint`, that sets up a modular monolith and generates modules, Data classes, Actions and full CRUD (JSON API and/or Blade pages). It also handles feature flags, settings and database-per-tenant tenancy (stancl/tenancy).
+**A standardized engineering system** for building maintainable Laravel applications with humans and AI agents — delivered as three integrated parts:
 
-The repo also ships an **AI-agent kit** (`kit/`, `bin/leb-install`) so Codex, Cursor, Antigravity, Claude Code, Gemini and other agents follow the same rules and use the same commands.
+1. **Engineering Standard** — approved specs in [`docs/`](docs/) (architecture, tenancy, features, boundaries).
+2. **Laravel Toolkit** — package `best/laravel-engineering-blueprint`: modular monolith, `make:*` generators, features, settings, tenancy profiles.
+3. **AI Engineering Kit** — `kit/` + `bin/leb-install` for Cursor, Codex, Claude, Antigravity, Gemini.
+
+See [`docs/PRODUCT.md`](docs/PRODUCT.md), [`docs/ENGINEERING-AUDIT.md`](docs/ENGINEERING-AUDIT.md), and [`docs/ROADMAP.md`](docs/ROADMAP.md) for product model, audit findings, and remaining priorities (API envelope, idempotency middleware, schema P2 relations).
 
 - PHP 8.3+, Laravel 12 and 13
 - Version 1.0.0
@@ -16,13 +20,17 @@ php artisan engineering:install --profile=modular
 php artisan engineering:about
 ```
 
+Production-oriented config and CRUD flags: [docs/PRODUCTION-DEFAULTS.md](./docs/PRODUCTION-DEFAULTS.md).
+
 ## Start a new project
 
 ```bash
 bin/new-app ~/Sites/shop --profile=saas --locales=en,ar
 ```
 
-Builds a fresh Laravel app with this package installed, Pest set up, your profile and languages configured, migrations run, and an example `Catalog` module (Product CRUD with Blade pages and JSON API) whose generated tests pass. Options: `--profile=basic|modular|saas|tenant-saas`, `--locales=en,ar` (first = default), `--laravel=^13.0`, `--no-example`. For `tenant-saas` it also installs stancl/tenancy and creates a `demo` tenant (`http://demo.localhost:8000`).
+Builds a fresh Laravel app with this package installed, Pest set up, your profile and languages configured, migrations run, and an example `Catalog` module (Product CRUD with Blade pages and JSON API) whose generated tests pass. By default the example uses **`--permissions`**, installs spatie/laravel-permission and laravel/sanctum, and sets **`route_auth` => `sanctum`** and **`route_auth_web` => `auth`** in config (see [docs/PRODUCTION-DEFAULTS.md](./docs/PRODUCTION-DEFAULTS.md)). Use **`--demo`** for the old `--open-policy` sandbox without permissions.
+
+Options: `--profile=basic|modular|saas|tenant-saas`, `--locales=en,ar` (first = default), `--laravel=^13.0`, `--no-example`, `--demo`. For `tenant-saas` it also installs stancl/tenancy and creates a `demo` tenant (`http://demo.localhost:8000`).
 
 ## Profiles
 
@@ -40,11 +48,13 @@ Builds a fresh Laravel app with this package installed, Pest set up, your profil
 | Command | Does |
 |---------|------|
 | `engineering:about` | Version and environment compatibility |
+| `engineering:architecture` `[--path=]` | Scan modules for cross-module import violations ([MODULE-BOUNDARIES.md](docs/MODULE-BOUNDARIES.md)) |
 | `engineering:install [--profile=] [--allow-downgrade] [--force] [--permissions]` | Set or change the project profile; `--permissions` sets up roles and permissions (needs spatie/laravel-permission) |
 | `make:module {name} [--api] [--web] [--central]` | Module with `Provider.php` and optional `routes/api.php`, `routes/web.php`; `--central` = platform module (tenant-saas) |
 | `make:dto {module} {name} [--fields=]` | Typed, immutable Data class |
 | `make:action {module} {name} [--data=] [--transaction]` | Action (one business operation) |
-| `make:crud {module} {entity} [--fields=] [--api] [--web] [--feature=] [--permissions] [--owned]` | Full CRUD; neither flag = `--api`; `--permissions` = policy checks named permissions; `--owned` = users see and change only their own records |
+| `make:crud {module} {entity} … [--nested-under=Parent]` | Full CRUD; `--schema=` YAML (see `docs/SCHEMA-DSL.md`); nested API: `make:nested-crud` / `--nested-under` |
+| `make:nested-crud {module} {parent} {entity} …` | Child JSON API under a parent (`docs/NESTED-RESOURCES.md`) |
 | `tenant:create {name} [--domain=] [--database=] [--existing-database]` | Create a tenant (tenant-saas), safe to re-run |
 | `feature:list`, `feature:enable {key}`, `feature:disable {key}` `[--tenant=]` | Platform admin feature control |
 | `permissions:sync [--prune] [--tenant=*] [--central]` | Create the defined permissions and roles; `--tenant`/`--central` for tenant-saas. A database without the permission tables is reported with the migrate command to run (exit 1) |
@@ -68,7 +78,7 @@ Example: `php artisan make:crud Orders Order --api --web`. The entity must be si
 - Run once with one side and add the other later; it reuses the existing fields and feature gate.
 - Pages are plain Blade (no JS) and extend `config('blueprint.layout')`. The layout `resources/views/layouts/blueprint.blade.php` is created once.
 - Tests are Pest; they are skipped with a message if Pest is missing.
-- Without `--permissions` the generated policy allows every signed-in user and denies guests: tighten it, or use `--permissions`. Guests get 403 also for ids that do not exist.
+- Default policy is **deny-by-default** (guests and signed-in users get 403 until you implement the policy). For production use `--permissions`; for local demos without permission setup use `--open-policy`. Register auth middleware on the module provider. See [`docs/SECURITY-GENERATION.md`](docs/SECURITY-GENERATION.md). Guests get 403 also for ids that do not exist.
 - `--permissions` (needs `engineering:install --permissions`): the policy checks `<uri>.view/create/update/delete`, the group is added to `Permissions::groups()`, and the generated tests prove the rules. Grant it to a role in `roles()` and run `permissions:sync`. If the group already exists without an ability this CRUD checks, it warns and names it. `--owned` adds `user_id`, scopes the list to the user's records and answers 404 for records they may not view; `<uri>.any` widens what they hold to every record. See [docs/PERMISSIONS.md](./docs/PERMISSIONS.md).
 - `--feature=orders` adds `->middleware('feature:orders')` to the routes (saas, tenant-saas).
 - Generated web tests fail with 419 if config is cached (`php artisan optimize`). Run `php artisan optimize:clear` before tests.
@@ -112,6 +122,17 @@ php artisan vendor:publish --tag=blueprint-stubs
 ```
 
 Stubs are copied to `stubs/blueprint/` and used automatically (or set `blueprint.stub_path`). A stub with leftover placeholders, a missing class, a missing `->names('api.<uri>')`, or one that would drop a requested feature gate is refused before anything is written. See [stubs/README.md](./stubs/README.md).
+
+## PHPStan module boundaries
+
+`engineering:architecture` scans `use` imports. For deeper checks (FQCN static calls, `new`, `::class`, extends/implements), add to your app's `phpstan.neon`:
+
+```neon
+includes:
+    - vendor/best/laravel-engineering-blueprint/phpstan/blueprint-module-boundaries.neon
+```
+
+Defaults match `config/blueprint.php` → `architecture.*`. See [docs/MODULE-BOUNDARIES.md](docs/MODULE-BOUNDARIES.md).
 
 ## Tenancy, features, settings
 

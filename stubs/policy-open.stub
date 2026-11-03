@@ -1,0 +1,40 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+{{ imports }}
+/**
+ * Blueprint: open policy (--open-policy).
+ *
+ * Demo only — every signed-in user can perform every action. Guests are denied.
+ * Do not use in production; prefer make:crud --permissions or implement {{ entity }}Policy manually.
+ */
+final class {{ entity }}Policy
+{
+    public function viewAny(User $user): bool
+    {
+        return true;
+    }
+
+    public function view(User $user, {{ entity }} ${{ variable }}): bool
+    {
+        return true;
+    }
+
+    public function create(User $user): bool
+    {
+        return true;
+    }
+
+    public function update(User $user, {{ entity }} ${{ variable }}): bool
+    {
+        return true;
+    }
+
+    public function delete(User $user, {{ entity }} ${{ variable }}): bool
+    {
+        return true;
+    }
+}

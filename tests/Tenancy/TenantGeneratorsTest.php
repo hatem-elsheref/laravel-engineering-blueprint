@@ -37,8 +37,11 @@ final class Provider extends ServiceProvider
             return;
         }
 
+        // Generated API routes use the 'api' middleware only — add auth (e.g. auth:sanctum) before production (docs/SECURITY-GENERATION.md).
+
         // Registered after central routes, so central (domain-bound) routes win on central hosts.
         $this->app->booted(function (): void {
+            // Add auth (e.g. auth:sanctum) on tenant API routes before production (docs/SECURITY-GENERATION.md).
             Route::middleware(['web', 'tenant'])->group(__DIR__.'/routes/web.php');
             Route::middleware(['api', 'tenant'])->prefix('api')->group(__DIR__.'/routes/api.php');
         });
@@ -94,9 +97,9 @@ it('puts tenant crud migrations in the tenant folder', function () {
     expect(glob(database_path('migrations/tenant/*_create_orders_table.php')))->toHaveCount(1)
         ->and(glob(database_path('migrations/*_create_orders_table.php')))->toBe([])
         ->and(file_get_contents(base_path('tests/Feature/Modules/Orders/OrderApiTest.php')))
-        ->toContain('uses(InteractsWithTenancy::class, DatabaseMigrations::class);')
+        ->toContain('uses(InteractsWithTenancy::class, DatabaseMigrations::class, Best\\Blueprint\\Testing\\ActsAsApiUser::class);')
         ->toContain("\$this->tenantUrl('/api/orders')")
-        ->toContain("postJson(\$this->tenantUrl('/api/orders'), [])")
+        ->toContain('denies authenticated users until OrderPolicy allows access')
         ->toContain('$this->tenant = $this->createTestTenant();');
 
     $lint = new Process([PHP_BINARY, '-l', base_path('tests/Feature/Modules/Orders/OrderApiTest.php')]);

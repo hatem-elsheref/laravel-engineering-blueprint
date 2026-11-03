@@ -1,0 +1,46 @@
+# Example entity schema for: php artisan make:crud Orders Order --schema=schemas/examples/orders/order.yaml
+softDeletes: true
+fields:
+  - name: name
+    type: string
+    min: 2
+    max: 120
+    unique: true
+  - name: quantity
+    type: int
+    default: 1
+  - name: tags
+    type: array
+    cast: collection
+    default: []
+  - name: note
+    type: text
+    nullable: true
+    hidden: true
+  - name: total
+    type: decimal
+    precision: 10
+    scale: 2
+  - name: status
+    type: enum
+    enum: OrderStatus
+    cases:
+      - pending
+      - paid
+      - shipped
+indexes:
+  - status
+filters:
+  - column: status
+    type: equals
+relations:
+  - type: hasMany
+    name: items
+    model: OrderItem
+scopes:
+  - name: paid
+    column: status
+    equals: paid
+  - name: pending
+    column: status
+    equals: pending
