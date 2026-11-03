@@ -125,3 +125,119 @@ it('skips tests without pest', function () {
 
     expect(file_exists(base_path('tests/Feature/Modules/Orders/OrderApiTest.php')))->toBeFalse();
 });
+
+function assertNothingWritten(object $test): void
+{
+    expect(file_get_contents(app_path('Modules/Orders/routes/api.php')))->toBe($test->routes)
+        ->and(glob(database_path('migrations/*.php')))->toBe([])
+        ->and(is_dir(app_path('Modules/Orders/Models')))->toBeFalse()
+        ->and(is_dir(database_path('factories/Orders')))->toBeFalse()
+        ->and(is_dir(base_path('tests/Feature/Modules')))->toBeFalse();
+}
+
+it('refuses project problems', function (string $key, string $value, string $message) {
+    config()->set($key, $value);
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])
+        ->expectsOutputToContain($message)
+        ->assertExitCode(1);
+
+    assertNothingWritten($this);
+})->with([
+    ['blueprint.profile', 'basic', 'The "basic" profile has no modules.'],
+    ['blueprint.module_path', 'src/Modules', 'module_path must be inside app/ (got "src/Modules").'],
+]);
+
+it('refuses missing module', function () {
+    $this->artisan('make:crud', ['module' => 'Billing', 'entity' => 'Invoice'])
+        ->expectsOutputToContain('Module "Billing" not found in app/Modules.')
+        ->assertExitCode(1);
+});
+
+it('refuses bad entity names', function (string $entity, string $message) {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => $entity])
+        ->expectsOutputToContain($message)
+        ->assertExitCode(1);
+
+    assertNothingWritten($this);
+})->with([
+    ['1x', 'Invalid entity name "1x". Use a singular name, e.g. Order.'],
+    ['Class', 'Invalid entity name "Class". Use a singular name, e.g. Order.'],
+    ['Orders', 'Entity names must be singular, e.g. Order.'],
+]);
+
+it('normalizes the entity name', function () {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'order'])
+        ->expectsOutputToContain('Using entity name "Order".')
+        ->assertExitCode(0);
+});
+
+it('refuses bad fields', function (string $fields, string $message) {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--fields' => $fields])
+        ->expectsOutputToContain($message)
+        ->assertExitCode(1);
+
+    assertNothingWritten($this);
+})->with([
+    ['x:App\Status', 'Invalid field "x:App\Status": make:crud supports string, int, float, bool, array and Carbon\CarbonImmutable.'],
+    ['id:int', 'Invalid field "id:int": id is created automatically.'],
+    ['name:text', 'Invalid field "name:text": unknown type text.'],
+]);
+
+it('refuses a module without api routes', function () {
+    $this->artisan('make:module', ['name' => 'Billing'])->assertExitCode(0);
+
+    $this->artisan('make:crud', ['module' => 'Billing', 'entity' => 'Invoice'])
+        ->expectsOutputToContain('Module "Billing" has no routes/api.php. Add it and load it in its Provider (see docs), or create the module with make:module Billing --api.')
+        ->assertExitCode(1);
+
+    expect(is_dir(app_path('Modules/Billing/Models')))->toBeFalse();
+});
+
+it('refuses collisions', function (callable $arrange, string $path) {
+    $arrange();
+    $routes = file_get_contents(app_path('Modules/Orders/routes/api.php'));
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])
+        ->expectsOutputToContain("\"{$path}\" already exists. make:crud never overwrites files.")
+        ->assertExitCode(1);
+
+    expect(file_get_contents(app_path('Modules/Orders/routes/api.php')))->toBe($routes)
+        ->and(is_dir(app_path('Modules/Orders/Controllers')))->toBeFalse();
+})->with([
+    'model' => [function () {
+        File::ensureDirectoryExists(app_path('Modules/Orders/Models'));
+        touch(app_path('Modules/Orders/Models/Order.php'));
+    }, 'app/Modules/Orders/Models/Order.php'],
+    'migration' => [function () {
+        touch(database_path('migrations/2020_01_01_000000_create_orders_table.php'));
+    }, 'database/migrations/2020_01_01_000000_create_orders_table.php'],
+    'route' => [function () {
+        file_put_contents(app_path('Modules/Orders/routes/api.php'), "// OrderController\n", FILE_APPEND);
+    }, 'app/Modules/Orders/routes/api.php'],
+]);
+
+it('refuses old published stub', function () {
+    File::ensureDirectoryExists(base_path('stubs/blueprint'));
+    file_put_contents(base_path('stubs/blueprint/model.stub'), "<?php\n\nnamespace App\\Modules\\{{ moduleNamespace }}\\Models;\n\nfinal class {{ model }} {}\n");
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])
+        ->expectsOutputToContain('did not produce a valid class (unknown placeholder {{ moduleNamespace }})')
+        ->assertExitCode(1);
+
+    assertNothingWritten($this);
+});
+
+it('rolls back on write failure', function () {
+    file_put_contents(app_path('Modules/Orders/Resources'), 'not a folder');
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--fields' => CRUD_FIELDS])
+        ->assertExitCode(1);
+
+    expect(file_get_contents(app_path('Modules/Orders/routes/api.php')))->toBe($this->routes)
+        ->and(glob(database_path('migrations/*.php')))->toBe([])
+        ->and(is_dir(app_path('Modules/Orders/Models')))->toBeFalse()
+        ->and(is_dir(database_path('factories/Orders')))->toBeFalse()
+        ->and(is_dir(base_path('tests/Feature/Modules')))->toBeFalse()
+        ->and(file_get_contents(app_path('Modules/Orders/Resources')))->toBe('not a folder');
+});

@@ -9,10 +9,15 @@ use Best\Blueprint\Support\FieldException;
 use Best\Blueprint\Support\ModuleName;
 use Best\Blueprint\Support\Modules;
 use Best\Blueprint\Support\PestDetector;
+use Best\Blueprint\Support\PhpNames;
 use Best\Blueprint\Support\RouteFile;
+use Best\Blueprint\Support\StubException;
 use Best\Blueprint\Support\StubRenderer;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Str;
+use RuntimeException;
+use Throwable;
 
 class MakeCrudCommand extends Command
 {
@@ -38,7 +43,20 @@ class MakeCrudCommand extends Command
             return $this->refuse("Module \"{$moduleInput}\" not found in {$modules->path()}. Create it with php artisan make:module {$moduleInput}.");
         }
 
-        $entity = ModuleName::normalize((string) $this->argument('entity'));
+        $entityInput = (string) $this->argument('entity');
+        $entity = ModuleName::normalize($entityInput);
+
+        if ($entity === null || PhpNames::isReserved($entity)) {
+            return $this->refuse("Invalid entity name \"{$entityInput}\". Use a singular name, e.g. Order.");
+        }
+
+        if (Str::singular($entity) !== $entity) {
+            return $this->refuse('Entity names must be singular, e.g. '.Str::singular($entity).'.');
+        }
+
+        if ($entity !== $entityInput) {
+            $this->line("Using entity name \"{$entity}\".");
+        }
 
         try {
             $fields = CrudFields::parse($this->option('fields'));
@@ -48,15 +66,50 @@ class MakeCrudCommand extends Command
 
         $names = CrudNames::for($entity, $module, $modules->namespace().'\\'.$module, $modules->path().'/'.$module);
         $routesPath = base_path($names->modulePath.'/routes/api.php');
-        $generated = $this->render($stubs, $names, $fields);
+
+        if (! $files->isFile($routesPath)) {
+            return $this->refuse("Module \"{$module}\" has no routes/api.php. Add it and load it in its Provider (see docs), or create the module with make:module {$module} --api.");
+        }
+
+        if (($collision = $this->collision($files, $names, $routesPath)) !== null) {
+            return $this->refuse("\"{$collision}\" already exists. make:crud never overwrites files.");
+        }
+
+        try {
+            $generated = $this->render($stubs, $names, $fields);
+        } catch (StubException $e) {
+            return $this->refuse($this->invalidStub($e->path, $e->reason));
+        }
+
+        foreach ($this->expectedClasses($names) as $key => [$namespace, $class, $stub]) {
+            $contents = $generated[$names->files()[$key]];
+
+            if (! str_contains($contents, "namespace {$namespace};") || preg_match('/\bclass\s+'.$class.'\b/', $contents) !== 1) {
+                return $this->refuse($this->invalidStub($stubs->path($stub), "no {$class} class in namespace {$namespace}"));
+            }
+        }
 
         if (! $pest->installed()) {
             unset($generated[$names->files()['test']]);
         }
 
-        foreach ($generated as $path => $contents) {
-            $files->ensureDirectoryExists(dirname(base_path($path)));
-            $files->put(base_path($path), $contents);
+        $routes = $files->get($routesPath);
+
+        try {
+            $this->write($files, $generated);
+            $files->put($routesPath, RouteFile::addResource(
+                $routes,
+                "{$names->moduleNamespace}\\Controllers\\{$names->entity}Controller",
+                $names->uri,
+                "{$names->entity}Controller",
+            ));
+        } catch (Throwable $e) {
+            $this->rollback($files, $routesPath, $routes);
+
+            return $this->refuse("Could not write the CRUD files ({$e->getMessage()}). Nothing was changed.");
+        }
+
+        foreach (array_keys($generated) as $path) {
             $this->line("created {$path}");
         }
 
@@ -64,18 +117,117 @@ class MakeCrudCommand extends Command
             $this->warn("Skipped {$names->files()['test']}: Pest is not installed (composer require pestphp/pest --dev --with-all-dependencies && ./vendor/bin/pest --init).");
         }
 
-        $files->put($routesPath, RouteFile::addResource(
-            $files->get($routesPath),
-            "{$names->moduleNamespace}\\Controllers\\{$names->entity}Controller",
-            $names->uri,
-            "{$names->entity}Controller",
-        ));
         $this->line("added route to {$names->modulePath}/routes/api.php");
 
         $this->line("Note: routes are protected by {$names->entity}Policy (guests get 403). Add auth middleware (e.g. auth:sanctum) in routes/api.php for token APIs.");
         $this->line("Next: php artisan migrate && php artisan test --filter={$names->entity}ApiTest");
 
         return self::SUCCESS;
+    }
+
+    /** @var list<string> */
+    private array $written = [];
+
+    /** @var list<string> */
+    private array $createdDirectories = [];
+
+    /**
+     * @param  array<string, string>  $generated
+     */
+    private function write(Filesystem $files, array $generated): void
+    {
+        $this->written = [];
+        $this->createdDirectories = [];
+
+        foreach ($generated as $path => $contents) {
+            $this->makeDirectory($files, dirname(base_path($path)));
+            $files->put(base_path($path), $contents);
+            $this->written[] = base_path($path);
+        }
+    }
+
+    private function makeDirectory(Filesystem $files, string $directory): void
+    {
+        if ($files->isDirectory($directory)) {
+            return;
+        }
+
+        $this->makeDirectory($files, dirname($directory));
+
+        if (! @mkdir($directory) && ! $files->isDirectory($directory)) {
+            throw new RuntimeException("cannot create {$directory}");
+        }
+
+        $this->createdDirectories[] = $directory;
+    }
+
+    private function rollback(Filesystem $files, string $routesPath, string $routes): void
+    {
+        foreach (array_reverse($this->written) as $path) {
+            $files->delete($path);
+        }
+
+        foreach (array_reverse($this->createdDirectories) as $directory) {
+            @rmdir($directory);
+        }
+
+        $files->put($routesPath, $routes);
+    }
+
+    private function collision(Filesystem $files, CrudNames $names, string $routesPath): ?string
+    {
+        foreach ($names->files() as $key => $path) {
+            if ($key === 'migration') {
+                $existing = glob(base_path("database/migrations/*_create_{$names->table}_table.php")) ?: [];
+
+                if ($existing !== []) {
+                    return 'database/migrations/'.basename($existing[0]);
+                }
+
+                continue;
+            }
+
+            if (($entry = Modules::entry(dirname(base_path($path)), basename($path))) !== null) {
+                return dirname($path).'/'.$entry;
+            }
+        }
+
+        if (str_contains($files->get($routesPath), "{$names->entity}Controller")) {
+            return "{$names->modulePath}/routes/api.php";
+        }
+
+        return null;
+    }
+
+    /**
+     * Class files to validate after rendering: key => [namespace, class, stub].
+     *
+     * @return array<string, array{string, string, string}>
+     */
+    private function expectedClasses(CrudNames $names): array
+    {
+        $ns = $names->moduleNamespace;
+        $e = $names->entity;
+
+        return [
+            'model' => ["{$ns}\\Models", $e, 'model.stub'],
+            'factory' => ["Database\\Factories\\{$names->module}", "{$e}Factory", 'factory.stub'],
+            'store' => ["{$ns}\\Requests", "Store{$e}Request", 'request.stub'],
+            'update' => ["{$ns}\\Requests", "Update{$e}Request", 'request.stub'],
+            'data' => ["{$ns}\\Data", "{$e}Data", 'crud-data.stub'],
+            'create' => ["{$ns}\\Actions", "Create{$e}", 'crud-create-action.stub'],
+            'updateAction' => ["{$ns}\\Actions", "Update{$e}", 'crud-update-action.stub'],
+            'delete' => ["{$ns}\\Actions", "Delete{$e}", 'crud-delete-action.stub'],
+            'query' => ["{$ns}\\Queries", "List{$names->plural}", 'query.stub'],
+            'controller' => ["{$ns}\\Controllers", "{$e}Controller", 'controller.stub'],
+            'resource' => ["{$ns}\\Resources", "{$e}Resource", 'resource.stub'],
+            'policy' => ["{$ns}\\Policies", "{$e}Policy", 'policy.stub'],
+        ];
+    }
+
+    private function invalidStub(?string $path, ?string $reason): string
+    {
+        return "Stub {$path} did not produce a valid class ({$reason}). Update or delete it, then re-run.";
     }
 
     /**
