@@ -90,7 +90,7 @@ final readonly class CrudField
             'float' => "\$request->float({$key})",
             'bool' => "\$request->boolean({$key})",
             'array' => "(array) \$request->validated({$key})",
-            'date' => "CarbonImmutable::parse(\$request->validated({$key}))",
+            'date' => "CarbonImmutable::parse(\$request->validated({$key}))->setTimezone(config('app.timezone'))",
         };
 
         return $this->nullable

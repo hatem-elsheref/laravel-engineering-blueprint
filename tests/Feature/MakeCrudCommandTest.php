@@ -51,7 +51,7 @@ it('generates every file', function () {
         ->expectsOutputToContain('created app/Modules/Orders/Models/Order.php')
         ->expectsOutputToContain('created tests/Feature/Modules/Orders/OrderApiTest.php')
         ->expectsOutputToContain('added route to app/Modules/Orders/routes/api.php')
-        ->expectsOutputToContain('Note: routes are protected by OrderPolicy (guests get 403). Add auth middleware (e.g. auth:sanctum) in routes/api.php for token APIs.')
+        ->expectsOutputToContain('Note: routes are protected by OrderPolicy (guests get 403). For token APIs add auth middleware (e.g. auth:sanctum) to the api routes in app/Modules/Orders/Provider.php, so every resource in this module gets it.')
         ->expectsOutputToContain('Next: php artisan migrate && php artisan test --filter=OrderApiTest')
         ->assertExitCode(0)
         ->run();
@@ -241,3 +241,20 @@ it('rolls back on write failure', function () {
         ->and(is_dir(base_path('tests/Feature/Modules')))->toBeFalse()
         ->and(file_get_contents(app_path('Modules/Orders/Resources')))->toBe('not a folder');
 });
+
+it('does not confuse similar controller names', function () {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'PurchaseOrder'])->assertExitCode(0);
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])->assertExitCode(0);
+
+    expect(file_get_contents(app_path('Modules/Orders/routes/api.php')))
+        ->toContain("Route::apiResource('orders', OrderController::class);");
+});
+
+it('refuses entity names that clash with imported classes', function (string $entity) {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => $entity])
+        ->expectsOutputToContain("Entity name \"{$entity}\" clashes with a class the generated code uses")
+        ->assertExitCode(1);
+
+    assertNothingWritten($this);
+})->with(['Response', 'Request', 'Model', 'Factory', 'Gate', 'Json']);

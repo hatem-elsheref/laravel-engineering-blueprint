@@ -54,7 +54,7 @@ it('maps each type', function (string $spec, array $expected) {
         'cast' => 'immutable_datetime',
         'rules' => ['required', 'date'],
         'factory' => 'CarbonImmutable::now()',
-        'fromRequest' => "CarbonImmutable::parse(\$request->validated('shipped_at'))",
+        'fromRequest' => "CarbonImmutable::parse(\$request->validated('shipped_at'))->setTimezone(config('app.timezone'))",
     ]],
     'nullable int' => ['quantity:?int', [
         'migration' => "\$table->integer('quantity')->nullable()",

@@ -110,3 +110,9 @@ it('shows, updates and deletes a purchase order', function () {
 
     $this->assertDatabaseMissing('purchase_orders', ['id' => $id]);
 });
+
+it('keeps the moment of offset dates', function () {
+    $this->actingAs($this->user)->postJson('/api/purchase-orders', purchaseOrderPayload(['shipped_at' => '2026-01-02T03:04:05+02:00']))
+        ->assertCreated()
+        ->assertJsonPath('data.shipped_at', '2026-01-02T01:04:05+00:00');
+});

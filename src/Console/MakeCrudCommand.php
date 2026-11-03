@@ -81,6 +81,12 @@ class MakeCrudCommand extends Command
             return $this->refuse($this->invalidStub($e->path, $e->reason));
         }
 
+        foreach ($generated as $path => $contents) {
+            if (($clash = $this->importClash($contents)) !== null) {
+                return $this->refuse("Entity name \"{$entity}\" clashes with a class the generated code uses ({$clash} in {$path}). Choose another name.");
+            }
+        }
+
         foreach ($this->expectedClasses($names) as $key => [$namespace, $class, $stub]) {
             $contents = $generated[$names->files()[$key]];
 
@@ -119,7 +125,7 @@ class MakeCrudCommand extends Command
 
         $this->line("added route to {$names->modulePath}/routes/api.php");
 
-        $this->line("Note: routes are protected by {$names->entity}Policy (guests get 403). Add auth middleware (e.g. auth:sanctum) in routes/api.php for token APIs.");
+        $this->line("Note: routes are protected by {$names->entity}Policy (guests get 403). For token APIs add auth middleware (e.g. auth:sanctum) to the api routes in {$names->modulePath}/Provider.php, so every resource in this module gets it.");
         $this->line("Next: php artisan migrate && php artisan test --filter={$names->entity}ApiTest");
 
         return self::SUCCESS;
@@ -192,7 +198,7 @@ class MakeCrudCommand extends Command
             }
         }
 
-        if (str_contains($files->get($routesPath), "{$names->entity}Controller")) {
+        if (preg_match('/\b'.$names->entity.'Controller\b/', $files->get($routesPath)) === 1) {
             return "{$names->modulePath}/routes/api.php";
         }
 
@@ -223,6 +229,28 @@ class MakeCrudCommand extends Command
             'resource' => ["{$ns}\\Resources", "{$e}Resource", 'resource.stub'],
             'policy' => ["{$ns}\\Policies", "{$e}Policy", 'policy.stub'],
         ];
+    }
+
+    /**
+     * A short name imported twice, or imported under the name of the class the file declares.
+     */
+    private function importClash(string $contents): ?string
+    {
+        preg_match_all('/^use ([A-Za-z0-9_\\\\]+);/m', $contents, $imports);
+        preg_match('/^(?:final |abstract |readonly )*class (\w+)/m', $contents, $declared);
+        $seen = isset($declared[1]) ? [strtolower($declared[1]) => true] : [];
+
+        foreach ($imports[1] as $import) {
+            $short = strtolower(class_basename($import));
+
+            if (isset($seen[$short])) {
+                return class_basename($import);
+            }
+
+            $seen[$short] = true;
+        }
+
+        return null;
     }
 
     private function invalidStub(?string $path, ?string $reason): string
