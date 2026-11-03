@@ -1,0 +1,18 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+{{ imports }}
+final class Update{{ entity }}
+{
+    public function handle({{ entity }} ${{ variable }}, {{ entity }}Data $data): {{ entity }}
+    {
+        return DB::transaction(function () use (${{ variable }}, $data): {{ entity }} {
+            ${{ variable }}->update($data->toArray());
+
+            return ${{ variable }}->refresh();
+        });
+    }
+}

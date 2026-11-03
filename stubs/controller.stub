@@ -2,21 +2,43 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\{{ moduleNamespace }}\Http\Controllers;
+namespace {{ namespace }};
 
-use App\Modules\{{ moduleNamespace }}\Actions\{{ actionClass }};
-use App\Modules\{{ moduleNamespace }}\Data\{{ actionData }};
-use App\Modules\{{ moduleNamespace }}\Http\Requests\{{ requestClass }};
-use App\Modules\{{ moduleNamespace }}\Resources\{{ model }}Resource;
-
-final class {{ controllerClass }}
+{{ imports }}
+final class {{ entity }}Controller
 {
-    public function __invoke(
-        {{ requestClass }} $request,
-        {{ actionClass }} $action,
-    ): {{ model }}Resource {
-        ${{ modelVariable }} = $action->execute({{ actionData }}::from($request));
+    public function index(List{{ plural }} $query): AnonymousResourceCollection
+    {
+        Gate::authorize('viewAny', {{ entity }}::class);
 
-        return new {{ model }}Resource(${{ modelVariable }});
+        return {{ entity }}Resource::collection($query->handle());
+    }
+
+    public function store(Store{{ entity }}Request $request, Create{{ entity }} $action): JsonResponse
+    {
+        ${{ variable }} = $action->handle({{ entity }}Data::fromRequest($request));
+
+        return (new {{ entity }}Resource(${{ variable }}))->response()->setStatusCode(201);
+    }
+
+    public function show({{ entity }} ${{ variable }}): {{ entity }}Resource
+    {
+        Gate::authorize('view', ${{ variable }});
+
+        return new {{ entity }}Resource(${{ variable }});
+    }
+
+    public function update(Update{{ entity }}Request $request, {{ entity }} ${{ variable }}, Update{{ entity }} $action): {{ entity }}Resource
+    {
+        return new {{ entity }}Resource($action->handle(${{ variable }}, {{ entity }}Data::fromRequest($request)));
+    }
+
+    public function destroy({{ entity }} ${{ variable }}, Delete{{ entity }} $action): Response
+    {
+        Gate::authorize('delete', ${{ variable }});
+
+        $action->handle(${{ variable }});
+
+        return response()->noContent();
     }
 }

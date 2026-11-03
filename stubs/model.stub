@@ -2,18 +2,22 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\{{ moduleNamespace }}\Models;
+namespace {{ namespace }};
 
-use Illuminate\Database\Eloquent\Model;
-
-final class {{ model }} extends Model
+{{ imports }}
+final class {{ entity }} extends Model
 {
-    protected $table = '{{ table }}';
+    /** @use HasFactory<{{ entity }}Factory> */
+    use HasFactory;
 
     /**
      * @var list<string>
      */
     protected $fillable = [
-        //
-    ];
+{{ fillable }}    ];
+{{ casts }}
+    protected static function newFactory(): {{ entity }}Factory
+    {
+        return {{ entity }}Factory::new();
+    }
 }

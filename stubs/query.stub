@@ -1,0 +1,17 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+{{ imports }}
+final class List{{ plural }}
+{
+    /**
+     * @return LengthAwarePaginator<int, {{ entity }}>
+     */
+    public function handle(int $perPage = 15): LengthAwarePaginator
+    {
+        return {{ entity }}::query()->latest('id')->paginate($perPage);
+    }
+}

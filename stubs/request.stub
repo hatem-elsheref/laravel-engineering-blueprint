@@ -2,24 +2,22 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\{{ moduleNamespace }}\Http\Requests;
+namespace {{ namespace }};
 
-use Illuminate\Foundation\Http\FormRequest;
-
-final class {{ requestClass }} extends FormRequest
+{{ imports }}
+final class {{ class }} extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('{{ policyAbility }}', {{ model }}::class) ?? false;
+        return $this->user()?->can({{ ability }}) ?? false;
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array<string, list<string>>
      */
     public function rules(): array
     {
         return [
-            // 'name' => ['required', 'string', 'max:255'],
-        ];
+{{ rules }}        ];
     }
 }

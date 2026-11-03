@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+{{ imports }}
+final readonly class {{ entity }}Data
+{
+    public function __construct(
+{{ properties }}    ) {}
+
+    public static function fromRequest(Store{{ entity }}Request|Update{{ entity }}Request $request): self
+    {
+        return new self(
+{{ arguments }}        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return [
+{{ array }}        ];
+    }
+}

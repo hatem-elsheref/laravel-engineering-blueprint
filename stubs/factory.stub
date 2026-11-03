@@ -1,0 +1,23 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+{{ imports }}
+/**
+ * @extends Factory<{{ entity }}>
+ */
+final class {{ entity }}Factory extends Factory
+{
+    protected $model = {{ entity }}::class;
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+{{ definition }}        ];
+    }
+}

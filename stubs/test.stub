@@ -2,9 +2,47 @@
 
 declare(strict_types=1);
 
-use App\Modules\{{ moduleNamespace }}\Models\{{ model }};
+{{ imports }}
+uses(RefreshDatabase::class);
 
-it('creates a {{ modelVariable }}', function (): void {
-    // actingAs tenant user, post to route, assert database
-    expect(true)->toBeTrue();
+beforeEach(function (): void {
+    $this->user = User::factory()->create();
+});
+
+it('denies guests', function (): void {
+    $this->getJson('/api/{{ uri }}')->assertForbidden();
+});
+
+it('lists {{ uri }}', function (): void {
+    {{ entity }}::factory()->create();
+
+    $this->actingAs($this->user)->getJson('/api/{{ uri }}')->assertOk()->assertJsonCount(1, 'data');
+});
+
+it('creates a {{ variable }}', function (): void {
+    $this->actingAs($this->user)->postJson('/api/{{ uri }}', {{ entity }}::factory()->raw())->assertCreated();
+
+    expect({{ entity }}::count())->toBe(1);
+});
+{{ validation }}
+it('shows a {{ variable }}', function (): void {
+    ${{ variable }} = {{ entity }}::factory()->create();
+
+    $this->actingAs($this->user)->getJson("/api/{{ uri }}/{${{ variable }}->id}")
+        ->assertOk()
+        ->assertJsonPath('data.id', ${{ variable }}->id);
+});
+
+it('updates a {{ variable }}', function (): void {
+    ${{ variable }} = {{ entity }}::factory()->create();
+
+    $this->actingAs($this->user)->putJson("/api/{{ uri }}/{${{ variable }}->id}", {{ entity }}::factory()->raw())->assertOk();
+});
+
+it('deletes a {{ variable }}', function (): void {
+    ${{ variable }} = {{ entity }}::factory()->create();
+
+    $this->actingAs($this->user)->deleteJson("/api/{{ uri }}/{${{ variable }}->id}")->assertNoContent();
+
+    expect({{ entity }}::count())->toBe(0);
 });
