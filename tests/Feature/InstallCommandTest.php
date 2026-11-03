@@ -83,3 +83,111 @@ it('creates no folders', function () {
     expect(is_dir(app_path('Modules')))->toBeFalse()
         ->and(is_dir(app_path('Shared')))->toBeFalse();
 });
+
+function install(array $options = []): \Illuminate\Testing\PendingCommand
+{
+    return test()->artisan('engineering:install', $options + ['--no-interaction' => true]);
+}
+
+function editConfig(string $search, string $replace): void
+{
+    file_put_contents(config_path('blueprint.php'), str_replace($search, $replace, installedConfig()));
+}
+
+it('rerun changes only the profile line', function () {
+    install(['--profile' => 'modular'])->assertExitCode(0);
+    editConfig("'app/Modules'", "'src/Modules'");
+
+    install(['--profile' => 'saas'])
+        ->expectsOutputToContain('updated profile: modular → saas')
+        ->assertExitCode(0);
+
+    expect(installedConfig())->toContain("'src/Modules'")->toContain("'profile' => 'saas',");
+});
+
+it('rerun keeps saved profile', function () {
+    install(['--profile' => 'saas'])->assertExitCode(0);
+
+    install()->expectsOutputToContain('profile unchanged: saas')->assertExitCode(0);
+
+    expect(installedConfig())->toContain("'profile' => 'saas',");
+});
+
+it('rerun with same profile leaves file untouched', function () {
+    install(['--profile' => 'saas'])->assertExitCode(0);
+    editConfig("'app/Modules'", "'src/Modules'");
+    $before = installedConfig();
+
+    install(['--profile' => 'saas'])->assertExitCode(0);
+
+    expect(installedConfig())->toBe($before);
+});
+
+it('force overwrites edits', function () {
+    install(['--profile' => 'modular'])->assertExitCode(0);
+    editConfig("'app/Modules'", "'src/Modules'");
+
+    install(['--profile' => 'saas', '--force' => true])
+        ->expectsOutputToContain('overwrote config/blueprint.php')
+        ->assertExitCode(0);
+
+    expect(installedConfig())->not->toContain("'src/Modules'")->toContain("'profile' => 'saas',");
+});
+
+it('refuses downgrade without force', function () {
+    install(['--profile' => 'tenant-saas'])->assertExitCode(0);
+
+    install(['--profile' => 'modular'])
+        ->expectsOutputToContain('Refusing to drop Features, Settings, Tenancy without --force.')
+        ->assertExitCode(1);
+
+    expect(installedConfig())->toContain("'profile' => 'tenant-saas',");
+});
+
+it('allows downgrade with force', function () {
+    install(['--profile' => 'tenant-saas'])->assertExitCode(0);
+
+    install(['--profile' => 'modular', '--force' => true])->assertExitCode(0);
+
+    expect(installedConfig())->toContain("'profile' => 'modular',");
+});
+
+it('confirms downgrade interactively', function (string $answer, int $exit, string $expected) {
+    install(['--profile' => 'tenant-saas'])->assertExitCode(0);
+
+    $this->artisan('engineering:install', ['--profile' => 'modular'])
+        ->expectsConfirmation('This removes Features, Settings, Tenancy from the project. Continue?', $answer)
+        ->assertExitCode($exit);
+
+    expect(installedConfig())->toContain("'profile' => '{$expected}',");
+})->with([
+    'declined' => ['no', 1, 'tenant-saas'],
+    'accepted' => ['yes', 0, 'modular'],
+]);
+
+it('refuses unrecordable configs', function (string $search, string $replace) {
+    install(['--profile' => 'modular'])->assertExitCode(0);
+    editConfig($search, $replace);
+    config()->set('blueprint.profile', null);
+    $before = installedConfig();
+
+    install(['--profile' => 'saas'])
+        ->expectsOutputToContain('Could not record the profile in config/blueprint.php.')
+        ->doesntExpectOutputToContain('Installed profile:')
+        ->assertExitCode(1);
+
+    expect(installedConfig())->toBe($before);
+})->with([
+    'phase-1 config' => ["    'profile' => 'modular', // set by php artisan engineering:install\n", ''],
+    'env profile' => ["'profile' => 'modular',", "'profile' => env('BLUEPRINT_PROFILE', 'saas'),"],
+]);
+
+it('clears cached config', function () {
+    file_put_contents(app()->getCachedConfigPath(), '<?php return [];');
+
+    install(['--profile' => 'saas'])
+        ->expectsOutputToContain('cleared config cache')
+        ->assertExitCode(0);
+
+    expect(file_exists(app()->getCachedConfigPath()))->toBeFalse();
+});
