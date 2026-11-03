@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Modules\{{ moduleNamespace }}\Http\Controllers\{{ controllerClass }};
+use App\Modules\{{ moduleNamespace }}\Controllers\{{ controllerClass }};
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['api', 'auth:sanctum'])

@@ -1,0 +1,8 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Support\Facades\Route;
+
+// Loaded with the "web" middleware group.
+// Route::get('/{{ url }}', IndexController::class);

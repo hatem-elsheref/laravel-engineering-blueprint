@@ -4,7 +4,7 @@ Placeholders for future `make:module` / `make:crud`. Replace `{{ ... }}` tokens 
 
 | File | Purpose |
 |------|---------|
-| `module-provider.stub` | Module service provider skeleton |
+| `module-provider.stub` | Module `Provider.php` (`make:module`) |
 | `model.stub` | Eloquent model |
 | `migration.stub` | Create table migration |
 | `request.stub` | Form request (store/update) |
@@ -14,4 +14,6 @@ Placeholders for future `make:module` / `make:crud`. Replace `{{ ... }}` tokens 
 | `resource.stub` | API resource |
 | `policy.stub` | Policy |
 | `route.stub` | Route snippet |
+| `module-routes-api.stub` | Module `routes/api.php` (`make:module --api`) |
+| `module-routes-web.stub` | Module `routes/web.php` (`make:module --web`) |
 | `test.stub` | Pest feature test |

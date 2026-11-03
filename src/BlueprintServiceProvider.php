@@ -34,6 +34,7 @@ class BlueprintServiceProvider extends ServiceProvider
         $this->commands([
             Console\AboutCommand::class,
             Console\InstallCommand::class,
+            Console\MakeModuleCommand::class,
         ]);
     }
 }
