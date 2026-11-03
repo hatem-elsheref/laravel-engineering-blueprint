@@ -1,7 +1,7 @@
 # Phase 6 — Multi-tenancy (`stancl/tenancy`) — Design Spec
 
 **Date:** 2026-11-03
-**Status:** Draft for approval
+**Status:** Approved
 **Builds on:** Phases 1–5 (profiles, install, `make:module`, `make:crud`, `Modules`, `FileWriter`, `StubRenderer`).
 **Supports:** PHP 8.3+, Laravel 12 and 13, `stancl/tenancy` ^3.10 (3.10.1 supports Laravel 12 and 13; v4 is unreleased and needs PHP 8.4).
 **Authority:** `docs/TENANCY.md` (binding), `docs/CONSTITUTION.md`, `docs/ARCHITECTURE.md`.
@@ -77,7 +77,7 @@ If any step 4–8 throws: end tenancy if it is active *(builder-check call: stan
 
 *(Builder-check call — Laravel matches routes by method + domain + URI in registration order, not by middleware, so middleware alone can't separate routes that share a URI. This follows stancl's documented v3 pattern.)*
 
-- **Central modules** (`make:module X --central`): Provider registers routes **inside `Route::domain($domain)` for each `tenancy.central_domains` entry**, during `boot()`, with `['api', 'central']` / `['web', 'central']` (the `central` group stays as defense in depth). Domain-scoped routes only match central hosts.
+- **Central modules** (`make:module X --central`): Provider registers routes **once**, during `boot()`, inside `Route::domain('{central_domain}')->where(['central_domain' => <quoted central domains joined by |>])` with `['api', 'central']` / `['web', 'central']`. Domain-scoped routes only match central hosts. *(Planning amendment: one registration per central domain would duplicate route names, which `route:cache` rejects; a single pattern avoids that.)* `CentralDomainsOnly` removes the `central_domain` route parameter (`$request->route()->forgetParameter('central_domain')`) so controllers never receive it.
 - **Tenant modules** (default in `tenant-saas`): Provider registers routes in `$this->app->booted(...)` — after all central routes — with `Route::middleware(['api', 'tenant'])->prefix('api')` / `['web', 'tenant']`. Because central routes are domain-scoped and registered first, a shared URI resolves to the central route on central hosts and to the tenant route on tenant hosts.
 - Modules in other profiles: unchanged (Phase 3 shape).
 - `CentralDomainsOnly` middleware: 404 when `$request->getHost()` is not in `tenancy.central_domains`.
