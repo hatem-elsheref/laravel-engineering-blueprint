@@ -61,6 +61,7 @@
                         <tr><td><a href="#feature-enable"><code>feature:enable</code></a></td><td>يفعّل ميزة (مدير المنصة)</td></tr>
                         <tr><td><a href="#feature-disable"><code>feature:disable</code></a></td><td>يعطّل ميزة (مدير المنصة)</td></tr>
                         <tr><td><a href="#features-sync"><code>features:sync</code></a></td><td>يضيف الميزات المعرّفة حديثًا (بحالتها الافتراضية) دون تغيير الموجودة</td></tr>
+                        <tr><td><a href="#permissions-sync"><code>permissions:sync</code></a></td><td>ينشئ الصلاحيات والأدوار المعرّفة ويضبط كل دور معرّف على ما يقوله الملف بالضبط</td></tr>
                         <tr><td><a href="#setting-list"><code>setting:list</code></a></td><td>يسرد الإعدادات وقيمها (مدير المنصة)</td></tr>
                         <tr><td><a href="#setting-set"><code>setting:set</code></a></td><td>يضبط أي إعداد (مدير المنصة)</td></tr>
                     </tbody>
@@ -295,6 +296,12 @@
                     </table>
                 </div>
                 <p>يضيف صفًا بالحالة الافتراضية لكل ميزة معرّفة لا صف لها، وتبقى الصفوف الموجودة كما هي. في <bdi>tenant-saas</bdi> يُفحص كل مستأجر مطلوب قبل مزامنة أي منهم، والمستأجر الذي يفشل يُبلَّغ عنه وينتهي الأمر برمز الخروج 1.</p>
+            </section>
+
+            <section class="index-card" aria-labelledby="permissions-sync">
+                <h3 class="index-card__title" id="permissions-sync">permissions:sync</h3>
+<pre><code><span class="prompt">$ </span>php artisan permissions:sync [--prune]</code></pre>
+                <p>ينشئ الصلاحيات والأدوار الناقصة من صنف التعريفات (<code>blueprint.permissions</code>) ويضبط كل دور معرّف على ما يقوله الملف بالضبط. يُنشأ دور <code>blueprint.super_admin</code> وهو يجتاز كل فحص، ويحدد <code>blueprint.permission_guard</code> الحارس. ما ليس في الملف يُعرض كقديم ولا يُحذف إلا مع <code>--prune</code>. خطأ في التعريفات ينهي الأمر برمز 1 دون كتابة شيء. <code>blueprint.central_permissions</code> هو صنف تعريفات الجهة المركزية في <bdi>tenant-saas</bdi>.</p>
             </section>
 
             <section class="index-card" aria-labelledby="setting-list">

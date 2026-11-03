@@ -2,11 +2,13 @@
 
 use Best\Blueprint\Tests\Fixtures\TestFeatures;
 use Best\Blueprint\Tests\Fixtures\TestSettings;
+use Best\Blueprint\Tests\SpatieTestCase;
 use Best\Blueprint\Tests\TenancyTestCase;
 use Best\Blueprint\Tests\TestCase;
 
 pest()->extend(TestCase::class)->in('Feature', 'Unit');
 pest()->extend(TenancyTestCase::class)->in('Tenancy');
+pest()->extend(SpatieTestCase::class)->in('Permissions');
 
 /** Feature/setting tables from the package's own migration stubs, on the current default connection. */
 function createFlagTables(): void

@@ -12,6 +12,7 @@ use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Stancl\Tenancy\Events\TenancyEnded;
@@ -71,6 +72,18 @@ class BlueprintServiceProvider extends ServiceProvider
             Blade::if('feature', fn (string $key): bool => $this->app->make(Features\FeatureManager::class)->enabled($key));
         }
 
+        // The super-admin role passes every check. Returns true or null, never false, so it can't block anything.
+        if ($this->app->make(Permissions\PermissionsDetector::class)->spatie()) {
+            Gate::before(function (mixed $user): ?bool {
+                if (is_object($user) && method_exists($user, 'hasRole')
+                    && $user->hasRole((string) config('blueprint.super_admin', 'super-admin'), (string) config('blueprint.permission_guard', 'web'))) {
+                    return true;
+                }
+
+                return null;
+            });
+        }
+
         if ($this->app->make(TenancyDetector::class)->active()) {
             $this->registerTenancyMiddleware();
 
@@ -114,6 +127,7 @@ class BlueprintServiceProvider extends ServiceProvider
             Console\FeatureEnableCommand::class,
             Console\FeatureDisableCommand::class,
             Console\FeaturesSyncCommand::class,
+            Console\PermissionsSyncCommand::class,
             Console\SettingListCommand::class,
             Console\SettingSetCommand::class,
         ]);

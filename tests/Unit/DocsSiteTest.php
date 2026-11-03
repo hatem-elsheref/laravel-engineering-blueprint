@@ -31,7 +31,7 @@ function packageCommandNames(): array
 }
 
 it('finds the registered commands', function () {
-    expect(packageCommandNames())->toHaveCount(13)->toContain('make:crud', 'engineering:install');
+    expect(packageCommandNames())->toHaveCount(14)->toContain('make:crud', 'engineering:install');
 });
 
 it('documents every command on the reference pages', function (string $page, string $path) {

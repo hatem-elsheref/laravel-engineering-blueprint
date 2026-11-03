@@ -61,6 +61,7 @@
                         <tr><td><a href="#feature-enable"><code>feature:enable</code></a></td><td>Enable a feature (platform admin)</td></tr>
                         <tr><td><a href="#feature-disable"><code>feature:disable</code></a></td><td>Disable a feature (platform admin)</td></tr>
                         <tr><td><a href="#features-sync"><code>features:sync</code></a></td><td>Add newly defined features (default state) without changing existing ones</td></tr>
+                        <tr><td><a href="#permissions-sync"><code>permissions:sync</code></a></td><td>Create the defined permissions and roles, and set each defined role to exactly what the file says</td></tr>
                         <tr><td><a href="#setting-list"><code>setting:list</code></a></td><td>List settings and their values (platform admin)</td></tr>
                         <tr><td><a href="#setting-set"><code>setting:set</code></a></td><td>Set any setting (platform admin)</td></tr>
                     </tbody>
@@ -295,6 +296,12 @@
                     </table>
                 </div>
                 <p>Adds a row in the default state for each defined feature that has none; existing rows are kept. In tenant-saas every requested tenant is checked before any is synced; a tenant that fails is reported and the command exits 1.</p>
+            </section>
+
+            <section class="index-card" aria-labelledby="permissions-sync">
+                <h3 class="index-card__title" id="permissions-sync">permissions:sync</h3>
+<pre><code><span class="prompt">$ </span>php artisan permissions:sync [--prune]</code></pre>
+                <p>Creates missing permissions and roles from the definitions class (<code>blueprint.permissions</code>) and sets each defined role to exactly what the file says. The <code>blueprint.super_admin</code> role is created and passes every check; <code>blueprint.permission_guard</code> sets the guard. Entries not in the file are listed as stale and deleted only with <code>--prune</code>. A definition error exits 1 and writes nothing. <code>blueprint.central_permissions</code> is the central-side definitions class for tenant-saas.</p>
             </section>
 
             <section class="index-card" aria-labelledby="setting-list">
