@@ -201,3 +201,19 @@ it('refuses dot module names', function (string $module) {
     expect(file_exists(app_path('Modules/Data/Weird.php')))->toBeFalse()
         ->and(file_exists(app_path('Data/Weird.php')))->toBeFalse();
 })->with(['.', '..']);
+
+it('refuses module folders that are not namespace names', function () {
+    File::ensureDirectoryExists(app_path('Modules/shared-utils'));
+
+    $this->artisan('make:dto', ['module' => 'shared-utils', 'name' => 'ThingData'])
+        ->expectsOutputToContain('Module folder "shared-utils" is not a valid PHP namespace name. Rename it (e.g. SharedUtils) and try again.')
+        ->assertExitCode(1);
+
+    expect(is_dir(app_path('Modules/shared-utils/Data')))->toBeFalse();
+});
+
+it('suggests a clean data name for Dto suffixes', function (string $name) {
+    $this->artisan('make:dto', ['module' => 'Orders', 'name' => $name])
+        ->expectsOutputToContain('Tip: data classes are usually named like OrderData.')
+        ->assertExitCode(0);
+})->with(['OrderDto', 'OrderDTO']);

@@ -44,10 +44,10 @@ abstract class ModuleClassCommand extends Command
         }
 
         $moduleInput = (string) $this->argument('module');
-        $module = Modules::entry(base_path($modules->path()), $moduleInput);
+        [$module, $moduleError] = $modules->locate($moduleInput);
 
-        if ($module === null || ! is_dir(base_path($modules->path().'/'.$module))) {
-            return $this->refuse("Module \"{$moduleInput}\" not found in {$modules->path()}. Create it with php artisan make:module {$moduleInput}.");
+        if ($moduleError !== null) {
+            return $this->refuse($moduleError);
         }
 
         $input = (string) $this->argument('name');

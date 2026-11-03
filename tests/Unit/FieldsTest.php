@@ -36,7 +36,8 @@ it('refuses invalid entries', function (string $spec, string $entry, string $rea
             ->and($e->getMessage())->toBe("Invalid field \"{$entry}\": {$reason}.");
     }
 })->with([
-    'empty entry' => ['name:string,,x:int', '', 'empty'],
+    'empty entry' => ['name:string,,x:int', '', 'empty (check for a stray comma)'],
+    'trailing comma' => ['name:string,', '', 'empty (check for a stray comma)'],
     'missing type' => ['name', 'name', 'missing type'],
     'invalid name' => ['1x:int', '1x:int', 'invalid name'],
     'unknown type' => ['name:text', 'name:text', 'unknown type text'],

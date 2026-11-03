@@ -258,3 +258,12 @@ it('refuses entity names that clash with imported classes', function (string $en
 
     assertNothingWritten($this);
 })->with(['Response', 'Request', 'Model', 'Factory', 'Gate', 'Json']);
+
+it('refuses module folders that are not namespace names', function () {
+    File::ensureDirectoryExists(app_path('Modules/shared-utils/routes'));
+    touch(app_path('Modules/shared-utils/routes/api.php'));
+
+    $this->artisan('make:crud', ['module' => 'shared-utils', 'entity' => 'Thing'])
+        ->expectsOutputToContain('Module folder "shared-utils" is not a valid PHP namespace name.')
+        ->assertExitCode(1);
+});

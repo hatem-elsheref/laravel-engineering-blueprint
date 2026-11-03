@@ -55,8 +55,12 @@ class MakeDtoCommand extends ModuleClassCommand
 
     protected function tip(string $class): ?string
     {
-        return str_ends_with($class, 'Data')
-            ? null
-            : "Tip: data classes are usually named like {$class}Data.";
+        if (str_ends_with($class, 'Data')) {
+            return null;
+        }
+
+        $base = preg_replace('/(Dto|DTO)$/', '', $class) ?: $class;
+
+        return "Tip: data classes are usually named like {$base}Data.";
     }
 }

@@ -38,10 +38,21 @@ class MakeActionCommand extends ModuleClassCommand
 
         if ($dataInput !== '') {
             $dataFolder = (new Modules)->path()."/{$module}/Data";
-            $file = Modules::entry(base_path($dataFolder), (ModuleName::normalize($dataInput) ?? $dataInput).'.php');
+
+            if (str_contains($dataInput, '\\') || str_contains($dataInput, '/')) {
+                return "Data classes must be in this module (got \"{$dataInput}\"). Pass a class name from {$dataFolder}.";
+            }
+
+            $dataName = ModuleName::normalize($dataInput);
+
+            if ($dataName === null) {
+                return "Invalid data class name \"{$dataInput}\". Use letters and numbers, starting with a letter, e.g. OrderData.";
+            }
+
+            $file = Modules::entry(base_path($dataFolder), $dataName.'.php');
 
             if ($file === null) {
-                return "Data class \"{$dataInput}\" not found in {$dataFolder}. Create it with php artisan make:dto {$module} {$dataInput}.";
+                return "Data class \"{$dataName}\" not found in {$dataFolder}. Create it with php artisan make:dto {$module} {$dataName}.";
             }
 
             $data = pathinfo($file, PATHINFO_FILENAME);

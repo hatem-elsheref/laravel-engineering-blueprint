@@ -30,7 +30,7 @@ final class Fields
             $entry = trim($raw);
 
             if ($entry === '') {
-                throw new FieldException($entry, 'empty');
+                throw new FieldException($entry, 'empty (check for a stray comma)');
             }
 
             if (! str_contains($entry, ':')) {

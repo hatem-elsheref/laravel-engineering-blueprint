@@ -139,3 +139,17 @@ it('refuses reserved class names', function (string $name) {
 
     expect(is_dir(app_path('Modules/Orders/Actions')))->toBeFalse();
 })->with(['Void', 'Print', 'Clone']);
+
+it('names the data class it looked for', function () {
+    $this->artisan('make:action', ['module' => 'Orders', 'name' => 'CreateOrder', '--data' => 'missing_data'])
+        ->expectsOutputToContain('Data class "MissingData" not found in app/Modules/Orders/Data. Create it with php artisan make:dto Orders MissingData.')
+        ->assertExitCode(1);
+});
+
+it('refuses data classes from other modules', function () {
+    $this->artisan('make:action', ['module' => 'Orders', 'name' => 'CreateOrder', '--data' => 'Billing\InvoiceData'])
+        ->expectsOutputToContain('Data classes must be in this module (got "Billing\InvoiceData"). Pass a class name from app/Modules/Orders/Data.')
+        ->assertExitCode(1);
+
+    expect(is_dir(app_path('Modules/Orders/Actions')))->toBeFalse();
+});

@@ -48,6 +48,28 @@ final class Modules
     }
 
     /**
+     * The existing module folder for $input (case-insensitive), or a refusal message.
+     *
+     * @return array{0: ?string, 1: ?string} [module folder, error]
+     */
+    public function locate(string $input): array
+    {
+        $module = self::entry(base_path($this->path()), $input);
+
+        if ($module === null || ! is_dir(base_path($this->path().'/'.$module))) {
+            return [null, "Module \"{$input}\" not found in {$this->path()}. Create it with php artisan make:module {$input}."];
+        }
+
+        if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $module) !== 1) {
+            $suggestion = ModuleName::normalize($module) ?? 'Orders';
+
+            return [null, "Module folder \"{$module}\" is not a valid PHP namespace name. Rename it (e.g. {$suggestion}) and try again."];
+        }
+
+        return [$module, null];
+    }
+
+    /**
      * The existing file or directory in $directory matching $name case-insensitively.
      */
     public static function entry(string $directory, string $name): ?string
