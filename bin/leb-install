@@ -136,6 +136,8 @@ install_bundle() {
   fi
 
   if component_enabled stubs; then
+    # Stubs moved from kit/stubs to stubs; drop the old copy so agents don't use stale templates.
+    run rm -rf "${bundle}/kit/stubs"
     run mkdir -p "${bundle}/stubs"
     run cp -R "${KIT_SOURCE}/stubs/." "${bundle}/stubs/"
   fi
@@ -156,8 +158,9 @@ link_project_agents() {
   fi
 
   local cursor_skills="${project_root}/.cursor/skills"
-  local rel_eng="../${BUNDLE_NAME}/kit/skills/laravel-engineering"
-  local rel_crud="../${BUNDLE_NAME}/kit/skills/leb-generate-crud"
+  # Links live in .cursor/skills/, two levels below the project root.
+  local rel_eng="../../${BUNDLE_NAME}/kit/skills/laravel-engineering"
+  local rel_crud="../../${BUNDLE_NAME}/kit/skills/leb-generate-crud"
   symlink_skill "laravel-engineering" "${cursor_skills}" "${rel_eng}"
   symlink_skill "leb-generate-crud" "${cursor_skills}" "${rel_crud}"
 

@@ -1,0 +1,13 @@
+# Keep development files out of the Composer package (composer archive / Packagist dist).
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/.idea export-ignore
+/.superpowers export-ignore
+/bin export-ignore
+/blueprint.manifest.json export-ignore
+/docs export-ignore
+/kit export-ignore
+/phpunit.xml export-ignore
+/rules.md export-ignore
+/tests export-ignore
+/AGENTS.md export-ignore

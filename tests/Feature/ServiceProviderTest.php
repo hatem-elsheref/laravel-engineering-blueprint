@@ -25,8 +25,7 @@ it('registers the config publish tag', function () {
 it('registers the stubs publish tag', function () {
     $paths = ServiceProvider::pathsToPublish(BlueprintServiceProvider::class, 'blueprint-stubs');
 
-    expect(array_values($paths))->toBe([base_path('stubs/blueprint')])
-        ->and(is_file(array_key_first($paths).'/model.stub'))->toBeTrue();
+    expect(array_values($paths))->toContain(base_path('stubs/blueprint/model.stub'));
 });
 
 it('binds compatibility using configured minimums', function () {
@@ -47,4 +46,19 @@ it('falls back to default minimums when support config is missing', function () 
 
 it('reports a version string', function () {
     expect(Blueprint::version())->toBeString()->not->toBeEmpty();
+});
+
+it('treats empty minimums as the defaults', function () {
+    config()->set('blueprint.support', ['php' => '', 'laravel' => '']);
+    app()->forgetInstance(Compatibility::class);
+
+    expect(array_column(app(Compatibility::class)->check('8.3', '12')->checks, 'required'))->toBe(['8.3', '12']);
+});
+
+it('publishes stub files only', function () {
+    $paths = ServiceProvider::pathsToPublish(BlueprintServiceProvider::class, 'blueprint-stubs');
+
+    expect(array_map('basename', array_keys($paths)))->not->toContain('README.md')
+        ->and(count($paths))->toBe(count(glob(__DIR__.'/../../stubs/*.stub')))
+        ->and(array_values($paths))->toContain(base_path('stubs/blueprint/model.stub'));
 });

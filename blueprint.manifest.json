@@ -1,9 +1,9 @@
 {
   "name": "laravel-engineering-blueprint",
-  "version": "0.2.0-phase0",
+  "version": "0.5.0",
   "phase": {
-    "current": 0,
-    "name": "Architecture Foundation",
+    "current": 5,
+    "name": "Generators (make:module, make:dto, make:action, make:crud)",
     "specs": [
       "docs/PHASE-0.md",
       "docs/ARCHITECTURE.md",
@@ -37,7 +37,12 @@
   },
   "install": {
     "projectBundleDir": "laravel-engineering-blueprint",
-    "defaultComponents": ["docs", "skills", "rules", "stubs"],
+    "defaultComponents": [
+      "docs",
+      "skills",
+      "rules",
+      "stubs"
+    ],
     "skillLinkTargets": {
       "cursorProject": ".cursor/skills",
       "cursorGlobal": "~/.cursor/skills",
@@ -51,6 +56,10 @@
       "make:module",
       "make:crud"
     ],
-    "pluginTargets": ["cursor", "codex", "claude-marketplace"]
+    "pluginTargets": [
+      "cursor",
+      "codex",
+      "claude-marketplace"
+    ]
   }
 }
