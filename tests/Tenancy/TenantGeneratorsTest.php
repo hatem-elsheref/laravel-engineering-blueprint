@@ -140,3 +140,14 @@ it('keeps a route-less central module central', function () {
         ->expectsOutputToContain('or create the module with make:module Billing --api --central.')
         ->assertExitCode(1);
 });
+
+it('refuses --feature on central modules', function () {
+    useTestFlags();
+    $this->artisan('make:module', ['name' => 'Admin', '--api' => true, '--central' => true])->assertExitCode(0);
+
+    $this->artisan('make:crud', ['module' => 'Admin', 'entity' => 'Plan', '--feature' => 'orders'])
+        ->expectsOutputToContain('Features are per tenant; central module routes have no tenant.')
+        ->assertExitCode(1);
+
+    expect(is_dir(app_path('Modules/Admin/Models')))->toBeFalse();
+});

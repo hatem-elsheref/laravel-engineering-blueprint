@@ -80,6 +80,10 @@ class MakeCrudCommand extends Command
             return $this->refuse($error);
         }
 
+        if ($feature !== null && Profile::current() === Profile::TenantSaas && ! $names->tenant) {
+            return $this->refuse('Features are per tenant; central module routes have no tenant. Drop --feature or use a tenant module.');
+        }
+
         $routesPath = base_path($names->modulePath.'/routes/api.php');
 
         if (! $files->isFile($routesPath)) {
@@ -126,6 +130,13 @@ class MakeCrudCommand extends Command
             if (! PhpSource::declares($contents, $namespace, $class)) {
                 return $this->refuse($this->invalidStub($stubs->path($stub), "no {$class} class in namespace {$namespace}"));
             }
+        }
+
+        // The generated tests must enable a requested feature, or the suite is red for no visible reason.
+        if ($feature !== null && ! str_contains($generated[$names->files()['test']], "app(FeatureAdmin::class)->enable('{$feature}')")) {
+            $stub = $stubs->path($names->tenant ? 'test-tenant.stub' : 'test.stub');
+
+            return $this->refuse("Stub {$stub} did not produce valid tests (no feature setup for {$feature}). Update or delete it, then re-run.");
         }
 
         if (! $pest->installed()) {

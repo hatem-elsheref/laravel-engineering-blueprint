@@ -147,3 +147,12 @@ If the definition classes don't exist (feature tables not set up), both steps re
 
 - Exception class names/namespaces beyond those named; table rendering of list commands.
 - How the Blade directive is registered (only when Blade is available).
+
+## Amendments (final review, 2026-11-03)
+
+- `feature:a,b` requires every listed feature (a second key was silently ignored).
+- `make:crud --feature` is refused for central modules in tenant-saas (no tenant → always 403), and refused when the (possibly published) test stub would drop the feature setup.
+- The admin guard also treats "a route is being handled" (`RouteMatched` … `RequestHandled`) as HTTP, so an app's own HTTP tests see the same refusal as production.
+- `RequireFeature` throws `FeatureDisabled` on the sync queue (no failed-jobs table there) instead of skipping silently.
+- Settings: editability/ability are checked before the value's type; integer strings that overflow are rejected; new feature/setting rows get `created_at`.
+- `features:sync` checks all requested tenants first and reports per-tenant errors; install tells existing tenant-saas projects to run `tenants:migrate && features:sync`.

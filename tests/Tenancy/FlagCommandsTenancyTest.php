@@ -58,3 +58,19 @@ it('sets a tenant setting', function () {
 
     expect(tenancy()->find('b')->run(fn () => Best\Blueprint\Facades\Setting::get('orders.limit')))->toBe(3);
 });
+
+it('validates tenants before syncing any', function () {
+    $this->artisan('features:sync', ['--tenant' => ['a', 'zzz']])
+        ->expectsOutputToContain('Tenant "zzz" not found.')
+        ->doesntExpectOutputToContain('added')
+        ->assertExitCode(1);
+});
+
+it('reports a tenant without a features table instead of crashing', function () {
+    tenancy()->find('b')->run(fn () => Illuminate\Support\Facades\Schema::drop('features'));
+
+    $this->artisan('features:sync')
+        ->expectsOutputToContain('added 0 feature(s) to tenant "a"')
+        ->expectsOutputToContain('tenant "b":')
+        ->assertExitCode(1);
+});

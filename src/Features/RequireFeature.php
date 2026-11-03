@@ -16,6 +16,11 @@ final class RequireFeature
     public function handle(object $job, Closure $next): mixed
     {
         if (! app(FeatureManager::class)->enabled($this->key)) {
+            // The sync driver has no failed-jobs table: fail loudly instead of silently skipping.
+            if (isset($job->job) && $job->job instanceof \Illuminate\Queue\Jobs\SyncJob) {
+                throw FeatureDisabled::key($this->key);
+            }
+
             $job->fail(FeatureDisabled::key($this->key));
 
             return null;

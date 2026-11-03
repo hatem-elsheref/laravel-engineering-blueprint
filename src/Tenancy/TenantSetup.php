@@ -121,7 +121,7 @@ class TenantSetup
                 $class = config('blueprint.settings');
 
                 if (! is_string($class) || ! class_exists($class)) {
-                    return ['skipped', 'run engineering:install to set up features'];
+                    return ['skipped', 'run engineering:install to set up settings'];
                 }
 
                 return ['already', 'defaults come from Settings definitions'];

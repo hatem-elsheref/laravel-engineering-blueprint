@@ -23,6 +23,6 @@ class AdminGuard
 
     protected function inHttpRequest(): bool
     {
-        return ! app()->runningInConsole();
+        return ! app()->runningInConsole() || app(HttpDispatch::class)->active;
     }
 }

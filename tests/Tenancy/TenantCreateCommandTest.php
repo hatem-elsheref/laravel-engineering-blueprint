@@ -49,7 +49,7 @@ it('creates a tenant', function () {
         ->expectsOutputToContain('✓ Run tenant migrations')
         ->expectsOutputToContain('– Seed tenant data (skipped: no Database\Seeders\TenantSeeder)')
         ->expectsOutputToContain('– Create default features (skipped: run engineering:install to set up features)')
-        ->expectsOutputToContain('– Create default settings (skipped: run engineering:install to set up features)')
+        ->expectsOutputToContain('– Create default settings (skipped: run engineering:install to set up settings)')
         ->expectsOutputToContain('Tenant "acme" is ready at http://acme.localhost')
         ->assertExitCode(0);
 

@@ -72,3 +72,15 @@ it('refuses an old route stub that would drop the feature gate', function () {
     expect(is_dir(app_path('Modules/Orders/Models')))->toBeFalse()
         ->and(file_get_contents(app_path('Modules/Orders/routes/api.php')))->toBe($this->routes);
 });
+
+it('refuses an old test stub that would drop the feature setup', function () {
+    File::ensureDirectoryExists(base_path('stubs/blueprint'));
+    $old = str_replace(['{{ featureSetup }}', '{{ featureTest }}'], '', file_get_contents(__DIR__.'/../../stubs/test.stub'));
+    file_put_contents(base_path('stubs/blueprint/test.stub'), $old);
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--feature' => 'orders'])
+        ->expectsOutputToContain('did not produce valid tests (no feature setup for orders)')
+        ->assertExitCode(1);
+
+    expect(is_dir(app_path('Modules/Orders/Models')))->toBeFalse();
+});

@@ -59,6 +59,7 @@ it('rejects values of the wrong type', function (string $key, mixed $input) {
     expect(fn () => Setting::set($key, $input))->toThrow(InvalidSettingValue::class);
 })->with([
     ['orders.limit', '5.5'],
+    ['orders.limit', '99999999999999999999'],
     ['orders.limit', 'x'],
     ['orders.limit', true],
     ['orders.rate', 'x'],
@@ -111,4 +112,18 @@ it('stores json', function () {
     app(SettingAdmin::class)->set('orders.statuses', ['a']);
 
     expect(DB::table('settings')->where('key', 'orders.statuses')->value('value'))->toBe('["a"]');
+});
+
+it('says a platform setting is not editable before checking its value', function () {
+    $this->actingAs(owner());
+
+    expect(fn () => Setting::set('orders.auto_confirm', 'maybe'))->toThrow(SettingNotEditable::class);
+});
+
+it('stamps created_at on new rows', function () {
+    app(SettingAdmin::class)->set('orders.limit', 3);
+    app(Best\Blueprint\Features\FeatureAdmin::class)->enable('reports');
+
+    expect(DB::table('settings')->where('key', 'orders.limit')->value('created_at'))->not->toBeNull()
+        ->and(DB::table('features')->where('key', 'reports')->value('created_at'))->not->toBeNull();
 });

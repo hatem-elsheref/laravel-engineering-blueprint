@@ -21,3 +21,11 @@ it('puts feature and setting tables in tenant migrations', function () {
         ->and(glob(database_path('migrations/tenant/*_create_settings_table.php')))->toHaveCount(1)
         ->and(glob(database_path('migrations/*_create_features_table.php')))->toBe([]);
 });
+
+it('tells existing tenants how to catch up', function () {
+    app(Best\Blueprint\Tenancy\TenantSetup::class)->run('old', 'old.localhost', 'tenant_old');
+
+    $this->artisan('engineering:install', ['--profile' => 'tenant-saas', '--no-interaction' => true])
+        ->expectsOutputToContain('Existing tenants: php artisan tenants:migrate && php artisan features:sync')
+        ->assertExitCode(0);
+});

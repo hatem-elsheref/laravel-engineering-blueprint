@@ -13,6 +13,7 @@ class BlueprintServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/blueprint.php', 'blueprint');
 
         // One request or one queued job; Laravel resets scoped instances between them.
+        $this->app->singleton(Flags\HttpDispatch::class);
         $this->app->scoped(Features\FeatureManager::class);
         $this->app->scoped(Settings\SettingManager::class);
 
@@ -25,6 +26,10 @@ class BlueprintServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->app['router']->aliasMiddleware('feature', Http\Middleware\EnsureFeatureEnabled::class);
+
+        // Admin writes are refused while a route is being handled, also in an app's own HTTP tests.
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Routing\Events\RouteMatched::class, fn () => $this->app->make(Flags\HttpDispatch::class)->active = true);
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Foundation\Http\Events\RequestHandled::class, fn () => $this->app->make(Flags\HttpDispatch::class)->active = false);
 
         if ($this->app->bound('blade.compiler')) {
             \Illuminate\Support\Facades\Blade::if('feature', fn (string $key): bool => $this->app->make(Features\FeatureManager::class)->enabled($key));

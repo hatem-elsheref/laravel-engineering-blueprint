@@ -34,18 +34,29 @@ class FeaturesSyncCommand extends Command
         }
 
         $ids = $this->option('tenant') ?: tenancy()->query()->pluck('id')->all();
+        $tenants = [];
 
+        // Check every requested tenant first, so a typo doesn't leave half the tenants synced.
         foreach ($ids as $id) {
-            $tenant = tenancy()->find($id);
+            $tenants[$id] = tenancy()->find($id) ?? null;
 
-            if ($tenant === null) {
+            if ($tenants[$id] === null) {
                 return $this->refuse("Tenant \"{$id}\" not found.");
             }
-
-            $added = $tenant->run(fn () => $admin->sync());
-            $this->line("added {$added} feature(s) to tenant \"{$id}\"");
         }
 
-        return self::SUCCESS;
+        $failed = false;
+
+        foreach ($tenants as $id => $tenant) {
+            try {
+                $added = $tenant->run(fn () => $admin->sync());
+                $this->line("added {$added} feature(s) to tenant \"{$id}\"");
+            } catch (\Throwable $e) {
+                $failed = true;
+                $this->error("tenant \"{$id}\": {$e->getMessage()}");
+            }
+        }
+
+        return $failed ? self::FAILURE : self::SUCCESS;
     }
 }

@@ -14,6 +14,12 @@ beforeEach(function () {
     createFlagTables();
     Route::middleware('feature:reports')->get('/reports', fn () => 'reports');
     Route::middleware('feature:nope')->get('/nope', fn () => 'nope');
+    Route::middleware('feature:orders,reports')->get('/both', fn () => 'both');
+    Route::get('/admin-write', function () {
+        app(FeatureAdmin::class)->disable('orders');
+
+        return 'wrote';
+    });
 });
 
 it('blocks routes of disabled features', function () {
@@ -72,4 +78,33 @@ it('has a blade directive', function () {
     app(FeatureAdmin::class)->enable('reports');
 
     expect(trim(Blade::render("@feature('reports') yes @endfeature")))->toBe('yes');
+});
+
+it('requires every listed feature', function () {
+    app(FeatureAdmin::class)->enable('orders');
+
+    $this->get('/both')->assertForbidden();
+
+    app(FeatureAdmin::class)->enable('reports');
+
+    $this->get('/both')->assertOk();
+});
+
+it('refuses admin writes inside http requests in tests too', function () {
+    app(FeatureAdmin::class)->enable('orders');
+
+    $this->get('/admin-write')->assertStatus(500);
+
+    expect(Feature::enabled('orders'))->toBeTrue();
+
+    app(FeatureAdmin::class)->disable('orders'); // back in console code after the request
+
+    expect(Feature::enabled('orders'))->toBeFalse();
+});
+
+it('fails gated jobs loudly on the sync queue', function () {
+    require_once __DIR__.'/../Fixtures/GatedJob.php';
+    config()->set('queue.default', 'sync');
+
+    expect(fn () => dispatch(new Best\Blueprint\Tests\Fixtures\GatedJob))->toThrow(FeatureDisabled::class);
 });

@@ -12,7 +12,7 @@ class SettingSetCommand extends Command
 
     protected $signature = 'setting:set
         {key : Setting key}
-        {value : JSON value (true, 5, ["a"], "text") or plain text}
+        {value : JSON value (true, 5, ["a"], "text") or plain text; put -- before negative numbers}
         {--tenant= : Tenant id (tenant-saas)}';
 
     protected $description = 'Set any setting (platform admin)';

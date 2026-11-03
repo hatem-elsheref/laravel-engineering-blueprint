@@ -52,7 +52,7 @@ class FeatureAdmin
         $this->guard->check();
         $this->features->assertDefined($key);
 
-        DB::table('features')->updateOrInsert(['key' => $key], ['enabled' => $enabled, 'updated_at' => now()]);
+        \Best\Blueprint\Settings\SettingManager::upsert('features', $key, ['enabled' => $enabled]);
         $this->features->forget();
     }
 }

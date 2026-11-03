@@ -44,6 +44,7 @@ Requires `composer require stancl/tenancy:^3.10`, then `php artisan engineering:
 
 - Keys live only in `app/Shared/Features/Features.php` (`defaults()`) and `app/Shared/Settings/Settings.php` (`definitions()`); never use string keys that aren't defined there.
 - Check features with `Feature::enabled(Features::ORDERS)` / `Feature::ensure(...)`; protect routes with `->middleware('feature:orders')` (or `make:crud ... --feature=orders`), jobs with `new RequireFeature(Features::ORDERS)` in `middleware()`, views with `@feature('orders')`. Hiding a button is not security.
+- `feature:a,b` requires every listed feature. In saas tests the features table starts empty (all off): call `app(FeatureAdmin::class)->sync()` or `->enable(...)` in `beforeEach`.
 - Never write feature states from app code. Platform admins use `php artisan feature:enable|disable <key> --tenant=<id>`, `feature:list`, `features:sync` (after adding a new key).
 - `Setting::get('app.language')` is typed with defaults. `Setting::set()` only works for `editable_by: tenant` settings, through their Gate `ability` (define `manage-settings`). Platform settings: `php artisan setting:set <key> <json> --tenant=<id>`.
 

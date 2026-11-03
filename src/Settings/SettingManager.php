@@ -45,7 +45,6 @@ class SettingManager
     public function set(string $key, mixed $value): void
     {
         $definition = $this->definition($key);
-        $converted = $this->convert($key, $definition, $value);
 
         if (($definition['editable_by'] ?? 'platform') !== 'tenant') {
             throw new SettingNotEditable("Setting \"{$key}\" can only be changed by the platform.");
@@ -56,6 +55,7 @@ class SettingManager
         }
 
         Gate::authorize($definition['ability']);
+        $converted = $this->convert($key, $definition, $value);
 
         if ($this->context->key() === null) {
             throw new RuntimeException('No tenant context.');
@@ -116,8 +116,22 @@ class SettingManager
 
     public function write(string $key, mixed $value): void
     {
-        DB::table('settings')->updateOrInsert(['key' => $key], ['value' => json_encode($value), 'updated_at' => now()]);
+        $this->upsert('settings', $key, ['value' => json_encode($value)]);
         $this->forget();
+    }
+
+    /**
+     * @param  array<string, mixed>  $values
+     */
+    public static function upsert(string $table, string $key, array $values): void
+    {
+        $now = now();
+
+        if (DB::table($table)->where('key', $key)->exists()) {
+            DB::table($table)->where('key', $key)->update($values + ['updated_at' => $now]);
+        } else {
+            DB::table($table)->insert(['key' => $key] + $values + ['created_at' => $now, 'updated_at' => $now]);
+        }
     }
 
     public function forget(): void

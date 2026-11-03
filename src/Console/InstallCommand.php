@@ -76,6 +76,10 @@ class InstallCommand extends Command
 
             if ($tenancyReady) {
                 $this->warn($setup->note());
+
+                if ($this->hasTenants()) {
+                    $this->line('Existing tenants: php artisan tenants:migrate && php artisan features:sync');
+                }
             }
         }
 
@@ -190,6 +194,15 @@ class InstallCommand extends Command
         return $this->savedProfile($writer)
             ?? (is_string($configured) ? Profile::tryFrom($configured) : null)
             ?? Profile::Modular;
+    }
+
+    private function hasTenants(): bool
+    {
+        try {
+            return tenancy()->query()->exists();
+        } catch (\Throwable) {
+            return false; // tenants table not migrated yet
+        }
     }
 
     private function renderSummary(Profile $profile, bool $tenancyReady = true): void
