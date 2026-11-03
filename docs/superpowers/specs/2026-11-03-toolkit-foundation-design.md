@@ -23,7 +23,7 @@ Build a **real, executable Composer package** — not a markdown/stub agent kit.
 |---|---|---|
 | Repo layout | **Package at repo root** (`composer.json`, `src/`, `config/`, `stubs/`, `tests/` at top level); starter app in `starter/` (Phase 9) | User choice; cleanest for publishing the package standalone |
 | Test framework | **Pest** for both package tests and generator-emitted CRUD tests | Matches Laravel 11/12 defaults |
-| Primary support target | **PHP 8.3+, Laravel 12** | Matches available environment (PHP 8.3.33, Laravel installer 5.31) |
+| Primary support target | **PHP 8.3+, Laravel 12 and 13** | Laravel 13 is current (bug fixes to Q3 2027); Laravel 12 is security-only until 2027-02-24. Both require PHP 8.3+ |
 | Package test harness | **orchestra/testbench** | Standard for Laravel package testing |
 | Command namespace | `engineering:*` | Master prompt uses `engineering:install` |
 
@@ -57,7 +57,7 @@ A versioned, installable Composer package that loads into a clean Laravel app, r
 ### 3.2 File layout produced
 
 ```
-composer.json          # php ^8.3, illuminate/support/console ^12; dev: orchestra/testbench, pestphp/pest
+composer.json          # php ^8.3, illuminate/support/console ^12 || ^13; dev: orchestra/testbench ^10 || ^11, pestphp/pest ^4
                        # autoload Best\Blueprint\ -> src/ ; autoload-dev Best\Blueprint\Tests\ -> tests/
                        # extra.laravel.providers -> BlueprintServiceProvider (auto-discovery)
 src/
@@ -120,7 +120,7 @@ Run with `vendor/bin/pest`.
 
 ### 3.7 Risks / notes
 
-- Testbench version must match Laravel 12 support — pin `orchestra/testbench ^10` (the Laravel 12 line) in dev deps; confirm at install time.
+- Testbench lines: `^10` = Laravel 12, `^11` = Laravel 13. Both are allowed; the suite is verified against each.
 - Package version string: read from composer's installed.json if available, else fall back to a `VERSION` constant to avoid a hard dependency.
 - Stub consolidation must not break the two markdown skills — update their path references in the same change.
 
