@@ -2,25 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\{{ moduleNamespace }}\Actions;
+namespace {{ namespace }};
 
-use App\Modules\{{ moduleNamespace }}\Data\{{ actionData }};
-use App\Modules\{{ moduleNamespace }}\Models\{{ model }};
-use Illuminate\Support\Facades\DB;
-
-final class {{ actionClass }}
+{{ imports }}final class {{ class }}
 {
-    public function execute({{ actionData }} $data): {{ model }}
+    public function handle({{ parameters }}): void
     {
-        return DB::transaction(function () use ($data): {{ model }} {
-            // {{ featureKey }} — enforce Feature::enabled when applicable
-
-            ${{ modelVariable }} = new {{ model }}();
-            // map $data → model
-
-            ${{ modelVariable }}->save();
-
-            return ${{ modelVariable }}->refresh();
-        });
-    }
+{{ body }}    }
 }

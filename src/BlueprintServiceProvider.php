@@ -36,6 +36,7 @@ class BlueprintServiceProvider extends ServiceProvider
             Console\InstallCommand::class,
             Console\MakeModuleCommand::class,
             Console\MakeDtoCommand::class,
+            Console\MakeActionCommand::class,
         ]);
     }
 }
