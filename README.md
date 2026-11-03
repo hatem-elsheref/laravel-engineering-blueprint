@@ -16,6 +16,14 @@ php artisan engineering:install --profile=modular
 php artisan engineering:about
 ```
 
+## Start a new project
+
+```bash
+bin/new-app ~/Sites/shop --profile=saas --locales=en,ar
+```
+
+Builds a fresh Laravel app with this package installed, Pest set up, your profile and languages configured, migrations run, and an example `Catalog` module (Product CRUD with Blade pages and JSON API) whose generated tests pass. Options: `--profile=basic|modular|saas|tenant-saas`, `--locales=en,ar` (first = default), `--laravel=^13.0`, `--no-example`. For `tenant-saas` it also installs stancl/tenancy and creates a `demo` tenant (`http://demo.localhost:8000`).
+
 ## Profiles
 
 | Profile | What you get |
@@ -119,6 +127,7 @@ The generated Blade pages and the package's own messages are translatable (`__()
 - The layout sets `<html lang dir>` (right-to-left for Arabic) and shows a language switcher when more than one language is configured.
 - `make:crud --web` adds entity and field names to `lang/<locale>.json` to translate.
 - Laravel's validation messages: `php artisan lang:publish`, then add `lang/ar/validation.php`.
+- Laravel's error pages (403, 404, …) show translated titles; their layout is Laravel's (`<html lang="en">`). For right-to-left error pages run `php artisan vendor:publish --tag=laravel-errors` and set `lang`/`dir` in `resources/views/errors/layout.blade.php` like the blueprint layout.
 
 ## Agent kit
 

@@ -23,7 +23,8 @@ final class Settings
     {
         return [
             self::APP_NAME => ['type' => 'string', 'default' => 'My App', 'editable_by' => 'tenant', 'ability' => 'manage-settings'],
-            self::APP_LANGUAGE => ['type' => 'string', 'default' => 'en', 'editable_by' => 'tenant', 'ability' => 'manage-settings'],
+            // Defaults to the app's language (APP_LOCALE); must be one of blueprint.locales to take effect.
+            self::APP_LANGUAGE => ['type' => 'string', 'default' => config('app.locale', 'en'), 'editable_by' => 'tenant', 'ability' => 'manage-settings'],
             self::ORDERS_AUTO_CONFIRM => ['type' => 'bool', 'default' => false, 'editable_by' => 'platform'],
         ];
     }

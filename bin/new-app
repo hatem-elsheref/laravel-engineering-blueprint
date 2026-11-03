@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+# Create a ready-to-work Laravel app that uses this package.
+#
+#   bin/new-app <path> [--profile=modular] [--locales=en,ar] [--laravel=^13.0] [--no-example]
+#
+#   --profile     basic | modular | saas | tenant-saas            (default: modular)
+#   --locales     languages the app serves, first = default        (default: en)
+#   --laravel     laravel/laravel version constraint               (default: ^13.0)
+#   --no-example  skip the example Catalog module (Product CRUD, Blade + JSON API)
+#
+# The package is installed from this repository (a Composer path repository), so changes here are
+# picked up by the app. Every generated test runs at the end; the script fails if any test fails.
+set -uo pipefail
+
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TARGET=""
+PROFILE="modular"
+LOCALES="en"
+LARAVEL="^13.0"
+EXAMPLE=1
+
+for arg in "$@"; do
+  case "$arg" in
+    --profile=*) PROFILE="${arg#*=}" ;;
+    --locales=*) LOCALES="${arg#*=}" ;;
+    --laravel=*) LARAVEL="${arg#*=}" ;;
+    --no-example) EXAMPLE=0 ;;
+    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    -*) echo "new-app: unknown option $arg" >&2; exit 2 ;;
+    *) if [[ -z "$TARGET" ]]; then TARGET="$arg"; else echo "new-app: unexpected argument $arg" >&2; exit 2; fi ;;
+  esac
+done
+
+say() { printf 'new-app: %s\n' "$*"; }
+fail() { say "✗ $*"; exit 1; }
+
+[[ -n "$TARGET" ]] || { sed -n '2,12p' "$0"; exit 2; }
+case "$PROFILE" in basic|modular|saas|tenant-saas) ;; *) fail "unknown profile \"$PROFILE\" (basic, modular, saas, tenant-saas)" ;; esac
+[[ "$LOCALES" =~ ^[a-z]{2}(_[A-Z]{2})?(,[a-z]{2}(_[A-Z]{2})?)*$ ]] || fail "--locales must look like en or en,ar"
+if [[ -e "$TARGET" ]] && [[ -n "$(ls -A "$TARGET" 2>/dev/null)" ]]; then fail "$TARGET already exists and is not empty"; fi
+
+LOG="$(mktemp "${TMPDIR:-/tmp}/new-app.XXXXXX")"
+step() {
+  local label="$1"; shift
+  if ! "$@" >>"$LOG" 2>&1; then
+    say "✗ $label"
+    tail -n 25 "$LOG" | sed 's/^/    /'
+    say "full log: $LOG"
+    exit 1
+  fi
+  say "✓ $label"
+}
+artisan() { (cd "$TARGET" && php artisan "$@"); }
+
+step "create Laravel app ($LARAVEL)" composer create-project "laravel/laravel:$LARAVEL" "$TARGET" --prefer-dist --no-interaction -q
+TARGET="$(cd "$TARGET" && pwd)"
+
+step "use this package from $REPO" bash -c "cd '$TARGET' && composer config repositories.blueprint path '$REPO' && composer config minimum-stability dev && composer config prefer-stable true"
+step "install best/laravel-engineering-blueprint" bash -c "cd '$TARGET' && composer require 'best/laravel-engineering-blueprint:*' -W --no-interaction -q"
+step "install Pest" bash -c "cd '$TARGET' && composer remove phpunit/phpunit --dev --no-interaction -q && composer require pestphp/pest --dev -W --no-interaction -q && (./vendor/bin/pest --init --no-interaction </dev/null >/dev/null 2>&1 || true)"
+
+if [[ "$PROFILE" == "tenant-saas" ]]; then
+  step "install stancl/tenancy" bash -c "cd '$TARGET' && composer require 'stancl/tenancy:^3.10' -W --no-interaction -q"
+  # Tenant cache isolation needs a taggable store. array works locally without a server;
+  # use redis (or memcached) in production.
+  sed -i.bak 's/^CACHE_STORE=.*/CACHE_STORE=array/' "$TARGET/.env" && rm -f "$TARGET/.env.bak"
+fi
+
+step "engineering:install --profile=$PROFILE" artisan engineering:install "--profile=$PROFILE" -n
+
+LOCALES_PHP="'${LOCALES//,/', '}'"
+DEFAULT_LOCALE="${LOCALES%%,*}"
+step "languages: $LOCALES" bash -c "cd '$TARGET' && sed -i.bak \"s/'locales' => \\['en'\\]/'locales' => [$LOCALES_PHP]/\" config/blueprint.php && rm -f config/blueprint.php.bak && sed -i.bak 's/^APP_LOCALE=.*/APP_LOCALE=$DEFAULT_LOCALE/' .env && rm -f .env.bak"
+grep -q "'locales' => \[$LOCALES_PHP\]" "$TARGET/config/blueprint.php" || fail "could not set blueprint.locales in config/blueprint.php"
+
+step "migrate" artisan migrate --force
+
+case "$PROFILE" in
+  saas) step "features:sync" artisan features:sync ;;
+  tenant-saas) step "tenant:create demo" artisan tenant:create demo ;;
+esac
+
+if [[ "$EXAMPLE" == 1 && "$PROFILE" != "basic" ]]; then
+  FEATURE=()
+  [[ "$PROFILE" == "saas" || "$PROFILE" == "tenant-saas" ]] && FEATURE=(--feature=orders)
+  step "example module Catalog (Blade + JSON API)" artisan make:module Catalog --api --web
+  step "example CRUD Catalog/Product" artisan make:crud Catalog Product --api --web "${FEATURE[@]}" '--fields=name:string,price:float,active:bool,tags:array'
+  if [[ "$PROFILE" == "tenant-saas" ]]; then
+    step "tenants:migrate" artisan tenants:migrate
+    step "enable the orders feature for tenant demo" artisan feature:enable orders --tenant=demo
+  else
+    step "migrate example tables" artisan migrate --force
+  fi
+fi
+
+step "run the tests" artisan test
+rm -f "$LOG"
+
+echo
+say "ready: $TARGET"
+say "  cd $TARGET && php artisan serve"
+case "$PROFILE" in
+  tenant-saas)
+    say "  tenant site:  http://demo.localhost:8000/products   (central: http://localhost:8000)"
+    say "  production: set CACHE_STORE=redis (tenant cache isolation needs tags)" ;;
+  basic) say "  http://localhost:8000" ;;
+  *) [[ "$EXAMPLE" == 1 ]] && say "  pages: http://localhost:8000/products   API: http://localhost:8000/api/products" ;;
+esac
+[[ "$EXAMPLE" == 1 && "$PROFILE" != "basic" ]] && say "  the example pages need a signed-in user (the generated policy denies guests); add a starter kit (Breeze/Jetstream) or your own login"
+[[ "$PROFILE" == "saas" || "$PROFILE" == "tenant-saas" ]] && say "  define the manage-settings Gate ability to let tenant owners change settings"
+[[ "$LOCALES" == *,* ]] && say "  translate the strings in lang/*.json (entity and field names were added for you)"
+exit 0

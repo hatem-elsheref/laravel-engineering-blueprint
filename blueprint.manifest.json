@@ -1,9 +1,9 @@
 {
   "name": "laravel-engineering-blueprint",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "phase": {
-    "current": 8,
-    "name": "Blade CRUD + quality pass",
+    "current": 9,
+    "name": "Starter app generator (bin/new-app) + interface translations",
     "specs": [
       "docs/PHASE-0.md",
       "docs/ARCHITECTURE.md",

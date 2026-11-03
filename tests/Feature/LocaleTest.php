@@ -3,6 +3,7 @@
 use Best\Blueprint\Features\FeatureDisabled;
 use Best\Blueprint\Settings\SettingAdmin;
 use Best\Blueprint\Tests\Fixtures\LocaleSettings;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 
 beforeEach(function () {
@@ -58,4 +59,11 @@ it('ships arabic for the package strings', function () {
         ->and(__(':item created.', ['item' => 'X']))->toBe('تم إنشاء X.');
 
     $this->getJson('/api/blocked', ['Accept-Language' => 'ar'])->assertForbidden()->assertJsonPath('message', 'هذه الميزة غير مفعّلة.');
+});
+
+it('translates laravel authorization messages', function () {
+    Route::middleware('api')->get('/api/denied', fn () => Gate::authorize('nobody'));
+
+    $this->getJson('/api/denied', ['Accept-Language' => 'ar'])->assertForbidden()->assertJsonPath('message', 'هذا الإجراء غير مصرح به.');
+    $this->getJson('/api/denied', ['Accept-Language' => 'en'])->assertForbidden()->assertJsonPath('message', 'This action is unauthorized.');
 });

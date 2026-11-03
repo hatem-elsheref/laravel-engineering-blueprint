@@ -27,7 +27,7 @@ it('sets up features and settings for saas', function () {
     expect(file_get_contents(app_path('Shared/Features/Features.php')))
         ->toContain('namespace App\Shared\Features;')->toContain('public static function defaults(): array')
         ->and(file_get_contents(app_path('Shared/Settings/Settings.php')))
-        ->toContain('namespace App\Shared\Settings;')->toContain("'ability' => 'manage-settings'")
+        ->toContain('namespace App\Shared\Settings;')->toContain("'ability' => 'manage-settings'")->toContain("'default' => config('app.locale', 'en')")
         ->and(glob(database_path('migrations/*_create_features_table.php')))->toHaveCount(1)
         ->and(glob(database_path('migrations/*_create_settings_table.php')))->toHaveCount(1);
 

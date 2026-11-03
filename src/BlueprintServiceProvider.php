@@ -4,7 +4,10 @@ namespace Best\Blueprint;
 
 use Best\Blueprint\Support\Compatibility;
 use Best\Blueprint\Tenancy\TenancyDetector;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\Facades\Blade;
@@ -42,6 +45,19 @@ class BlueprintServiceProvider extends ServiceProvider
 
         // Interface translations: package strings, the language switch route, per-request locale.
         $this->loadJsonTranslationsFrom(__DIR__.'/../lang');
+
+        // Laravel's own "This action is unauthorized." is not translated; translate it per request language.
+        $this->callAfterResolving(ExceptionHandler::class, function (mixed $handler): void {
+            if ($handler instanceof Handler) {
+                $handler->map(
+                    AuthorizationException::class,
+                    fn (AuthorizationException $e) => $e->getMessage() === 'This action is unauthorized.'
+                        ? (new AuthorizationException(__('This action is unauthorized.'), $e->getCode(), $e))->withStatus($e->status())
+                        : $e,
+                );
+            }
+        });
+
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
         $kernel = $this->app->make(Kernel::class);
         $kernel->appendMiddlewareToGroup('web', Http\Middleware\SetLocale::class);

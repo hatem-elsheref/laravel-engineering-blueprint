@@ -8,7 +8,7 @@ final class Blueprint
 {
     public const NAME = 'best/laravel-engineering-blueprint';
 
-    public const VERSION = '0.8.0';
+    public const VERSION = '0.9.0';
 
     /**
      * The installed package version when Composer knows a tagged release, otherwise VERSION.
