@@ -111,10 +111,21 @@ profile_saas() {
 profile_tenant_saas() {
   local app="$1"
   new_app "$app" 1 || return 1
-  run "$app" php artisan engineering:install --profile=tenant-saas --permissions -n || return 1
+  run "$app" php artisan engineering:install --profile=tenant-saas -n || return 1
   run "$app" php artisan migrate --force || return 1
   run "$app" php artisan tenant:create acme || return 1
-  run "$app" php artisan tenant:create acme || return 1 # retry-safe: everything "already done"
+  # Permissions added to an app that already has a tenant: the sync refuses until the tenant is migrated.
+  run "$app" php artisan engineering:install --profile=tenant-saas --permissions -n || return 1
+  if (cd "$app" && php artisan permissions:sync) >>"$LOG" 2>&1; then
+    log "  ✗ permissions:sync should refuse a tenant without permission tables"; return 1
+  fi
+  log "  ✓ permissions:sync refuses a tenant without permission tables"
+  run "$app" php artisan migrate --force || return 1
+  run "$app" php artisan tenants:migrate || return 1
+  run "$app" php artisan permissions:sync || return 1
+  run "$app" php artisan permissions:sync --central || return 1
+  run "$app" php artisan tenant:create globex || return 1
+  run "$app" php artisan tenant:create globex || return 1 # retry-safe: everything "already done"
   run "$app" php artisan make:module Shop --api --web || return 1
   run "$app" php artisan make:crud Shop Product --api --web --feature=orders --permissions --owned "--fields=$FIELDS" || return 1
   run "$app" php artisan make:module Admin --api --web --central || return 1

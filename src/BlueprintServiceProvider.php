@@ -7,6 +7,7 @@ use Best\Blueprint\Tenancy\TenancyDetector;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Routing\Events\RouteMatched;
@@ -73,14 +74,18 @@ class BlueprintServiceProvider extends ServiceProvider
         }
 
         // The super-admin role passes every check. Returns true or null, never false, so it can't block anything.
+        // Without the role tables (a tenant not migrated yet) nobody is super-admin; the policies still decide.
         if ($this->app->make(Permissions\PermissionsDetector::class)->spatie()) {
             Gate::before(function (mixed $user): ?bool {
-                if (is_object($user) && method_exists($user, 'hasRole')
-                    && $user->hasRole((string) config('blueprint.super_admin', 'super-admin'), (string) config('blueprint.permission_guard', 'web'))) {
-                    return true;
+                if (! is_object($user) || ! method_exists($user, 'hasRole')) {
+                    return null;
                 }
 
-                return null;
+                try {
+                    return $user->hasRole((string) config('blueprint.super_admin', 'super-admin'), (string) config('blueprint.permission_guard', 'web')) ? true : null;
+                } catch (QueryException) {
+                    return null;
+                }
             });
         }
 

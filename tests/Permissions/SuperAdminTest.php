@@ -37,3 +37,11 @@ it('does not error for a user model without roles', function () {
 
     expect(Gate::forUser($user)->allows('anything'))->toBeFalse();
 });
+
+it('leaves the check to the policies when the role tables are missing (a tenant not migrated yet)', function () {
+    $user = RoleUser::create(['name' => 'plain']);
+    $this->app['db']->connection()->getSchemaBuilder()->drop('model_has_roles');
+
+    expect(Gate::forUser($user)->allows('view-thing'))->toBeTrue()
+        ->and(Gate::forUser($user)->allows('update-thing'))->toBeFalse();
+});

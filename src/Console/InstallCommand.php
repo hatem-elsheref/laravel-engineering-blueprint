@@ -272,8 +272,11 @@ class InstallCommand extends Command
 
     private function renderSummary(Profile $profile, bool $tenancyReady = true): void
     {
+        // Existing tenants and the central database need the new tables before a sync (and before any gate check).
         if ($this->option('permissions')) {
-            $this->line('Permissions: define roles in the Permissions class, then run php artisan permissions:sync');
+            $this->line($profile->usesTenancy()
+                ? 'Permissions: define roles in the Permissions (tenants) and CentralPermissions (central) classes, then run php artisan migrate && php artisan tenants:migrate && php artisan permissions:sync && php artisan permissions:sync --central'
+                : 'Permissions: define roles in the Permissions class, then run php artisan migrate && php artisan permissions:sync');
         }
 
         $this->newLine();

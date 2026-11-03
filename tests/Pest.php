@@ -1,5 +1,6 @@
 <?php
 
+use Best\Blueprint\Permissions\PermissionsDetector;
 use Best\Blueprint\Support\StubRenderer;
 use Best\Blueprint\Tests\Fixtures\TestFeatures;
 use Best\Blueprint\Tests\Fixtures\TestSettings;
@@ -110,7 +111,7 @@ function makePermissionDefinitions(string ...$classes): void
 /** Pretends spatie/laravel-permission 6.x is installed. */
 function useOldSpatie(): void
 {
-    app()->instance(\Best\Blueprint\Permissions\PermissionsDetector::class, new class extends \Best\Blueprint\Permissions\PermissionsDetector
+    app()->instance(PermissionsDetector::class, new class extends PermissionsDetector
     {
         protected function installedVersion(): ?string
         {

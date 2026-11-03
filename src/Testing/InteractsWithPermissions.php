@@ -3,13 +3,14 @@
 namespace Best\Blueprint\Testing;
 
 use Illuminate\Contracts\Auth\Authenticatable;
+use Spatie\Permission\Contracts\Role as RoleContract;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
  * For tests of permission-protected code, on whichever database is current (central or tenant).
- * Needs spatie/laravel-permission.
+ * Needs spatie/laravel-permission; uses the permission and role models it is configured with.
  *
  * grantPermissions() REPLACES all the user's roles (a super-admin role set earlier included) with one test
  * role, so the user ends up with exactly the given permissions. makeSuperAdmin() is additive.
@@ -25,10 +26,10 @@ trait InteractsWithPermissions
         $this->forgetPermissionCache();
 
         foreach ($names as $name) {
-            Permission::findOrCreate($name, $guard);
+            $this->permissionModel()::findOrCreate($name, $guard);
         }
 
-        $role = Role::findOrCreate('test-role-'.substr(sha1(implode('|', $names)), 0, 8), $guard);
+        $role = $this->roleModel()::findOrCreate('test-role-'.substr(sha1(implode('|', $names)), 0, 8), $guard);
         $role->syncPermissions($names);
 
         $this->assignTestRole($user, $role, replace: true);
@@ -38,12 +39,12 @@ trait InteractsWithPermissions
     {
         $this->forgetPermissionCache();
 
-        $role = Role::findOrCreate((string) config('blueprint.super_admin', 'super-admin'), $this->permissionTestGuard());
+        $role = $this->roleModel()::findOrCreate((string) config('blueprint.super_admin', 'super-admin'), $this->permissionTestGuard());
 
         $this->assignTestRole($user, $role);
     }
 
-    private function assignTestRole(Authenticatable $user, Role $role, bool $replace = false): void
+    private function assignTestRole(Authenticatable $user, RoleContract $role, bool $replace = false): void
     {
         $replace ? $user->syncRoles([$role]) : $user->assignRole($role);
 
@@ -52,6 +53,18 @@ trait InteractsWithPermissions
             $user->unsetRelation('roles')->unsetRelation('permissions');
         }
         $this->forgetPermissionCache();
+    }
+
+    /** @return class-string<Permission> */
+    private function permissionModel(): string
+    {
+        return app(PermissionRegistrar::class)->getPermissionClass();
+    }
+
+    /** @return class-string<Role> */
+    private function roleModel(): string
+    {
+        return app(PermissionRegistrar::class)->getRoleClass();
     }
 
     private function permissionTestGuard(): string

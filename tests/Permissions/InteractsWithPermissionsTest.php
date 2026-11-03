@@ -1,9 +1,12 @@
 <?php
 
 use Best\Blueprint\Testing\InteractsWithPermissions;
+use Best\Blueprint\Tests\Fixtures\AclPermission;
+use Best\Blueprint\Tests\Fixtures\AclRole;
 use Best\Blueprint\Tests\Fixtures\RoleUser;
 use Illuminate\Support\Facades\Gate;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 uses(InteractsWithPermissions::class);
 
@@ -66,4 +69,18 @@ it('makes a super-admin pass any gate check', function () {
 
     expect(Gate::forUser($user)->allows('x'))->toBeTrue()
         ->and(Role::where('name', 'super-admin')->count())->toBe(1);
+});
+
+it('uses the role and permission models spatie is configured with', function () {
+    require_once __DIR__.'/../Fixtures/AclModels.php';
+    AclPermission::$created = AclRole::$created = [];
+    app(PermissionRegistrar::class)->setPermissionClass(AclPermission::class)->setRoleClass(AclRole::class);
+
+    $user = RoleUser::create(['name' => 'a']);
+    $this->grantPermissions($user, 'x.view');
+    $this->makeSuperAdmin($user);
+
+    expect(AclPermission::$created)->toBe(['x.view'])
+        ->and(AclRole::$created)->toHaveCount(2)->toContain('super-admin')
+        ->and($user->checkPermissionTo('x.view'))->toBeTrue();
 });

@@ -1,11 +1,15 @@
 <?php
 
 use Best\Blueprint\Permissions\PermissionsDetector;
+use Best\Blueprint\Tests\Fixtures\AclPermission;
+use Best\Blueprint\Tests\Fixtures\AclRole;
 use Best\Blueprint\Tests\Fixtures\TestPermissions;
 use Best\Blueprint\Tests\Fixtures\TypoPermissions;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function () {
     require_once __DIR__.'/../Fixtures/TestPermissions.php';
@@ -119,3 +123,36 @@ it('refuses an unsupported spatie setup', function (Closure $setup, string $mess
 
     expect(Permission::query()->count())->toBe(0);
 })->with('unsupported spatie');
+
+it('tells the user to migrate when the permission tables are missing', function () {
+    Schema::drop('role_has_permissions');
+    Schema::drop('model_has_permissions');
+    Schema::drop('permissions');
+
+    $this->artisan('permissions:sync')
+        ->expectsOutputToContain('no permission tables — run php artisan migrate')
+        ->assertExitCode(1);
+});
+
+it('writes with the permission and role models spatie is configured with', function () {
+    require_once __DIR__.'/../Fixtures/AclModels.php';
+    AclPermission::$created = AclRole::$created = [];
+    app(PermissionRegistrar::class)->setPermissionClass(AclPermission::class)->setRoleClass(AclRole::class);
+
+    $this->artisan('permissions:sync')->assertExitCode(0);
+
+    expect(AclPermission::$created)->toBe(['orders.view', 'products.update', 'products.view'])
+        ->and(AclRole::$created)->toContain('editor', 'super-admin');
+});
+
+it('finds permission tables under their configured names', function () {
+    foreach (['role_has_permissions', 'model_has_roles', 'model_has_permissions', 'roles', 'permissions'] as $table) {
+        Schema::drop($table);
+    }
+    config()->set('permission.table_names.permissions', 'acl_permissions');
+    (require __DIR__.'/../../vendor/spatie/laravel-permission/database/migrations/create_permission_tables.php.stub')->up();
+
+    $this->artisan('permissions:sync')->assertExitCode(0);
+
+    expect(DB::table('acl_permissions')->count())->toBe(3);
+});

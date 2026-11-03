@@ -1,5 +1,6 @@
 <?php
 
+use Best\Blueprint\Permissions\PermissionsDetector;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\Process\Process;
 
@@ -89,5 +90,11 @@ it('refuses an unsupported spatie setup before changing anything', function (Clo
 })->with('unsupported spatie');
 
 it('accepts spatie 8', function () {
-    expect(app(\Best\Blueprint\Permissions\PermissionsDetector::class)->unsupported())->toBeNull();
+    expect(app(PermissionsDetector::class)->unsupported())->toBeNull();
+});
+
+it('tells single-database apps to migrate and sync', function () {
+    installPermissions()
+        ->expectsOutputToContain('Permissions: define roles in the Permissions class, then run php artisan migrate && php artisan permissions:sync')
+        ->assertExitCode(0);
 });

@@ -15,6 +15,9 @@ use Throwable;
 
 class PermissionsSyncCommand extends Command
 {
+    /** A database without spatie's tables: an existing app or tenant that has not been migrated since install. */
+    private const NO_TABLES = 'no permission tables — run ';
+
     protected $signature = 'permissions:sync {--prune : Delete permissions and roles that are not in the definitions} {--tenant=* : Tenant ids (tenant-saas); all tenants when omitted} {--central : Sync the central database with CentralPermissions (tenant-saas)}';
 
     protected $description = 'Create the defined permissions and roles, and set each defined role to exactly what the file says';
@@ -50,6 +53,10 @@ class PermissionsSyncCommand extends Command
         }
 
         if (! $tenancy) {
+            if (! PermissionSync::tablesExist()) {
+                return $this->refuse(self::NO_TABLES.'php artisan migrate');
+            }
+
             $this->report('', '', $sync->run($set, $prune));
 
             return self::SUCCESS;
@@ -64,6 +71,10 @@ class PermissionsSyncCommand extends Command
         }
 
         if ($central) {
+            if (! PermissionSync::tablesExist()) {
+                return $this->refuse('central: '.self::NO_TABLES.'php artisan migrate');
+            }
+
             $this->report('central: ', '--central ', $sync->run($set, $prune));
 
             return self::SUCCESS;
@@ -92,7 +103,16 @@ class PermissionsSyncCommand extends Command
 
         foreach ($tenants as $id => $tenant) {
             try {
-                $this->report("tenant \"{$id}\": ", "--tenant={$id} ", $tenant->run(fn () => $sync->run($set, $prune)));
+                $result = $tenant->run(fn () => PermissionSync::tablesExist() ? $sync->run($set, $prune) : null);
+
+                if ($result === null) {
+                    $failed = true;
+                    $this->error("Tenant \"{$id}\": ".self::NO_TABLES.'php artisan tenants:migrate');
+
+                    continue;
+                }
+
+                $this->report("tenant \"{$id}\": ", "--tenant={$id} ", $result);
             } catch (Throwable $e) {
                 // stancl's run() leaves tenancy on when the callback throws; end() is a no-op otherwise.
                 tenancy()->end();

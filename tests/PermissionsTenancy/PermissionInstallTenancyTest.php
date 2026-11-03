@@ -43,3 +43,9 @@ it('creates both definitions and both migrations in tenant-saas', function () {
     expect(glob(database_path('migrations/*_create_permission_tables.php')))->toHaveCount(1)
         ->and(glob(database_path('migrations/tenant/*_create_permission_tables.php')))->toHaveCount(1);
 });
+
+it('tells tenant-saas apps to migrate and sync every tenant and the central database', function () {
+    $this->artisan('engineering:install', ['--profile' => 'tenant-saas', '--permissions' => true, '--no-interaction' => true])
+        ->expectsOutputToContain('Permissions: define roles in the Permissions (tenants) and CentralPermissions (central) classes, then run php artisan migrate && php artisan tenants:migrate && php artisan permissions:sync && php artisan permissions:sync --central')
+        ->assertExitCode(0);
+});

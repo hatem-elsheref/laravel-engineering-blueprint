@@ -136,7 +136,7 @@ class TenantSetup
                 $set = PermissionSet::fromClass($class);
 
                 return $tenant->run(function () use ($set) {
-                    if (! Schema::hasTable('permissions')) {
+                    if (! PermissionSync::tablesExist()) {
                         return ['skipped', 'no permissions table in the tenant database'];
                     }
 

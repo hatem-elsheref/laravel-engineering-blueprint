@@ -251,3 +251,39 @@ it('rebuilds the loaded permissions on every tenant switch, also when spatie kee
         ->and($loaded())->toBe(['central.only'])
         ->and(tenancy()->find('a')->run($loaded))->toBe(['orders.view', 'products.update', 'products.view']);
 });
+
+it('tells the user to migrate a tenant without permission tables, and still syncs the others', function () {
+    tenancy()->find('a')->run(function () {
+        Schema::drop('role_has_permissions');
+        Schema::drop('model_has_permissions');
+        Schema::drop('permissions');
+    });
+    tenancy()->find('b')->run(fn () => DB::table('permissions')->delete());
+
+    $this->artisan('permissions:sync')
+        ->expectsOutputToContain('Tenant "a": no permission tables — run php artisan tenants:migrate')
+        ->assertExitCode(1);
+
+    expect(tenantPermissionNames('b'))->toHaveCount(3)
+        ->and(tenancy()->initialized)->toBeFalse();
+});
+
+it('tells the user to migrate when the central database has no permission tables', function () {
+    Schema::connection('testing')->drop('role_has_permissions');
+    Schema::connection('testing')->drop('model_has_permissions');
+    Schema::connection('testing')->drop('permissions');
+
+    $this->artisan('permissions:sync', ['--central' => true])
+        ->expectsOutputToContain('central: no permission tables — run php artisan migrate')
+        ->assertExitCode(1);
+});
+
+it('tenant:create finds the permission tables under their configured names', function () {
+    config()->set('permission.table_names.permissions', 'acl_permissions');
+
+    $this->artisan('tenant:create', ['name' => 'c'])
+        ->expectsOutputToContain('✓ Sync permissions')
+        ->assertExitCode(0);
+
+    expect(tenancy()->find('c')->run(fn () => DB::table('acl_permissions')->count()))->toBe(3);
+});
