@@ -1,7 +1,7 @@
 # Phase 3 — `make:module` — Design Spec
 
 **Date:** 2026-11-03
-**Status:** Draft for approval
+**Status:** Approved
 **Builds on:** Phase 1 (package, config, stubs publishing) and Phase 2 (`Profile`, `engineering:install`).
 **Supports:** PHP 8.3+, Laravel 12 and 13.
 **Authority:** `docs/ARCHITECTURE.md` §1.2 and §1.4, `docs/NAMING.md`.
