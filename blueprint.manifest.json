@@ -1,9 +1,9 @@
 {
   "name": "laravel-engineering-blueprint",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "phase": {
-    "current": 6,
-    "name": "Multi-tenancy (stancl/tenancy, tenant:create, tenant-aware generators)",
+    "current": 7,
+    "name": "Features and Settings",
     "specs": [
       "docs/PHASE-0.md",
       "docs/ARCHITECTURE.md",

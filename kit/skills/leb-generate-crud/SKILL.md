@@ -40,6 +40,13 @@ Requires `composer require stancl/tenancy:^3.10`, then `php artisan engineering:
 - Use `CACHE_STORE=redis` (or memcached): tenant cache isolation needs tags; `database`/`file` stores fail inside tenants.
 - Central module routes are named `central.*` (e.g. `route('central.plans.index')`).
 
+## Features and settings (saas, tenant-saas)
+
+- Keys live only in `app/Shared/Features/Features.php` (`defaults()`) and `app/Shared/Settings/Settings.php` (`definitions()`); never use string keys that aren't defined there.
+- Check features with `Feature::enabled(Features::ORDERS)` / `Feature::ensure(...)`; protect routes with `->middleware('feature:orders')` (or `make:crud ... --feature=orders`), jobs with `new RequireFeature(Features::ORDERS)` in `middleware()`, views with `@feature('orders')`. Hiding a button is not security.
+- Never write feature states from app code. Platform admins use `php artisan feature:enable|disable <key> --tenant=<id>`, `feature:list`, `features:sync` (after adding a new key).
+- `Setting::get('app.language')` is typed with defaults. `Setting::set()` only works for `editable_by: tenant` settings, through their Gate `ability` (define `manage-settings`). Platform settings: `php artisan setting:set <key> <json> --tenant=<id>`.
+
 ## Customizing output
 
 All stubs are rendered by the commands above. To customize them, run `php artisan vendor:publish --tag=blueprint-stubs` and edit `stubs/blueprint/*.stub` in the project; never hand-fill placeholders.

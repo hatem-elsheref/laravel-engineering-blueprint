@@ -28,3 +28,7 @@ To customize, publish them with `php artisan vendor:publish --tag=blueprint-stub
 | `test-tenant.stub` | `make:crud` in a tenant module (tenant-saas) — Pest tests on a real test tenant |
 | `tenant-model.stub` | `engineering:install --profile=tenant-saas` — `app/Models/Tenant.php` |
 | `tenant-routes.stub` | `engineering:install --profile=tenant-saas` — empty `routes/tenant.php` group |
+| `features-definitions.stub` | `engineering:install` (saas, tenant-saas) — `app/Shared/Features/Features.php` |
+| `settings-definitions.stub` | `engineering:install` (saas, tenant-saas) — `app/Shared/Settings/Settings.php` |
+| `features-migration.stub` | `engineering:install` — `features` table (tenant migrations in tenant-saas) |
+| `settings-migration.stub` | `engineering:install` — `settings` table (tenant migrations in tenant-saas) |
