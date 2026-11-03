@@ -8,8 +8,8 @@ Placeholders for future `make:module` / `make:crud`. Replace `{{ ... }}` tokens 
 | `model.stub` | Eloquent model |
 | `migration.stub` | Create table migration |
 | `request.stub` | Form request (store/update) |
-| `dto.stub` | Input DTO |
-| `action.stub` | Single action class |
+| `dto.stub` | Data class (`make:dto`) |
+| `action.stub` | Action class (`make:action`) |
 | `controller.stub` | Invokable controller |
 | `resource.stub` | API resource |
 | `policy.stub` | Policy |
