@@ -134,3 +134,9 @@ it('blocks both sides when the feature is disabled', function () {
     $this->actingAs($this->user)->get('/books')->assertForbidden();
     $this->actingAs($this->user)->getJson('/api/books')->assertForbidden();
 });
+
+it('rejects nested arrays instead of storing them', function () {
+    $this->actingAs($this->user)->postJson('/api/books', array_merge(bookForm(), ['tags' => [['x'], ['k' => 'v']]]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['tags.0', 'tags.1']);
+});

@@ -14,7 +14,7 @@ beforeEach(function () {
 });
 
 afterEach(function () {
-    File::delete([config_path('blueprint.php'), app()->getCachedConfigPath()]);
+    File::delete([config_path('blueprint.php'), config_path('blueprint.php.bak'), app()->getCachedConfigPath()]);
     File::deleteDirectory(app_path('Shared'));
     File::cleanDirectory(database_path('migrations'));
 });
@@ -138,8 +138,11 @@ it('force overwrites edits', function () {
     editConfig("'app/Modules'", "'src/Modules'");
 
     install(['--profile' => 'saas', '--force' => true])
+        ->expectsOutputToContain('backed up config/blueprint.php to config/blueprint.php.bak')
         ->expectsOutputToContain('overwrote config/blueprint.php')
         ->assertExitCode(0);
+
+    expect(file_get_contents(config_path('blueprint.php.bak')))->toContain("'src/Modules'");
 
     expect(installedConfig())->not->toContain("'src/Modules'")->toContain("'profile' => 'saas',");
 });

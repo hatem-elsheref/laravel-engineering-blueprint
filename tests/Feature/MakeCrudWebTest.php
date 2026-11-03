@@ -175,7 +175,7 @@ it('refuses a taken web route name', function () {
 
 it('words the note for web-only cruds', function () {
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--web' => true])
-        ->expectsOutputToContain('Note: routes are protected by OrderPolicy (guests get 403).')
+        ->expectsOutputToContain('Note: OrderPolicy lets every signed-in user do everything (guests get 403). Tighten it for your app.')
         ->doesntExpectOutputToContain('token APIs')
         ->assertExitCode(0);
 });

@@ -2,6 +2,7 @@
 
 use App\Models\Tenant;
 use Best\Blueprint\Facades\Feature;
+use Best\Blueprint\Tenancy\TenantSetup;
 use Best\Blueprint\Testing\InteractsWithTenancy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -76,4 +77,12 @@ it('gives test tenants their default features', function () {
     expect(Feature::enabled('orders'))->toBeTrue();
 
     File::deleteDirectory(database_path('migrations/tenant'));
+});
+
+it('never takes over an existing tenant', function () {
+    app(TenantSetup::class)->run('test', 'test.localhost', 'tenant_real');
+
+    expect(fn () => $this->createTestTenant())->toThrow(RuntimeException::class, 'Tenant "test" already exists');
+
+    expect(file_exists(database_path('tenant_real')))->toBeTrue();
 });

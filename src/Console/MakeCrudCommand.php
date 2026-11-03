@@ -220,7 +220,7 @@ class MakeCrudCommand extends Command
             $this->line("added route to {$names->modulePath}/routes/{$side}.php");
         }
 
-        $this->line("Note: routes are protected by {$names->entity}Policy (guests get 403).".($api ? " For token APIs add auth middleware (e.g. auth:sanctum) to the api routes in {$names->modulePath}/Provider.php, so every resource in this module gets it." : ''));
+        $this->line("Note: {$names->entity}Policy lets every signed-in user do everything (guests get 403). Tighten it for your app.".($api ? " For token APIs add auth middleware (e.g. auth:sanctum) to the api routes in {$names->modulePath}/Provider.php." : ''));
 
         $written = array_filter(["{$entity}ApiTest" => $api && ! in_array($names->files()['test'], $skippedTests, true), "{$entity}WebTest" => $web && ! in_array($names->files()['webTest'], $skippedTests, true)]);
         $steps = array_filter([
@@ -542,7 +542,15 @@ class MakeCrudCommand extends Command
      */
     private function rules(array $fields): string
     {
-        return $this->lines($fields, fn (CrudField $f) => "'{$f->column}' => ['".implode("', '", $f->rules())."'],", 12);
+        $lines = '';
+
+        foreach ($fields as $field) {
+            foreach ([$field->column => $field->rules()] + $field->elementRules() as $key => $rules) {
+                $lines .= str_repeat(' ', 12)."'{$key}' => ['".implode("', '", $rules)."'],\n";
+            }
+        }
+
+        return $lines;
     }
 
     /**

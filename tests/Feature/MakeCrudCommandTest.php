@@ -53,7 +53,7 @@ it('generates every file', function () {
         ->expectsOutputToContain('created app/Modules/Orders/Models/Order.php')
         ->expectsOutputToContain('created tests/Feature/Modules/Orders/OrderApiTest.php')
         ->expectsOutputToContain('added route to app/Modules/Orders/routes/api.php')
-        ->expectsOutputToContain('Note: routes are protected by OrderPolicy (guests get 403). For token APIs add auth middleware (e.g. auth:sanctum) to the api routes in app/Modules/Orders/Provider.php, so every resource in this module gets it.')
+        ->expectsOutputToContain('Note: OrderPolicy lets every signed-in user do everything (guests get 403). Tighten it for your app. For token APIs add auth middleware (e.g. auth:sanctum) to the api routes in app/Modules/Orders/Provider.php.')
         ->expectsOutputToContain('Next: php artisan migrate && php artisan test --filter=OrderApiTest')
         ->assertExitCode(0)
         ->run();

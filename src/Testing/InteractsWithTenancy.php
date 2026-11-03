@@ -32,6 +32,11 @@ trait InteractsWithTenancy
         $id = $token ? "{$id}-{$token}" : $id;
         $domain = app(TenantDomains::class)->forTenant($id);
 
+        // Only ever manage tenants this helper creates (their cleanup deletes the database).
+        if (tenancy()->find($id) !== null) {
+            throw new RuntimeException("Tenant \"{$id}\" already exists; createTestTenant() only manages its own test tenants. Use a fresh central test database.");
+        }
+
         // "blueprint_test_" so a real tenant's default database (tenant_<name>) can never collide.
         app(TenantSetup::class)->run($id, $domain, 'blueprint_test_'.str_replace('-', '_', $id));
 

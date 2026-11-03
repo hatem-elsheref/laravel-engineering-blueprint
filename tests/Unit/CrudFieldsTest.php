@@ -45,7 +45,7 @@ it('maps each type', function (string $spec, array $expected) {
     'array' => ['tags:array', [
         'migration' => "\$table->json('tags')",
         'cast' => 'array',
-        'rules' => ['present', 'array'],
+        'rules' => ['present', 'array', 'max:100'],
         'factory' => '[]',
         'fromRequest' => "array_values(array_filter((array) \$request->validated('tags'), fn (\$value) => \$value !== null && \$value !== ''))",
     ]],
@@ -66,7 +66,7 @@ it('maps each type', function (string $spec, array $expected) {
     'nullable array' => ['tags:?array', [
         'migration' => "\$table->json('tags')->nullable()",
         'cast' => 'array',
-        'rules' => ['nullable', 'array'],
+        'rules' => ['nullable', 'array', 'max:100'],
         'factory' => '[]',
         'fromRequest' => "\$request->validated('tags') === null ? null : array_values(array_filter((array) \$request->validated('tags'), fn (\$value) => \$value !== null && \$value !== ''))",
     ]],
@@ -91,3 +91,8 @@ it('refuses fields make:crud cannot handle', function (string $spec, string $rea
     ['updated_at:Carbon\CarbonImmutable', 'updated_at is created automatically'],
     ['name:text', 'unknown type text'],
 ]);
+
+it('validates array elements as short strings', function () {
+    expect(CrudFields::parse('tags:array')[0]->elementRules())->toBe(['tags.*' => ['nullable', 'string', 'max:255']])
+        ->and(CrudFields::parse('name:string')[0]->elementRules())->toBe([]);
+});

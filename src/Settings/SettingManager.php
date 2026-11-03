@@ -4,6 +4,7 @@ namespace Best\Blueprint\Settings;
 
 use Best\Blueprint\Flags\Definitions;
 use Best\Blueprint\Flags\FlagContext;
+use Best\Blueprint\Flags\Rows;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use RuntimeException;
@@ -115,24 +116,10 @@ class SettingManager
         return $converted;
     }
 
-    public function write(string $key, mixed $value): void
+    private function write(string $key, mixed $value): void
     {
-        $this->upsert('settings', $key, ['value' => json_encode($value)]);
+        Rows::upsert('settings', $key, ['value' => json_encode($value)]);
         $this->forget();
-    }
-
-    /**
-     * @param  array<string, mixed>  $values
-     */
-    public static function upsert(string $table, string $key, array $values): void
-    {
-        $now = now();
-
-        if (DB::table($table)->where('key', $key)->exists()) {
-            DB::table($table)->where('key', $key)->update($values + ['updated_at' => $now]);
-        } else {
-            DB::table($table)->insert(['key' => $key] + $values + ['created_at' => $now, 'updated_at' => $now]);
-        }
     }
 
     public function forget(): void

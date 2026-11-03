@@ -67,10 +67,20 @@ final readonly class CrudField
             'int' => ['integer', 'between:-2147483648,2147483647'],
             'float' => ['numeric', 'between:-9999999999.99,9999999999.99'],
             'bool' => ['boolean'],
-            'array' => ['array'],
+            'array' => ['array', 'max:100'],
             'date' => ['date'],
             default => throw $this->unknownKind(),
         }];
+    }
+
+    /**
+     * Rules for array elements: short strings only (no nested arrays, which would break the pages).
+     *
+     * @return array<string, list<string>>
+     */
+    public function elementRules(): array
+    {
+        return $this->kind() === 'array' ? ["{$this->column}.*" => ['nullable', 'string', 'max:255']] : [];
     }
 
     public function factory(): string

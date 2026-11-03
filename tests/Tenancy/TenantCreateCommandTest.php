@@ -185,3 +185,31 @@ it('creates default features and settings', function () {
         ->expectsOutputToContain('– Create default features (already done)')
         ->assertExitCode(0);
 });
+
+it('refuses a database that belongs to another tenant', function () {
+    $this->artisan('tenant:create', ['name' => 'acme'])->assertExitCode(0);
+
+    $this->artisan('tenant:create', ['name' => 'evil', '--database' => 'tenant_acme'])
+        ->expectsOutputToContain('Database "tenant_acme" already belongs to tenant "acme".')
+        ->assertExitCode(1);
+
+    expect(Tenant::find('evil'))->toBeNull();
+});
+
+it('refuses to adopt an existing database unless asked', function () {
+    touch(database_path('tenant_found'));
+
+    $this->artisan('tenant:create', ['name' => 'found'])
+        ->expectsOutputToContain('Database "tenant_found" already exists. Pass --existing-database to use it for this tenant.')
+        ->assertExitCode(1);
+
+    $this->artisan('tenant:create', ['name' => 'found', '--existing-database' => true])->assertExitCode(0);
+});
+
+it('refuses the central database', function () {
+    config()->set('database.connections.testing.database', database_path('central_db'));
+
+    $this->artisan('tenant:create', ['name' => 'acme', '--database' => 'central_db'])
+        ->expectsOutputToContain('Database "central_db" is the central database.')
+        ->assertExitCode(1);
+});

@@ -92,6 +92,11 @@ class InstallCommand extends Command
         $exists = file_exists($path);
 
         if (! $exists || $this->option('force')) {
+            if ($exists) {
+                copy($path, $path.'.bak');
+                $this->line('backed up config/blueprint.php to config/blueprint.php.bak');
+            }
+
             $writer->publish($path);
 
             if ($writer->setProfile($path, $profile)->status === ProfileWrite::UNRECORDABLE) {

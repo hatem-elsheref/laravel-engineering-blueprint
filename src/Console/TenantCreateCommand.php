@@ -15,7 +15,8 @@ class TenantCreateCommand extends Command
     protected $signature = 'tenant:create
         {name : Tenant id, lowercase letters, numbers and dashes}
         {--domain= : Full domain, defaults to <name>.<base domain>}
-        {--database= : Database name, defaults to tenant_<name>}';
+        {--database= : Database name, defaults to tenant_<name>}
+        {--existing-database : Use a database that already exists for this new tenant}';
 
     protected $description = 'Create a tenant: records, domain, database, migrations and seed data (safe to re-run)';
 
@@ -51,7 +52,7 @@ class TenantCreateCommand extends Command
 
         $this->line('✓ Validate domain');
 
-        if (($error = $this->duplicateError($model, $name, $domain, $database)) !== null) {
+        if (($error = $this->duplicateError($model, $name, $domain, $database) ?? $this->databaseError($model, $name, $database)) !== null) {
             return $this->refuse($error);
         }
 
@@ -86,6 +87,35 @@ class TenantCreateCommand extends Command
                 default => "– {$result['step']} (skipped: {$result['note']})",
             });
         }
+    }
+
+    /**
+     * A tenant database must be its own: not the central database, not another tenant's, and not an
+     * unrelated existing database unless --existing-database says so.
+     */
+    private function databaseError(string $model, string $name, string $database): ?string
+    {
+        $central = (string) config('database.connections.'.config('tenancy.database.central_connection').'.database');
+
+        if ($database === $central || $database === pathinfo($central, PATHINFO_FILENAME)) {
+            return "Database \"{$database}\" is the central database.";
+        }
+
+        foreach ($model::query()->where('id', '!=', $name)->cursor() as $other) {
+            if ($other->getAttribute('tenancy_db_name') === $database) {
+                return "Database \"{$database}\" already belongs to tenant \"{$other->getTenantKey()}\".";
+            }
+        }
+
+        if ($model::find($name) === null && ! $this->option('existing-database')) {
+            $probe = new $model(['id' => $name, 'tenancy_db_name' => $database]);
+
+            if ($probe->database()->manager()->databaseExists($database)) {
+                return "Database \"{$database}\" already exists. Pass --existing-database to use it for this tenant.";
+            }
+        }
+
+        return null;
     }
 
     private function duplicateError(string $model, string $name, string $domain, string $database): ?string

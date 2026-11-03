@@ -108,6 +108,9 @@ class BlueprintServiceProvider extends ServiceProvider
         ]);
         $router->middlewareGroup('central', [Http\Middleware\CentralDomainsOnly::class]);
 
+        // Every web session is tied to the tenant (or central app) where it started.
+        $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', Http\Middleware\ScopeSessionToDomain::class);
+
         // Unknown tenant domains are "not found", not a server error.
         InitializeTenancyByDomain::$onFail = fn () => abort(404);
 

@@ -34,3 +34,12 @@ it('removes the old kit/stubs folder on reinstall', function () {
         ->and(is_dir($this->target.'/laravel-engineering-blueprint/kit/stubs'))->toBeFalse()
         ->and(is_file($this->target.'/laravel-engineering-blueprint/stubs/model.stub'))->toBeTrue();
 });
+
+it('backs up real folders instead of deleting them', function () {
+    mkdir($this->target.'/.cursor/skills/leb-generate-crud', 0777, true);
+    file_put_contents($this->target.'/.cursor/skills/leb-generate-crud/mine.md', 'keep me');
+
+    expect(runInstaller($this->target)->getExitCode())->toBe(0)
+        ->and(file_get_contents($this->target.'/.cursor/skills/leb-generate-crud.bak/mine.md'))->toBe('keep me')
+        ->and(is_file($this->target.'/.cursor/skills/leb-generate-crud/SKILL.md'))->toBeTrue();
+});

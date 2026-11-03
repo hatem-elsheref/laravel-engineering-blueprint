@@ -3,6 +3,7 @@
 namespace Best\Blueprint\Settings;
 
 use Best\Blueprint\Flags\AdminGuard;
+use Best\Blueprint\Flags\Rows;
 
 /**
  * Platform-admin writes (console only): any setting, still type-checked.
@@ -19,6 +20,7 @@ class SettingAdmin
         $this->guard->check();
         $definition = $this->settings->definition($key);
 
-        $this->settings->write($key, $this->settings->convert($key, $definition, $value));
+        Rows::upsert('settings', $key, ['value' => json_encode($this->settings->convert($key, $definition, $value))]);
+        $this->settings->forget();
     }
 }

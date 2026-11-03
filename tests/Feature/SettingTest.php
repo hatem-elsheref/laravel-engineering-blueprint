@@ -5,6 +5,7 @@ use Best\Blueprint\Facades\Setting;
 use Best\Blueprint\Features\FeatureAdmin;
 use Best\Blueprint\Settings\InvalidSettingValue;
 use Best\Blueprint\Settings\SettingAdmin;
+use Best\Blueprint\Settings\SettingManager;
 use Best\Blueprint\Settings\SettingNotEditable;
 use Best\Blueprint\Settings\UnknownSetting;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -127,4 +128,9 @@ it('stamps created_at on new rows', function () {
 
     expect(DB::table('settings')->where('key', 'orders.limit')->value('created_at'))->not->toBeNull()
         ->and(DB::table('features')->where('key', 'reports')->value('created_at'))->not->toBeNull();
+});
+
+it('exposes no unguarded write methods', function () {
+    expect(method_exists(SettingManager::class, 'upsert'))->toBeFalse()
+        ->and((new ReflectionMethod(SettingManager::class, 'write'))->isPublic())->toBeFalse();
 });
