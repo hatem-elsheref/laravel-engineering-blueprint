@@ -185,7 +185,7 @@ CI runs in `.github/workflows/ci.yml`.
 
 ## Status
 
-Phases 0–8 are shipped. Remaining: Phase 9 (starter app) and Phase 10 (release).
+Phases 0–9 are shipped (Phase 9: `bin/new-app`). Remaining: Phase 10 (release).
 
 ## License
 
