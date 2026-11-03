@@ -83,6 +83,8 @@ profile_modular() {
   run "$app" php artisan engineering:install --profile=modular --permissions -n || return 1
   run "$app" php artisan make:module Shop --api --web || return 1
   run "$app" php artisan make:crud Shop Product --api --web --permissions --owned "--fields=$FIELDS" || return 1
+  run "$app" php artisan make:module Billing --api || return 1
+  run "$app" php artisan make:crud Billing Invoice --api --api-envelope --open-policy --fields=title:string || return 1
   run "$app" php artisan make:dto Shop ProductSummary --fields=name:string || return 1
   run "$app" php artisan make:action Shop PublishProduct --transaction || return 1
   run "$app" php artisan migrate --force || return 1

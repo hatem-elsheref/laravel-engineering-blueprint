@@ -30,6 +30,9 @@ jobs:
       - name: Style, static analysis and tests
         run: composer check
 
+      - name: Idempotency concurrent stress (pcntl)
+        run: composer test:stress
+
   e2e:
     name: Real apps (all profiles)
     runs-on: ubuntu-latest

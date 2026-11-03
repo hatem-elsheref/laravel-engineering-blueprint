@@ -120,8 +120,8 @@ Backlog items that require **new Shared code** remain in [STANDARDS-BACKLOG.md](
 Full hardening plan (six workstreams, acceptance criteria): **[HARDENING.md](./HARDENING.md)**.
 
 1. **MySQL (or PostgreSQL) job in CI** for migrations, tenancy, and idempotency locks where SQLite differs.
-2. **tenants:run** / schedule on MySQL (queue path covered in `TenancyQueueMysqlTest`).
-3. **Stub matrix** combinatorial gaps ([HARDENING.md](./HARDENING.md) §5).
+2. Optional **k6** idempotency load (beyond `composer test:stress` pcntl test).
+3. Remaining stub matrix rows without dedicated snapshots (see HARDENING §5).
 
 **Closed in §24 follow-up:** optional idempotency middleware; `route_auth_web` / web CRUD auth; schema v4 (filters, hidden/resource shaping, profiles); [PRODUCTION-DEFAULTS.md](./PRODUCTION-DEFAULTS.md); extra queued-job isolation test.
 

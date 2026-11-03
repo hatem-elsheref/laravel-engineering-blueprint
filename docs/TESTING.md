@@ -26,7 +26,9 @@ export LEB_MYSQL_PASSWORD=root
 composer test:mysql
 ```
 
-Without `LEB_MYSQL=1`, those tests **skip**. CI: GitHub Actions job **mysql-integration** (MySQL service container).
+Without `LEB_MYSQL=1`, those tests **skip**. CI: GitHub Actions job **mysql-integration** (MySQL service container). Includes `TenancyScheduleMysqlTest` (`tenants:run`).
+
+**Idempotency stress:** `composer test:stress` (pcntl overlap; runs in CI matrix after `composer check`). Stub matrix snapshot: `tests/Permissions/StubMatrixEnvelopeSnapshotTest.php` (`modular-api-envelope`).
 
 ## Generated CRUD tests
 

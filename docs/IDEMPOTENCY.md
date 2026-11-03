@@ -59,4 +59,4 @@ Before shipping an idempotent route in production:
 5. **Tenancy** — Keys are scoped in `IdempotencyKey::storageKey()`; verify cross-tenant isolation in staging.
 6. **Observability** — Log 409 fingerprint mismatches and lock timeouts; alert on spikes.
 
-Optional load proof: two concurrent clients with the same key and body should observe **one** side effect (manual or k6/Artillery); CI does not require a parallel HTTP load test.
+Optional load proof: two concurrent clients with the same key and body should observe **one** side effect. CI runs `composer test:stress` (`ReplayIdempotentStressTest`, **pcntl** overlap on Linux); macOS/Windows skip if `pcntl` is missing. Heavier k6/Artillery remains optional.

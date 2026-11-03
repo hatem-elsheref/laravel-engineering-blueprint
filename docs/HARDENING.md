@@ -11,7 +11,7 @@ External engineering review (~**8.5/10**, 2026-11) concluded the product directi
 | Production reliability | MySQL CI job (`mysql-integration`), `tests/MysqlIntegration/` | **Shipped** — CI fails if MySQL unreachable when `LEB_MYSQL=1` |
 | Architecture 9/10 | `ModuleDependencyGraphTest` + `engineering:architecture` | **Shipped** |
 | CRUD / stubs | Snapshots, `composer check` L12/L13, `bin/e2e` profiles | **Partial** — matrix below |
-| Idempotency | Feature + MySQL cache tests, [IDEMPOTENCY.md](./IDEMPOTENCY.md) production checklist | **Shipped** (no mandatory parallel load in CI) |
+| Idempotency | Feature + MySQL cache tests, checklist, `composer test:stress` (pcntl overlap) in CI matrix | **Shipped** |
 | AI kit | `KitAuthParityTest`, `KitGeneratorParityTest` | **Shipped** (extend when stubs change) |
 
 **Release gate:** Treat green CI on the **default branch** as mandatory before calling a release production-ready. Matrix jobs can fail independently — verify Actions on the branch you ship ([QUALITY-ROADMAP.md](./QUALITY-ROADMAP.md)).
@@ -40,7 +40,7 @@ Scores reflect **design and reviewed code**, not a certificate that every workfl
 |---|---|
 | **Goal** | Same key + same payload replays; different body/query → **409**; concurrent keys → one execution. |
 | **Status** | **Shipped:** `ReplayIdempotentRequests`, fingerprint, `Cache::lock`, Pest coverage ([IDEMPOTENCY.md](./IDEMPOTENCY.md)). |
-| **Still to prove** | CI job with **lock-capable cache** (redis or file) under parallel requests; document **DB unique** `(tenant_id, idempotency_key)` for financial writes. |
+| **Still to prove** | Optional k6 load; **DB unique** `(tenant_id, idempotency_key)` left to apps (documented in checklist). |
 | **Acceptance** | Documented production checklist + optional integration test group that fails if lock/replay regresses. |
 
 ### 2. MySQL (or PostgreSQL) integration tests
@@ -50,7 +50,7 @@ Scores reflect **design and reviewed code**, not a certificate that every workfl
 | **Goal** | Behavior that SQLite hides: transactions, indexes, tenancy `CREATE DATABASE`, migration ordering. |
 | **Status** | **Partial** — CI job `mysql-integration` runs `tests/MysqlIntegration/` ([TESTING.md](./TESTING.md)); local opt-in via `composer test:mysql`. |
 | **Acceptance** | Separate CI job (service container); focused Pest path; does not run inside `composer check` (SQLite matrix stays fast). |
-| **First scenarios** | Tenant create/migrate; permission sync; FK/index; schema DSL migrate (`SchemaMigrationMysqlTest`); tenant queue (`TenancyQueueMysqlTest`). Still open: `tenants:run` schedule path on MySQL. |
+| **First scenarios** | Tenant create/migrate; permission sync; FK/index; schema DSL migrate; tenant queue; **`tenants:run`** (`TenancyScheduleMysqlTest`). |
 
 ### 3. Pagination standards
 
@@ -99,7 +99,7 @@ Mark in PRs when a row is re-verified after stub changes.
 | modular | sanctum | auth | permissions + owned | off | `bin/e2e` **modular** (`--permissions --owned`); `bin/new-app` |
 | saas | sanctum | auth | permissions + feature + owned | optional | `bin/e2e` **saas**; feature enable/disable in e2e |
 | tenant-saas | sanctum | auth | permissions tenant + central | optional | `bin/e2e` **tenant-saas**; PermissionsTenancy* |
-| any | sanctum | — | permissions | on | **Gap** — add e2e row or snapshot when `--api-envelope` changes |
+| modular | sanctum | — | permissions + owned | on | `StubMatrixEnvelopeSnapshotTest` + `bin/e2e` Billing/Invoice |
 
 ---
 
