@@ -36,4 +36,4 @@ First stable release. Upgrading from a 0.x version: see [UPGRADE.md](UPGRADE.md)
 ### Added
 - `make:crud` (JSON API), `make:dto`, `make:action`, `make:module`, `engineering:install`, profiles, `engineering:about`.
 
-[1.0.0]: https://github.com/OWNER/laravel-engineering-blueprint/releases/tag/v1.0.0
+[1.0.0]: https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases/tag/v1.0.0

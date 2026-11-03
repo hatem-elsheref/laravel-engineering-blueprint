@@ -6,12 +6,7 @@ Everything up to the tag is prepared in the repository. These steps need your ac
 
 1. **License.** MIT, Copyright (c) 2026 Hatem Mohamed — done (`LICENSE`).
 2. **Package name.** `best/laravel-engineering-blueprint` needs the `best` vendor on Packagist. If it is taken, pick another vendor and replace it everywhere: `grep -rl "best/laravel-engineering-blueprint" --exclude-dir=vendor .`
-3. **Repository.** Create the GitHub repository, then:
-   ```bash
-   git remote add origin git@github.com:<owner>/laravel-engineering-blueprint.git
-   git push -u origin main
-   ```
-   Replace `OWNER` in the link at the bottom of `CHANGELOG.md`.
+3. **Repository.** https://github.com/hatem-elsheref/laravel-engineering-blueprint (public) — done.
 4. **Packagist.** Submit the repository URL at https://packagist.org/packages/submit and enable the GitHub hook (auto-update on push).
 
 ## Every release
