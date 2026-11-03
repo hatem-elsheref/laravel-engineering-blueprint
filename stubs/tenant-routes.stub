@@ -1,0 +1,14 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Support\Facades\Route;
+
+/*
+| Tenant routes answer only on tenant domains: the "tenant" middleware group identifies the tenant
+| and blocks central domains. Business modules made with make:module register their own tenant routes.
+*/
+
+Route::middleware(['web', 'tenant'])->group(function (): void {
+    //
+});

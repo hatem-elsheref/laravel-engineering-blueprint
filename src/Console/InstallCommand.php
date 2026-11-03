@@ -6,6 +6,8 @@ use Best\Blueprint\Support\Compatibility;
 use Best\Blueprint\Support\ConfigWriter;
 use Best\Blueprint\Support\Profile;
 use Best\Blueprint\Support\ProfileWrite;
+use Best\Blueprint\Tenancy\TenancyDetector;
+use Best\Blueprint\Tenancy\TenancySetup;
 use Illuminate\Console\Command;
 
 class InstallCommand extends Command
@@ -22,7 +24,7 @@ class InstallCommand extends Command
     /**
      * Capabilities whose phase has not shipped yet. Delete an entry when its phase ships.
      */
-    private const UPCOMING = ['Tenancy' => 6, 'Features' => 7, 'Settings' => 7];
+    private const UPCOMING = ['Features' => 7, 'Settings' => 7];
 
     private const ALL_CAPABILITIES = ['Modules', 'Features', 'Settings', 'Tenancy'];
 
@@ -54,7 +56,23 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
-        $this->renderSummary($profile);
+        $tenancyReady = true;
+
+        if ($profile->usesTenancy()) {
+            $setup = $this->laravel->make(TenancySetup::class);
+
+            foreach ($setup->run() as $line) {
+                $this->line($line);
+            }
+
+            $tenancyReady = $this->laravel->make(TenancyDetector::class)->stancl();
+
+            if ($tenancyReady) {
+                $this->warn($setup->note());
+            }
+        }
+
+        $this->renderSummary($profile, $tenancyReady);
 
         return self::SUCCESS;
     }
@@ -167,7 +185,7 @@ class InstallCommand extends Command
             ?? Profile::Modular;
     }
 
-    private function renderSummary(Profile $profile): void
+    private function renderSummary(Profile $profile, bool $tenancyReady = true): void
     {
         $this->newLine();
         $this->info('Installed profile: '.$profile->label());
@@ -179,11 +197,23 @@ class InstallCommand extends Command
                 continue;
             }
 
+            if ($capability === 'Tenancy' && ! $tenancyReady) {
+                $this->line('✗ Tenancy (stancl/tenancy not installed)');
+
+                continue;
+            }
+
             $suffix = isset(self::UPCOMING[$capability]) ? ' (coming in Phase '.self::UPCOMING[$capability].')' : '';
             $this->line("✓ {$capability}{$suffix}");
         }
 
         $modulesShipped = ! isset(self::UPCOMING['Modules']);
+
+        if ($profile->usesTenancy() && $tenancyReady) {
+            $this->line('Next: php artisan migrate && php artisan tenant:create acme');
+
+            return;
+        }
 
         $this->line($profile->usesModules() && $modulesShipped
             ? 'Next: php artisan make:module <Name>'
