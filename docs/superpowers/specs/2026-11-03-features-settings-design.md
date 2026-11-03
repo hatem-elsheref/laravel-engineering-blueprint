@@ -1,7 +1,7 @@
 # Phase 7 — Features + Settings — Design Spec
 
 **Date:** 2026-11-03
-**Status:** Draft for approval
+**Status:** Approved
 **Builds on:** Phases 2 (profiles/install), 5 (`make:crud`), 6 (tenancy, `TenantSetup`, `tenant:create`).
 **Supports:** PHP 8.3+, Laravel 12 and 13; `saas` and `tenant-saas` profiles.
 **Authority:** `docs/FEATURES.md`, `docs/SETTINGS.md` (binding), `docs/TENANCY.md`, `docs/ARCHITECTURE.md` (`app/Shared/Features`, `app/Shared/Settings`).
