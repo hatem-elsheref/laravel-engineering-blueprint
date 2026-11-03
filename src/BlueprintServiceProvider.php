@@ -14,6 +14,7 @@ class BlueprintServiceProvider extends ServiceProvider
 
         // One request or one queued job; Laravel resets scoped instances between them.
         $this->app->scoped(Features\FeatureManager::class);
+        $this->app->scoped(Settings\SettingManager::class);
 
         $this->app->singleton(Compatibility::class, fn ($app) => new Compatibility(
             (string) ($app['config']->get('blueprint.support.php') ?: '8.3'),
@@ -34,7 +35,13 @@ class BlueprintServiceProvider extends ServiceProvider
 
             \Illuminate\Support\Facades\Event::listen(
                 [\Stancl\Tenancy\Events\TenancyInitialized::class, \Stancl\Tenancy\Events\TenancyEnded::class],
-                fn () => $this->app->resolved(Features\FeatureManager::class) ? $this->app->make(Features\FeatureManager::class)->forget() : null,
+                function (): void {
+                    foreach ([Features\FeatureManager::class, Settings\SettingManager::class] as $manager) {
+                        if ($this->app->resolved($manager)) {
+                            $this->app->make($manager)->forget();
+                        }
+                    }
+                },
             );
         }
 
