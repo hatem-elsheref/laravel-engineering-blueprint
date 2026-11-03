@@ -2,7 +2,7 @@
 
 ## Phase 0 — Architecture Foundation
 
-**Status:** Draft for approval  
+**Status:** Approved  
 **Architecture:** Modular Monolith  
 **DTO:** Native PHP  
 **Generator:** Advanced Artisan Generator  
@@ -10,7 +10,7 @@
 **Multi-tenancy:** stancl/tenancy  
 **Database:** Central database + separate database per tenant  
 
-Phase 0 fixes the engineering constitution. No features implementation, no CRUD generation, no application classes until these specifications are approved.
+Phase 0 fixes the engineering constitution. It is approved; the package (`best/laravel-engineering-blueprint`) implements it. Phases 0–8 are shipped.
 
 Any new decision must match this blueprint or be documented as an amendment here or in the linked spec files.
 
@@ -24,22 +24,25 @@ Any new decision must match this blueprint or be documented as an amendment here
 | [FEATURES.md](./FEATURES.md) | Feature ON/OFF |
 | [SETTINGS.md](./SETTINGS.md) | Tenant settings |
 
+Package usage (install, commands, config): [../README.md](../README.md).
+
 Extended narrative (Arabic/English): [../rules.md](../rules.md).
 
 ## Phase 0 acceptance criteria
 
-Phase 0 is complete when:
+Phase 0 is complete (all criteria met):
 
-- [ ] Architecture is approved.
-- [ ] Naming rules are approved.
-- [ ] Central and tenant database responsibilities are clear.
-- [ ] stancl/tenancy integration approach is approved.
-- [ ] Subdomain identification is defined.
-- [ ] Tenant creation lifecycle is defined.
-- [ ] Central and tenant migration paths are defined.
-- [ ] Feature ownership and permissions are defined.
-- [ ] Settings storage is defined.
-- [ ] Feature cache invalidation behavior is defined.
-- [ ] No unnecessary architecture layers are required.
+- [x] Architecture is approved.
+- [x] Naming rules are approved.
+- [x] Central and tenant database responsibilities are clear.
+- [x] stancl/tenancy integration approach is approved.
+- [x] Subdomain identification is defined.
+- [x] Tenant creation lifecycle is defined.
+- [x] Central and tenant migration paths are defined.
+- [x] Feature ownership and permissions are defined.
+- [x] Settings storage is defined.
+- [x] Feature cache invalidation behavior is defined.
+- [x] No unnecessary architecture layers are required.
 
-**Next phase:** Phase 1 — Laravel Foundation and Tenancy Setup.
+**Done:** Phases 1–8 (package foundation, install and profiles, `make:module`, `make:dto` / `make:action`, `make:crud`, tenancy, features and settings, quality and Blade pages).  
+**Remaining:** Phase 9 — starter app; Phase 10 — release.

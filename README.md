@@ -1,23 +1,111 @@
 # Laravel Engineering Blueprint (LEB)
 
-Portable engineering kit for Laravel SaaS (modular monolith, tenancy, features, CRUD generators). **Not a Laravel application** — copy or run the installer into any project so Codex, Cursor, Antigravity, Claude Code, Gemini, and other agents share the same standards, skills, stubs, and docs.
+A Laravel package, `best/laravel-engineering-blueprint`, that sets up a modular monolith and generates modules, Data classes, Actions and full CRUD (JSON API and/or Blade pages). It also handles feature flags, settings and database-per-tenant tenancy (stancl/tenancy).
 
-Inspired by composable agent kits (e.g. Superpowers): one source tree, multiple install targets.
+The repo also ships an **AI-agent kit** (`kit/`, `bin/leb-install`) so Codex, Cursor, Antigravity, Claude Code, Gemini and other agents follow the same rules and use the same commands.
 
-## What you get
+- PHP 8.3+, Laravel 12 and 13
+- Version 0.8.0
+- Design authority: [docs/PHASE-0.md](./docs/PHASE-0.md) (approved)
 
-| Component | Purpose |
-|-----------|---------|
-| `docs/` | **Phase 0** specs: `PHASE-0.md`, architecture, naming, tenancy, features, settings, constitution |
-| `kit/skills/` | Agent skills (`laravel-engineering`, `leb-generate-crud`) |
-| `kit/rules/` | Cursor rules + `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` templates |
-| `stubs/` | Generator templates (for future `make:module` / `make:crud`) |
-| `rules.md` | Full Arabic/English engineering guide (source narrative) |
-| `bin/leb-install` | Install or refresh kit files in a target project or global skills dir |
+## Install
 
-## Quick install
+```bash
+composer require best/laravel-engineering-blueprint
+php artisan engineering:install --profile=modular
+php artisan engineering:about
+```
 
-From this repo (or after copying the folder anywhere):
+## Profiles
+
+| Profile | What you get |
+|---------|--------------|
+| `basic` | Package conventions, no modules |
+| `modular` | Modules in `app/Modules/` (default) |
+| `saas` | `modular` + features and settings in the app database |
+| `tenant-saas` | `saas` + stancl/tenancy (`composer require stancl/tenancy:^3.10`), one database per tenant, features and settings in each tenant database |
+
+`engineering:install` is safe to re-run. Moving to a profile with fewer capabilities needs `--allow-downgrade`; it warns about modules the change breaks. `--force` overwrites `config/blueprint.php` (the old file is backed up to `config/blueprint.php.bak`).
+
+## Commands
+
+| Command | Does |
+|---------|------|
+| `engineering:about` | Version and environment compatibility |
+| `engineering:install [--profile=] [--allow-downgrade] [--force]` | Set or change the project profile |
+| `make:module {name} [--api] [--web] [--central]` | Module with `Provider.php` and optional `routes/api.php`, `routes/web.php`; `--central` = platform module (tenant-saas) |
+| `make:dto {module} {name} [--fields=]` | Typed, immutable Data class |
+| `make:action {module} {name} [--data=] [--transaction]` | Action (one business operation) |
+| `make:crud {module} {entity} [--fields=] [--api] [--web] [--feature=]` | Full CRUD; neither flag = `--api` |
+| `tenant:create {name} [--domain=] [--database=] [--existing-database]` | Create a tenant (tenant-saas), safe to re-run |
+| `feature:list`, `feature:enable {key}`, `feature:disable {key}` `[--tenant=]` | Platform admin feature control |
+| `features:sync [--tenant=*]` | Add newly defined features with their defaults; without `--tenant` = all tenants |
+| `setting:list`, `setting:set {key} {value}` `[--tenant=]` | Platform admin settings (value is JSON) |
+
+`--tenant` is required in `tenant-saas` and refused in `saas`.
+
+Field types for `--fields`: `string`, `int`, `float`, `bool`, `array`, `Carbon\CarbonImmutable`; prefix `?` for nullable. Example: `--fields="name:string,quantity:int,note:?string"`.
+
+## What `make:crud` generates
+
+Example: `php artisan make:crud Orders Order --api --web`. The entity must be singular (and not uncountable for `--web`).
+
+| Side | Files |
+|------|-------|
+| Shared (both sides) | `Models/Order.php`, migration, `database/factories/Orders/OrderFactory.php`, `Requests/StoreOrderRequest.php`, `Requests/UpdateOrderRequest.php`, `Data/OrderData.php`, `Actions/CreateOrder.php`, `UpdateOrder.php`, `DeleteOrder.php`, `Queries/ListOrders.php`, `Policies/OrderPolicy.php` |
+| `--api` | `Controllers/OrderController.php`, `Resources/OrderResource.php`, route in `routes/api.php`, `tests/Feature/Modules/Orders/OrderApiTest.php` |
+| `--web` | `Controllers/OrderPageController.php`, views in `resources/views/orders/orders/{index,create,edit,show,_form}.blade.php`, route in `routes/web.php`, `tests/Feature/Modules/Orders/OrderWebTest.php` |
+
+- Run once with one side and add the other later; it reuses the existing fields and feature gate.
+- Pages are plain Blade (no JS) and extend `config('blueprint.layout')`. The layout `resources/views/layouts/blueprint.blade.php` is created once.
+- Tests are Pest; they are skipped with a message if Pest is missing.
+- The generated policy allows every signed-in user and denies guests. Tighten it. Guests get 403 also for ids that do not exist.
+- `--feature=orders` adds `->middleware('feature:orders')` to the routes (saas, tenant-saas).
+- Generated web tests fail with 419 if config is cached (`php artisan optimize`). Run `php artisan optimize:clear` before tests.
+
+## Route names
+
+| Route | Name |
+|-------|------|
+| API | `api.<uri>.*` (e.g. `api.orders.index`) |
+| Web | `<uri>.*` (e.g. `orders.index`) |
+| Central module (tenant-saas) | `central.api.<uri>.*`, `central.<uri>.*` |
+
+Put auth middleware for token APIs (e.g. `auth:sanctum`) in the module's `Provider.php` API route group.
+
+## Config (`config/blueprint.php`)
+
+| Key | Meaning |
+|-----|---------|
+| `profile` | Set by `engineering:install` |
+| `module_path` | Module folder inside `app/` (default `app/Modules`) |
+| `shared_path` | Shared folder inside `app/` (default `app/Shared`) |
+| `stub_path` | Your own stubs folder (null = published `stubs/blueprint/` or package stubs) |
+| `default_profile` | Profile used when none is given (`modular`) |
+| `layout` | Blade layout the generated pages extend (`layouts.blueprint`) |
+| `features` | Feature definitions class (null = `<shared_path>/Features/Features`) |
+| `settings` | Setting definitions class (null = `<shared_path>/Settings/Settings`) |
+| `tenant_seeder` | Seeder run by `tenant:create` (`Database\Seeders\TenantSeeder`) |
+| `tenant_domain` | Base tenant domain, env `BLUEPRINT_TENANT_DOMAIN`; tenants are `<name>.<base>` |
+| `support.php`, `support.laravel` | Minimum supported versions |
+
+## Customizing stubs
+
+```bash
+php artisan vendor:publish --tag=blueprint-stubs
+```
+
+Stubs are copied to `stubs/blueprint/` and used automatically (or set `blueprint.stub_path`). A stub with leftover placeholders, a missing class, a missing `->names('api.<uri>')`, or one that would drop a requested feature gate is refused before anything is written. See [stubs/README.md](./stubs/README.md).
+
+## Tenancy, features, settings
+
+- **Tenancy** ([docs/TENANCY.md](./docs/TENANCY.md)): tenant modules use the `tenant` middleware group (subdomain); `--central` modules answer only on central domains. Tenant migrations live in `database/migrations/tenant` (`php artisan tenants:migrate`). Use `CACHE_STORE=redis` (or memcached). Test helper: `Best\Blueprint\Testing\InteractsWithTenancy`.
+- **Features** ([docs/FEATURES.md](./docs/FEATURES.md)): `Feature::enabled()`, route middleware `feature:a,b`, job middleware `RequireFeature`, Blade `@feature`. Writes only through console commands.
+- **Settings** ([docs/SETTINGS.md](./docs/SETTINGS.md)): typed `Setting::get()`; `Setting::set()` only for tenant-editable settings through their Gate ability.
+
+## Agent kit
+
+`bin/leb-install` copies the docs, skills, rules and a reference copy of the stubs into a project and wires agent entry files.
 
 ```bash
 # Project-local (recommended): skills, rules, docs, stubs under ./laravel-engineering-blueprint/
@@ -31,34 +119,47 @@ From this repo (or after copying the folder anywhere):
 
 # Preview
 ./bin/leb-install /path/to/your/laravel-app --dry-run
-```
 
-### Component flags
-
-```bash
+# Components
 ./bin/leb-install TARGET --only skills,rules
 ./bin/leb-install TARGET --skip stubs
 ```
 
-Default install puts a **`laravel-engineering-blueprint/`** directory inside the target project (safe to commit). Skills are **symlinked** from there into agent skill paths when you use `--link-agents` or `--global`.
-
-## Agent harnesses
+The `laravel-engineering-blueprint/` folder is safe to commit. Its `stubs/` copy is reference only; the commands use the package stubs (or your published ones).
 
 | Harness | What gets installed |
 |---------|---------------------|
-| **Cursor** | `.cursor/rules/*.mdc`, `.cursor/skills/laravel-engineering/` (symlink), optional `AGENTS.md` |
-| **Claude Code** | `~/.claude/skills/` or project skills via symlink; `CLAUDE.md` snippet |
-| **Codex / Copilot CLI** | `~/.agents/skills/` alias + project `AGENTS.md` |
-| **Antigravity / Gemini** | Same skills path + `GEMINI.md` pointer to constitution |
+| **Cursor** | `.cursor/rules/*.mdc`, `.cursor/skills/` (symlinks), `AGENTS.md` |
+| **Claude Code** | `~/.claude/skills/` or project skills via symlink; `CLAUDE.md` |
+| **Codex / Copilot CLI** | `~/.agents/skills/` + project `AGENTS.md` |
+| **Antigravity / Gemini** | Same skills path + `GEMINI.md` |
 | **Any agent** | Read `docs/CONSTITUTION.md` + `AGENTS.md` |
 
-Later: package as a Cursor/Codex plugin (see `blueprint.manifest.json`).
+Agents must use the commands above; they never fill stubs by hand.
 
-## Roadmap (this repo)
+## Repository layout
 
-1. **Now** — Kit files, docs, stubs, installer (you are here).
-2. **Phase 1** — Laravel package or app skeleton with module registration.
-3. **Phase 3** — Artisan commands that consume `stubs/`.
+| Path | Purpose |
+|------|---------|
+| `src/`, `config/`, `stubs/` | The package |
+| `tests/` | Pest tests |
+| `docs/` | Phase 0 specs (approved) |
+| `kit/skills/`, `kit/rules/` | Agent skills, Cursor rules, `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` templates |
+| `rules.md` | Long Arabic/English engineering guide |
+| `bin/leb-install`, `bin/e2e` | Kit installer; end-to-end check |
+
+## Development
+
+```bash
+composer check   # Pint, PHPStan (level 6), Pest
+bin/e2e          # builds real Laravel apps for every profile
+```
+
+CI runs in `.github/workflows/ci.yml`.
+
+## Status
+
+Phases 0–8 are shipped. Remaining: Phase 9 (starter app) and Phase 10 (release).
 
 ## License
 

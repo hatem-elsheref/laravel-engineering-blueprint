@@ -6,15 +6,28 @@ alwaysApply: false
 
 # Laravel Engineering Blueprint
 
-Follow Phase 0: `laravel-engineering-blueprint/docs/PHASE-0.md` and linked specs.
+Follow Phase 0 (approved): `laravel-engineering-blueprint/docs/PHASE-0.md` and linked specs. Package usage: `laravel-engineering-blueprint/README.md`.
 
 - Modules: `app/Modules/{Name}/` (Requests, Controllers, routes/, Provider.php — only folders needed).
 - Shared: `app/Shared/Features`, `Settings`, `Support`, `Contracts`.
-- Controllers: HTTP only; Request + Data + Action|Query + Resource.
+- Controllers: HTTP only; Request + Data + Action|Query + Resource|View.
 - Migrations: `database/migrations/` and `database/migrations/tenant/` only.
 - Tenancy: stancl/tenancy; subdomain; no tenant business data in central DB.
-- Features/settings: tenant DB; backend enforcement when feature disabled.
+- Features/settings: tenant DB (tenant-saas) or app DB (saas); backend enforcement when a feature is off.
 
-Until Phase 0 is approved, do not generate application code—docs only.
+## Generate with the commands
 
-After Phase 1+, CRUD stubs: `laravel-engineering-blueprint/stubs/` + skill **leb-generate-crud**.
+Package `best/laravel-engineering-blueprint`. Never hand-fill or copy stubs; run the commands:
+
+```bash
+php artisan make:module Orders --api --web
+php artisan make:dto Orders OrderData --fields="name:string,quantity:int,note:?string"
+php artisan make:action Orders CancelOrder --data=OrderData --transaction
+php artisan make:crud Orders Order --fields="name:string,quantity:int"          # API (default)
+php artisan make:crud Orders Order --fields="name:string,quantity:int" --web    # Blade pages
+php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web
+```
+
+To change generated code: `php artisan vendor:publish --tag=blueprint-stubs`, then edit `stubs/blueprint/*.stub`. The copy in `laravel-engineering-blueprint/stubs/` is reference only.
+
+Details: skill **leb-generate-crud**.

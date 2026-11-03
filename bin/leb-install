@@ -132,6 +132,8 @@ install_bundle() {
   if component_enabled docs; then
     run mkdir -p "${bundle}/docs"
     run cp -R "${KIT_SOURCE}/docs/." "${bundle}/docs/"
+    # docs/superpowers holds internal plans/specs for building the package, not part of the kit.
+    run rm -rf "${bundle}/docs/superpowers"
   fi
 
   if component_enabled skills; then

@@ -14,7 +14,13 @@ https://tenancyforlaravel.com/
 
 Use the package's supported tenant identification, database bootstrapping, database creation, and migration features.
 
-The exact installed package version must be verified against the project's Composer dependencies before implementation.
+Version: `stancl/tenancy ^3.10`. Set it up with:
+
+```bash
+composer require stancl/tenancy:^3.10
+php artisan engineering:install --profile=tenant-saas
+php artisan migrate
+```
 
 Do not build a custom tenancy engine unless a documented requirement cannot be handled by the package.
 
@@ -91,6 +97,21 @@ The central application must be able to distinguish platform routes from tenant 
 
 Custom domains can be supported later without changing the tenant database design.
 
+Base domain: tenants are `<name>.<base>`. Set the base with `BLUEPRINT_TENANT_DOMAIN` (config `blueprint.tenant_domain`); when empty, the first central domain is used. Central domains are listed in `config/tenancy.php` (`central_domains`).
+
+Route groups:
+
+| Module | Created with | Middleware group | Answers on |
+|---|---|---|---|
+| Tenant module | `make:module Orders` | `tenant` (`InitializeTenancyByDomain` + `PreventAccessFromCentralDomains`) | Tenant domains |
+| Central (platform) module | `make:module Plans --central` | `central` | Central domains only |
+
+- Tenant module routes are registered after central routes.
+- Central module route names start with `central.` (`central.plans.index`, `central.api.plans.index`).
+- Unknown tenant domains return 404.
+- Web sessions are tied to the tenant (or central app) where they started; the same cookie on another tenant is refused.
+- The app's own `routes/web.php` and `routes/api.php` answer on every domain. Wrap central-only routes in `Route::domain(...)` or move them into a `--central` module.
+
 ## 3.5 Tenant Creation
 
 Create tenants through a central Artisan command.
@@ -102,6 +123,8 @@ php artisan tenant:create acme \
     --domain=acme.example.com \
     --database=tenant_acme
 ```
+
+Defaults: domain `acme.<base>`, database `tenant_acme`.
 
 The command must:
 
@@ -117,7 +140,14 @@ The command must:
 10. Create default settings.
 11. Report the final result.
 
-The process must be safe to retry after a failure.
+Notes on the implementation:
+
+- Step 8 runs the seeder in `blueprint.tenant_seeder` (default `Database\Seeders\TenantSeeder`) when that class exists.
+- Step 9 inserts the keys from `Features::defaults()`.
+- Step 10 is reported as skipped: defaults come from the Settings definitions, so no rows are needed.
+- The command refuses the central database, another tenant's database, and a database that already exists unless `--existing-database` is passed.
+
+The process must be safe to retry after a failure. Re-running the same command skips finished steps.
 
 Do not create tenants using a normal tenant-facing CRUD endpoint.
 
@@ -147,6 +177,8 @@ Rules:
 - Use separate commands for central and tenant migrations.
 - Never run tenant migrations against the central database.
 
+Commands: `php artisan migrate` (central) and `php artisan tenants:migrate` (all tenants). `make:crud` in a tenant module writes its migration to `database/migrations/tenant/`; in a `--central` module, to `database/migrations/`.
+
 ## 3.7 Tenant Isolation
 
 - Resolve the tenant before accessing tenant data.
@@ -156,3 +188,10 @@ Rules:
 - Tenant users must not access central administration routes.
 - Test database isolation.
 - Test tenant switching in queued jobs and scheduled tasks.
+
+## 3.8 Runtime Notes
+
+- **Queue:** the `database` queue connection is pinned to the central connection, so workers find jobs dispatched inside a tenant.
+- **Scheduler:** run tenant work with `php artisan tenants:run <command>`.
+- **Cache:** tenant cache isolation needs a taggable store. Set `CACHE_STORE=redis` (or `memcached`); the `database` and `file` stores fail inside tenants.
+- **Tests:** use `Best\Blueprint\Testing\InteractsWithTenancy` (`createTestTenant()`, `tenantUrl()`). Generated tenant tests use it and run against a real test tenant.

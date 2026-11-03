@@ -6,9 +6,18 @@ alwaysApply: false
 
 # LEB frontend (Blade)
 
+## Baseline: generated pages
+
+`php artisan make:crud {Module} {Entity} --web` generates the CRUD pages (`index`, `create`, `edit`, `show`, `_form`) in `resources/views/<module-kebab>/<entity-plural-kebab>/`. They are plain Blade with no JS, use the module's Actions and Queries through `<Entity>PageController`, and `@extends(config('blueprint.layout'))` (default `layouts/blueprint.blade.php`, created once). Generate them with the command; do not write them by hand. Change your layout or set `blueprint.layout`, or publish the stubs (`php artisan vendor:publish --tag=blueprint-stubs`).
+
 - Dumb views; no business logic in Blade.
+- Forms: CSRF; validation errors from the Store/Update requests.
+- Show/hide feature UI with `@feature('key') ... @endfeature`; the route still needs `feature:key` middleware.
+
+## Optional guidance for custom pages
+
 - Page JS: jQuery only in page scripts; pass data via `window.PageData`.
 - Heavy selects: Select2 + AJAX URL with load-more on scroll.
-- Forms: CSRF; disable submit after post; idempotency on critical submits.
+- Forms: disable submit after post; idempotency on critical submits.
 
 If the project has a **frontend-views** skill, prefer that skill for detailed Blade rules.

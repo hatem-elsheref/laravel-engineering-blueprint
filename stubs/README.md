@@ -2,7 +2,9 @@
 
 Templates rendered by the package's Artisan generators. Placeholders (`{{ ... }}`) are filled by PHP; do not fill them by hand.
 
-To customize, publish them with `php artisan vendor:publish --tag=blueprint-stubs` (copied to `stubs/blueprint/`, used automatically) or point `blueprint.stub_path` at your own folder. A stub that leaves a placeholder unfilled, or no longer declares the expected class, is refused before anything is written.
+To customize, publish them with `php artisan vendor:publish --tag=blueprint-stubs` (copied to `stubs/blueprint/`, used automatically) or point `blueprint.stub_path` at your own folder. A stub that leaves a placeholder unfilled, no longer declares the expected class, drops the required `->names('api.{{ uri }}')`, or would drop a requested feature gate is refused before anything is written.
+
+The copy of this folder that `bin/leb-install` puts in `laravel-engineering-blueprint/stubs/` is reference only; the commands never read it.
 
 | File | Used by |
 |------|---------|
@@ -20,12 +22,22 @@ To customize, publish them with `php artisan vendor:publish --tag=blueprint-stub
 | `crud-update-action.stub` | `make:crud` — Update action |
 | `crud-delete-action.stub` | `make:crud` — Delete action |
 | `query.stub` | `make:crud` — paginated list query |
-| `controller.stub` | `make:crud` — API resource controller |
-| `route.stub` | `make:crud` — route added to the module's `routes/api.php`; its `->missing()` gives guests 403 for unknown ids so they can't probe which records exist (add e.g. `->middleware('auth:sanctum')` here) |
-| `resource.stub` | `make:crud` — API resource |
-| `policy.stub` | `make:crud` — policy |
-| `test.stub` | `make:crud` — Pest feature tests |
-| `test-tenant.stub` | `make:crud` in a tenant module (tenant-saas) — Pest tests on a real test tenant |
+| `policy.stub` | `make:crud` — policy (signed-in users allowed, guests denied) |
+| `controller.stub` | `make:crud --api` — API resource controller |
+| `route.stub` | `make:crud --api` — route added to the module's `routes/api.php`; must keep `->names('api.{{ uri }}')`; its `->missing()` gives guests 403 for unknown ids so they can't probe which records exist (you may add e.g. `->middleware('auth:sanctum')` here, or on the module's `Provider.php` API group) |
+| `resource.stub` | `make:crud --api` — API resource |
+| `test.stub` | `make:crud --api` — Pest API tests |
+| `test-tenant.stub` | `make:crud --api` in a tenant module (tenant-saas) — Pest API tests on a real test tenant |
+| `web-controller.stub` | `make:crud --web` — `<Entity>PageController` (Blade pages) |
+| `web-route.stub` | `make:crud --web` — `Route::resource(...)` added to the module's `routes/web.php` |
+| `view-index.stub` | `make:crud --web` — `index.blade.php` (list) |
+| `view-create.stub` | `make:crud --web` — `create.blade.php` |
+| `view-edit.stub` | `make:crud --web` — `edit.blade.php` |
+| `view-show.stub` | `make:crud --web` — `show.blade.php` |
+| `view-form.stub` | `make:crud --web` — `_form.blade.php` (fields shared by create and edit) |
+| `layout.stub` | `make:crud --web` — `resources/views/layouts/blueprint.blade.php`, created once (config `blueprint.layout`) |
+| `test-web.stub` | `make:crud --web` — Pest web tests |
+| `test-web-tenant.stub` | `make:crud --web` in a tenant module (tenant-saas) — Pest web tests on a real test tenant |
 | `tenant-model.stub` | `engineering:install --profile=tenant-saas` — `app/Models/Tenant.php` |
 | `tenant-routes.stub` | `engineering:install --profile=tenant-saas` — empty `routes/tenant.php` group |
 | `features-definitions.stub` | `engineering:install` (saas, tenant-saas) — `app/Shared/Features/Features.php` |

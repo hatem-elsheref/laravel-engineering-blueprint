@@ -18,12 +18,31 @@ Good:
 CreateOrder
 CancelOrder
 OrderData
-OrderRequest
+StoreOrderRequest
+UpdateOrderRequest
+OrderController
+OrderPageController
 OrderResource
 OrderPolicy
+ListOrders
 OrderService
 OrderStatus
 ```
+
+Names `make:crud Orders Order` generates:
+
+| Class | Name |
+|---|---|
+| Model | `Order` |
+| Requests | `StoreOrderRequest`, `UpdateOrderRequest` |
+| Data | `OrderData` |
+| Actions | `CreateOrder`, `UpdateOrder`, `DeleteOrder` |
+| Query | `ListOrders` |
+| API controller | `OrderController` |
+| Web (Blade) controller | `OrderPageController` |
+| Resource | `OrderResource` |
+| Policy | `OrderPolicy` |
+| Factory | `OrderFactory` |
 
 Avoid:
 
@@ -100,3 +119,14 @@ Actions/
 ```
 
 Do not add `Action` to every class name when the folder already explains its type.
+
+## 2.6 Route Names
+
+| Route | Name | Example |
+|---|---|---|
+| API | `api.<uri>.*` | `api.orders.index` |
+| Web | `<uri>.*` | `orders.index` |
+| Central module API (tenant-saas) | `central.api.<uri>.*` | `central.api.plans.index` |
+| Central module web (tenant-saas) | `central.<uri>.*` | `central.plans.index` |
+
+`<uri>` is the plural, kebab-case entity name (`OrderItem` → `order-items`).

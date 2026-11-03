@@ -16,7 +16,21 @@ Phase 0 constitution lives in the project bundle:
 5. `docs/FEATURES.md`
 6. `docs/SETTINGS.md`
 
-If Phase 0 is not approved, do not implement application code for features, tenancy services, or modules—only doc amendments.
+Phase 0 is approved. The package `best/laravel-engineering-blueprint` implements it; package usage is in the bundle's `README.md`.
+
+## Use the commands
+
+Never hand-fill or copy stubs. Generate code with:
+
+```bash
+php artisan engineering:install --profile=modular   # basic | modular | saas | tenant-saas
+php artisan make:module Orders --api --web
+php artisan make:dto Orders OrderData --fields="name:string,quantity:int"
+php artisan make:action Orders CancelOrder --data=OrderData --transaction
+php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web
+```
+
+For CRUD details use skill **leb-generate-crud**. To change generated code, run `php artisan vendor:publish --tag=blueprint-stubs` and edit `stubs/blueprint/*.stub`.
 
 ## Architecture defaults (from ARCHITECTURE.md)
 
@@ -34,13 +48,12 @@ Follow `docs/NAMING.md`. Folder implies type (`Actions/CreateOrder.php`).
 
 ## Tenancy & features & settings
 
-- `docs/TENANCY.md` — central vs tenant DB, `tenant:create`, migration paths, isolation.
-- `docs/FEATURES.md` — tenant `features` table, `Feature::enabled()`, platform admin only writes.
-- `docs/SETTINGS.md` — tenant `settings` table, `Setting::get` / `Setting::set`.
+- `docs/TENANCY.md` — central vs tenant DB, `tenant:create`, `make:module --central`, migration paths (`tenants:migrate`), isolation, `CACHE_STORE=redis`.
+- `docs/FEATURES.md` — `features` table (tenant DB in tenant-saas, app DB in saas), `Feature::enabled()`, `feature:` middleware, `RequireFeature` job middleware, `@feature`; writes only via `feature:*` / `features:sync` commands.
+- `docs/SETTINGS.md` — `settings` table, typed `Setting::get`, `Setting::set` for tenant-editable settings (Gate ability), `setting:set` for platform settings.
 
-## Phase 0 vs later phases
+## Status
 
-- **Phase 0:** specifications only.
-- **Phase 1+:** Laravel app, stancl wiring, Shared services (implementation).
+Phases 0–8 are shipped (specs, package, generators, tenancy, features, settings, Blade pages). Remaining: Phase 9 (starter app), Phase 10 (release).
 
 Full narrative: `rules.md` at kit root.
