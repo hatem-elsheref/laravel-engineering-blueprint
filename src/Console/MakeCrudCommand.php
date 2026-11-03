@@ -6,17 +6,18 @@ use Best\Blueprint\Support\CrudField;
 use Best\Blueprint\Support\CrudFields;
 use Best\Blueprint\Support\CrudNames;
 use Best\Blueprint\Support\FieldException;
+use Best\Blueprint\Support\FileWriter;
 use Best\Blueprint\Support\ModuleName;
 use Best\Blueprint\Support\Modules;
 use Best\Blueprint\Support\PestDetector;
 use Best\Blueprint\Support\PhpNames;
+use Best\Blueprint\Support\PhpSource;
 use Best\Blueprint\Support\RouteFile;
 use Best\Blueprint\Support\StubException;
 use Best\Blueprint\Support\StubRenderer;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
-use RuntimeException;
 use Throwable;
 
 class MakeCrudCommand extends Command
@@ -90,7 +91,7 @@ class MakeCrudCommand extends Command
         foreach ($this->expectedClasses($names) as $key => [$namespace, $class, $stub]) {
             $contents = $generated[$names->files()[$key]];
 
-            if (! str_contains($contents, "namespace {$namespace};") || preg_match('/\bclass\s+'.$class.'\b/', $contents) !== 1) {
+            if (! PhpSource::declares($contents, $namespace, $class)) {
                 return $this->refuse($this->invalidStub($stubs->path($stub), "no {$class} class in namespace {$namespace}"));
             }
         }
@@ -101,8 +102,15 @@ class MakeCrudCommand extends Command
 
         $routes = $files->get($routesPath);
 
+        $writer = new FileWriter($files);
+        $absolute = [];
+
+        foreach ($generated as $path => $contents) {
+            $absolute[base_path($path)] = $contents;
+        }
+
         try {
-            $this->write($files, $generated);
+            $writer->write($absolute);
             $files->put($routesPath, RouteFile::addResource(
                 $routes,
                 "{$names->moduleNamespace}\\Controllers\\{$names->entity}Controller",
@@ -110,7 +118,8 @@ class MakeCrudCommand extends Command
                 "{$names->entity}Controller",
             ));
         } catch (Throwable $e) {
-            $this->rollback($files, $routesPath, $routes);
+            $writer->rollback();
+            $files->put($routesPath, $routes);
 
             return $this->refuse("Could not write the CRUD files ({$e->getMessage()}). Nothing was changed.");
         }
@@ -129,55 +138,6 @@ class MakeCrudCommand extends Command
         $this->line("Next: php artisan migrate && php artisan test --filter={$names->entity}ApiTest");
 
         return self::SUCCESS;
-    }
-
-    /** @var list<string> */
-    private array $written = [];
-
-    /** @var list<string> */
-    private array $createdDirectories = [];
-
-    /**
-     * @param  array<string, string>  $generated
-     */
-    private function write(Filesystem $files, array $generated): void
-    {
-        $this->written = [];
-        $this->createdDirectories = [];
-
-        foreach ($generated as $path => $contents) {
-            $this->makeDirectory($files, dirname(base_path($path)));
-            $files->put(base_path($path), $contents);
-            $this->written[] = base_path($path);
-        }
-    }
-
-    private function makeDirectory(Filesystem $files, string $directory): void
-    {
-        if ($files->isDirectory($directory)) {
-            return;
-        }
-
-        $this->makeDirectory($files, dirname($directory));
-
-        if (! @mkdir($directory) && ! $files->isDirectory($directory)) {
-            throw new RuntimeException("cannot create {$directory}");
-        }
-
-        $this->createdDirectories[] = $directory;
-    }
-
-    private function rollback(Filesystem $files, string $routesPath, string $routes): void
-    {
-        foreach (array_reverse($this->written) as $path) {
-            $files->delete($path);
-        }
-
-        foreach (array_reverse($this->createdDirectories) as $directory) {
-            @rmdir($directory);
-        }
-
-        $files->put($routesPath, $routes);
     }
 
     private function collision(Filesystem $files, CrudNames $names, string $routesPath): ?string

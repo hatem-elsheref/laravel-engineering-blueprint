@@ -3,13 +3,16 @@
 namespace Best\Blueprint\Console;
 
 use Best\Blueprint\Support\ModuleName;
+use Best\Blueprint\Support\FileWriter;
 use Best\Blueprint\Support\Modules;
+use Best\Blueprint\Support\PhpSource;
 use Best\Blueprint\Support\StubException;
 use Best\Blueprint\Support\StubRenderer;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Throwable;
 
 class MakeModuleCommand extends Command
 {
@@ -58,9 +61,19 @@ class MakeModuleCommand extends Command
             return $this->refuse($this->invalidStub($stubs->path('module-provider.stub'), "no Provider class in namespace {$namespace}"));
         }
 
+        $absolute = [];
+
         foreach ($generated as $relative => $contents) {
-            $files->ensureDirectoryExists(dirname($directory.'/'.$relative));
-            $files->put($directory.'/'.$relative, $contents);
+            $absolute[$directory.'/'.$relative] = $contents;
+        }
+
+        try {
+            (new FileWriter($files))->write($absolute);
+        } catch (Throwable $e) {
+            return $this->refuse("Could not write the module ({$e->getMessage()}). Nothing was changed.");
+        }
+
+        foreach (array_keys($generated) as $relative) {
             $this->line("created {$modulePath}/{$name}/{$relative}");
         }
 
@@ -81,8 +94,7 @@ class MakeModuleCommand extends Command
 
     private function declaresProvider(string $contents, string $namespace): bool
     {
-        return str_contains($contents, "namespace {$namespace};")
-            && preg_match('/\bclass\s+Provider\b/', $contents) === 1;
+        return PhpSource::declares($contents, $namespace, 'Provider');
     }
 
     private function invalidStub(?string $path, ?string $reason): string

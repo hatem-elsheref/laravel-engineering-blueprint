@@ -3,12 +3,15 @@
 namespace Best\Blueprint\Console;
 
 use Best\Blueprint\Support\ModuleName;
+use Best\Blueprint\Support\FileWriter;
 use Best\Blueprint\Support\Modules;
+use Best\Blueprint\Support\PhpSource;
 use Best\Blueprint\Support\PhpNames;
 use Best\Blueprint\Support\StubException;
 use Best\Blueprint\Support\StubRenderer;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
+use Throwable;
 
 /**
  * Shared flow for generators that add one class to an existing module.
@@ -78,12 +81,16 @@ abstract class ModuleClassCommand extends Command
             return $this->refuse($this->invalidStub($e->path, $e->reason));
         }
 
-        if (! str_contains($contents, "namespace {$namespace};") || preg_match('/\bclass\s+'.$class.'\b/', $contents) !== 1) {
+        if (! PhpSource::declares($contents, $namespace, $class)) {
             return $this->refuse($this->invalidStub($stubs->path($this->stub()), "no {$class} class in namespace {$namespace}"));
         }
 
-        $files->ensureDirectoryExists(base_path($folder));
-        $files->put(base_path("{$folder}/{$class}.php"), $contents);
+        try {
+            (new FileWriter($files))->write([base_path("{$folder}/{$class}.php") => $contents]);
+        } catch (Throwable $e) {
+            return $this->refuse("Could not write {$folder}/{$class}.php ({$e->getMessage()}). Nothing was changed.");
+        }
+
         $this->line("created {$folder}/{$class}.php");
 
         if (($tip = $this->tip($class)) !== null) {

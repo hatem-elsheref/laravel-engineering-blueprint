@@ -13,7 +13,7 @@ beforeEach(function () {
 
 afterEach(function () {
     $this->files->deleteDirectory($this->tmp);
-    $this->files->deleteDirectory(base_path('stubs/blueprint'));
+    $this->files->deleteDirectory(base_path('stubs'));
     config()->set('blueprint.stub_path', null);
 });
 

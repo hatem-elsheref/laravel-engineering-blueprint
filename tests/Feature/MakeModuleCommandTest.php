@@ -11,7 +11,7 @@ beforeEach(function () {
 
 afterEach(function () {
     File::deleteDirectory(app_path('Modules'));
-    File::deleteDirectory(base_path('stubs/blueprint'));
+    File::deleteDirectory(base_path('stubs'));
     file_put_contents($this->providersPath, $this->providers);
     File::delete([app()->getCachedConfigPath(), app()->getCachedRoutesPath()]);
     config()->set('blueprint.stub_path', null);
@@ -274,4 +274,39 @@ it('refuses when a file has the module name', function () {
         ->assertExitCode(1);
 
     expect(file_get_contents($this->providersPath))->toBe($this->providers);
+});
+
+it('refuses stub that only mentions Provider in a comment', function () {
+    overrideProviderStub(str_replace('final class Provider', "// class Provider\nfinal class Thing", file_get_contents(__DIR__.'/../../stubs/module-provider.stub')));
+
+    $this->artisan('make:module', ['name' => 'Orders'])
+        ->expectsOutputToContain('did not produce a valid module provider')
+        ->assertExitCode(1);
+
+    expect(is_dir(app_path('Modules')))->toBeFalse();
+});
+
+it('rolls back a half-written module', function () {
+    app()->instance(Illuminate\Filesystem\Filesystem::class, new class extends Illuminate\Filesystem\Filesystem
+    {
+        public function put($path, $contents, $lock = false)
+        {
+            if (str_ends_with($path, 'routes/web.php')) {
+                throw new RuntimeException('disk full');
+            }
+
+            return parent::put($path, $contents, $lock);
+        }
+    });
+
+    $this->artisan('make:module', ['name' => 'Orders', '--api' => true, '--web' => true])
+        ->expectsOutputToContain('Could not write the module (disk full). Nothing was changed.')
+        ->assertExitCode(1);
+
+    expect(is_dir(app_path('Modules/Orders')))->toBeFalse()
+        ->and(file_get_contents($this->providersPath))->toBe($this->providers);
+
+    app()->forgetInstance(Illuminate\Filesystem\Filesystem::class);
+
+    $this->artisan('make:module', ['name' => 'Orders'])->assertExitCode(0);
 });
