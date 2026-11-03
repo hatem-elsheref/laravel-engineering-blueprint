@@ -37,13 +37,13 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
-        $profile = $this->chooseProfile();
+        $profile = $this->chooseProfile($writer);
 
         if ($profile === null) {
             return self::FAILURE;
         }
 
-        if (! $this->allowsDowngrade($profile)) {
+        if (! $this->allowsDowngrade($profile, $writer)) {
             return self::FAILURE;
         }
 
@@ -69,7 +69,11 @@ class InstallCommand extends Command
 
         if (! $exists || $this->option('force')) {
             $writer->publish($path);
-            $writer->setProfile($path, $profile);
+
+            if ($writer->setProfile($path, $profile)->status === ProfileWrite::UNRECORDABLE) {
+                return false;
+            }
+
             $this->line(($exists ? 'overwrote' : 'created').' config/blueprint.php');
         } else {
             $write = $writer->setProfile($path, $profile);
@@ -93,9 +97,17 @@ class InstallCommand extends Command
         return true;
     }
 
-    private function allowsDowngrade(Profile $profile): bool
+    /**
+     * The saved profile: what the config file says, falling back to the (possibly cached) config.
+     */
+    private function savedProfile(ConfigWriter $writer): ?Profile
     {
-        $saved = Profile::current();
+        return Profile::tryFrom((string) $writer->recordedProfile(config_path('blueprint.php'))) ?? Profile::current();
+    }
+
+    private function allowsDowngrade(Profile $profile, ConfigWriter $writer): bool
+    {
+        $saved = $this->savedProfile($writer);
         $dropped = $saved === null ? [] : array_values(array_diff($saved->capabilities(), $profile->capabilities()));
 
         if ($dropped === [] || $this->option('force') || $this->option('allow-downgrade')) {
@@ -110,10 +122,16 @@ class InstallCommand extends Command
             return false;
         }
 
-        return $this->confirm("This removes {$list} from the project. Continue?", false);
+        if ($this->confirm("This removes {$list} from the project. Continue?", false)) {
+            return true;
+        }
+
+        $this->line('Install cancelled; nothing was changed.');
+
+        return false;
     }
 
-    private function chooseProfile(): ?Profile
+    private function chooseProfile(ConfigWriter $writer): ?Profile
     {
         $option = $this->option('profile');
 
@@ -127,7 +145,7 @@ class InstallCommand extends Command
             return $profile;
         }
 
-        $default = $this->defaultProfile();
+        $default = $this->defaultProfile($writer);
 
         if (! $this->input->isInteractive()) {
             return $default;
@@ -140,10 +158,12 @@ class InstallCommand extends Command
         return Profile::from($this->choice('Which project profile?', Profile::values(), $default->value));
     }
 
-    private function defaultProfile(): Profile
+    private function defaultProfile(ConfigWriter $writer): Profile
     {
-        return Profile::current()
-            ?? Profile::tryFrom((string) config('blueprint.default_profile'))
+        $configured = config('blueprint.default_profile');
+
+        return $this->savedProfile($writer)
+            ?? (is_string($configured) ? Profile::tryFrom($configured) : null)
             ?? Profile::Modular;
     }
 

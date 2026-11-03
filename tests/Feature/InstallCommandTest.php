@@ -222,3 +222,46 @@ it('basic keeps the about hint', function () {
         ->expectsOutputToContain('Next: php artisan engineering:about')
         ->assertExitCode(0);
 });
+
+it('trusts the config file over a stale cache', function () {
+    install(['--profile' => 'tenant-saas'])->assertExitCode(0);
+    editConfig("'profile' => 'tenant-saas',", "'profile' => 'basic',");
+    file_put_contents(app()->getCachedConfigPath(), '<?php return [];');
+
+    install(['--profile' => 'basic'])
+        ->expectsOutputToContain('profile unchanged: basic')
+        ->expectsOutputToContain('cleared config cache')
+        ->assertExitCode(0);
+});
+
+it('says so when a downgrade is declined', function () {
+    install(['--profile' => 'tenant-saas'])->assertExitCode(0);
+
+    $this->artisan('engineering:install', ['--profile' => 'modular'])
+        ->expectsConfirmation('This removes Features, Settings, Tenancy from the project. Continue?', 'no')
+        ->expectsOutputToContain('Install cancelled; nothing was changed.')
+        ->assertExitCode(1);
+});
+
+it('ignores a non-string default_profile', function () {
+    config()->set('blueprint.default_profile', ['saas']);
+
+    install()->assertExitCode(0);
+
+    expect(installedConfig())->toContain("'profile' => 'modular',");
+});
+
+it('fails when a fresh config cannot record the profile', function () {
+    app()->instance(Best\Blueprint\Support\ConfigWriter::class, new class(new Illuminate\Filesystem\Filesystem) extends Best\Blueprint\Support\ConfigWriter
+    {
+        public function setProfile(string $path, Best\Blueprint\Support\Profile $profile): Best\Blueprint\Support\ProfileWrite
+        {
+            return new Best\Blueprint\Support\ProfileWrite(Best\Blueprint\Support\ProfileWrite::UNRECORDABLE);
+        }
+    });
+
+    install(['--profile' => 'saas'])
+        ->expectsOutputToContain('Could not record the profile in config/blueprint.php.')
+        ->doesntExpectOutputToContain('Installed profile:')
+        ->assertExitCode(1);
+});

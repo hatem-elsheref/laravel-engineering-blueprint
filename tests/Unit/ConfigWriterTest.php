@@ -86,3 +86,38 @@ it('refuses unrecordable configs', function (string $profileLine) {
     'duplicate profile keys' => ["    'profile' => 'basic',\n    'profile' => 'modular',\n"],
     'nested profile key' => ["    'nested' => [\n        'profile' => 'x',\n    ],\n"],
 ]);
+
+it('refuses interpolated strings', function () {
+    writeConfig($this->path, "    'profile' => \"\$x\",\n");
+    $before = file_get_contents($this->path);
+
+    expect($this->writer->setProfile($this->path, Profile::Saas)->status)->toBe(ProfileWrite::UNRECORDABLE)
+        ->and(file_get_contents($this->path))->toBe($before);
+});
+
+it('ignores profile lines inside block comments', function () {
+    writeConfig($this->path, "    /*\n    'profile' => 'basic',\n    */\n    'profile' => 'modular',\n");
+
+    $result = $this->writer->setProfile($this->path, Profile::Saas);
+
+    expect($result->status)->toBe(ProfileWrite::UPDATED)
+        ->and($result->old)->toBe('modular')
+        ->and(file_get_contents($this->path))->toContain("    /*\n    'profile' => 'basic',\n    */\n    'profile' => 'saas',\n");
+});
+
+it('does not rewrite a commented line when the real one is an expression', function () {
+    writeConfig($this->path, "    /* 'profile' => 'basic', */\n    'profile' => env('BLUEPRINT_PROFILE'),\n");
+    $before = file_get_contents($this->path);
+
+    expect($this->writer->setProfile($this->path, Profile::Saas)->status)->toBe(ProfileWrite::UNRECORDABLE)
+        ->and(file_get_contents($this->path))->toBe($before);
+});
+
+it('reads the recorded profile', function () {
+    writeConfig($this->path, "    'profile' => 'saas',\n");
+    expect($this->writer->recordedProfile($this->path))->toBe('saas');
+
+    writeConfig($this->path, "    'profile' => env('X'),\n");
+    expect($this->writer->recordedProfile($this->path))->toBeNull()
+        ->and($this->writer->recordedProfile($this->dir.'/missing.php'))->toBeNull();
+});
