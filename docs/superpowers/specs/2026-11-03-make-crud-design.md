@@ -1,7 +1,7 @@
 # Phase 5 — `make:crud` (API) — Design Spec
 
 **Date:** 2026-11-03
-**Status:** Draft for approval
+**Status:** Approved
 **Builds on:** Phases 3–4 (`Modules`, `ModuleName`, `PhpNames`, `Fields`, `StubRenderer`, the generator safety rules).
 **Supports:** PHP 8.3+, Laravel 12 and 13.
 **Authority:** `docs/ARCHITECTURE.md` (§1.2 layout, §1.3 class roles, §1.4 module rules, §1.5 request flow), `docs/NAMING.md`, `docs/CONSTITUTION.md` ("Requests: validation + authorization; Data classes for typed transfer").
