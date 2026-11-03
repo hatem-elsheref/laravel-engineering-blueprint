@@ -23,6 +23,12 @@ class BlueprintServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->app['router']->aliasMiddleware('feature', Http\Middleware\EnsureFeatureEnabled::class);
+
+        if ($this->app->bound('blade.compiler')) {
+            \Illuminate\Support\Facades\Blade::if('feature', fn (string $key): bool => $this->app->make(Features\FeatureManager::class)->enabled($key));
+        }
+
         if ($this->app->make(TenancyDetector::class)->active()) {
             $this->registerTenancyMiddleware();
 
