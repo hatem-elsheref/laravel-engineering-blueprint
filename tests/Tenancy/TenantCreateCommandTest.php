@@ -142,8 +142,9 @@ it('does not run the app tenant pipeline', function () {
     Event::assertNotDispatched(Stancl\Tenancy\Events\TenantCreated::class);
 });
 
-it('seeds once when a TenantSeeder exists', function () {
-    eval('namespace Database\Seeders; class TenantSeeder extends \Illuminate\Database\Seeder { public function run(): void { \Illuminate\Support\Facades\DB::table("records")->insert(["tenant" => tenant("id")]); } }');
+it('seeds once when the tenant seeder exists', function () {
+    require_once __DIR__.'/../Fixtures/RecordingTenantSeeder.php';
+    config()->set('blueprint.tenant_seeder', Best\Blueprint\Tests\Fixtures\RecordingTenantSeeder::class);
 
     $this->artisan('tenant:create', ['name' => 'acme'])->expectsOutputToContain('✓ Seed tenant data')->assertExitCode(0);
     $this->artisan('tenant:create', ['name' => 'acme'])->expectsOutputToContain('– Seed tenant data (already done)')->assertExitCode(0);

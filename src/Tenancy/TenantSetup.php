@@ -12,8 +12,6 @@ use Throwable;
  */
 class TenantSetup
 {
-    public const SEEDER = 'Database\\Seeders\\TenantSeeder';
-
     public function __construct(private readonly Kernel $artisan) {}
 
     /**
@@ -74,15 +72,17 @@ class TenantSetup
                 return 'done';
             },
             'Seed tenant data' => function () use ($name, &$tenant) {
-                if (! class_exists(self::SEEDER)) {
-                    return ['skipped', 'no '.self::SEEDER];
+                $seeder = (string) config('blueprint.tenant_seeder', 'Database\\Seeders\\TenantSeeder');
+
+                if (! class_exists($seeder)) {
+                    return ['skipped', 'no '.$seeder];
                 }
 
                 if ($tenant->getAttribute('blueprint_seeded_at') !== null) {
                     return 'already';
                 }
 
-                $exit = $this->artisan->call('tenants:seed', ['--tenants' => [$name], '--class' => self::SEEDER, '--force' => true]);
+                $exit = $this->artisan->call('tenants:seed', ['--tenants' => [$name], '--class' => $seeder, '--force' => true]);
 
                 if ($exit !== 0) {
                     throw new RuntimeException(trim($this->artisan->output()) ?: "tenants:seed exited with {$exit}");
