@@ -26,7 +26,8 @@ class MakeCrudCommand extends Command
     protected $signature = 'make:crud
         {module : Module name, e.g. Orders}
         {entity : Singular entity name, e.g. Order}
-        {--fields= : Comma-separated name:type list, e.g. "name:string,quantity:int,note:?string"}';
+        {--fields= : Comma-separated name:type list, e.g. "name:string,quantity:int,note:?string"}
+        {--feature= : Feature key that must be enabled for these routes (saas, tenant-saas)}';
 
     protected $description = 'Create a JSON API CRUD for an entity in a module';
 
@@ -73,6 +74,12 @@ class MakeCrudCommand extends Command
             $modules->path().'/'.$module,
             $this->isTenantModule(base_path($modules->path().'/'.$module.'/Provider.php')),
         );
+        $feature = $this->option('feature');
+
+        if ($feature !== null && ($error = $this->featureError((string) $feature)) !== null) {
+            return $this->refuse($error);
+        }
+
         $routesPath = base_path($names->modulePath.'/routes/api.php');
 
         if (! $files->isFile($routesPath)) {
@@ -88,14 +95,23 @@ class MakeCrudCommand extends Command
         $controller = "{$names->entity}Controller";
 
         try {
-            $generated = $this->render($stubs, $names, $fields);
-            $routeLine = $stubs->render('route.stub', ['uri' => $names->uri, 'controller' => $controller]);
+            $generated = $this->render($stubs, $names, $fields, $feature);
+            $routeLine = $stubs->render('route.stub', [
+                'uri' => $names->uri,
+                'controller' => $controller,
+                'middleware' => $feature === null ? '' : "\n    ->middleware('feature:{$feature}')",
+            ]);
         } catch (StubException $e) {
             return $this->refuse($this->invalidStub($e->path, $e->reason));
         }
 
         if (! str_contains($routeLine, "{$controller}::class")) {
             return $this->refuse('Stub '.$stubs->path('route.stub')." did not produce a valid route (no {$controller}::class). Update or delete it, then re-run.");
+        }
+
+        // A requested feature gate must never be silently dropped (e.g. by an old published route.stub).
+        if ($feature !== null && ! str_contains($routeLine, "feature:{$feature}")) {
+            return $this->refuse('Stub '.$stubs->path('route.stub')." did not produce a valid route (no feature:{$feature} middleware). Update or delete it, then re-run.");
         }
 
         foreach ($generated as $path => $contents) {
@@ -240,7 +256,7 @@ class MakeCrudCommand extends Command
      * @param  list<CrudField>  $fields
      * @return array<string, string> base-relative path => contents
      */
-    private function render(StubRenderer $stubs, CrudNames $names, array $fields): array
+    private function render(StubRenderer $stubs, CrudNames $names, array $fields, ?string $feature = null): array
     {
         $ns = $names->moduleNamespace;
         $e = $names->entity;
@@ -324,10 +340,15 @@ class MakeCrudCommand extends Command
             ]),
             $paths['policy'] => $render('policy.stub', "{$ns}\\Policies", [$model, 'App\\Models\\User']),
             $paths['test'] => $stubs->render($names->tenant ? 'test-tenant.stub' : 'test.stub', $common + [
-                'imports' => $this->imports($names->tenant
-                    ? [$model, 'App\\Models\\User', 'Best\\Blueprint\\Testing\\InteractsWithTenancy', 'Illuminate\\Foundation\\Testing\\DatabaseMigrations']
-                    : [$model, 'App\\Models\\User', 'Illuminate\\Foundation\\Testing\\RefreshDatabase']),
+                'imports' => $this->imports([
+                    ...($names->tenant
+                        ? [$model, 'App\\Models\\User', 'Best\\Blueprint\\Testing\\InteractsWithTenancy', 'Illuminate\\Foundation\\Testing\\DatabaseMigrations']
+                        : [$model, 'App\\Models\\User', 'Illuminate\\Foundation\\Testing\\RefreshDatabase']),
+                    ...($feature === null ? [] : ['Best\\Blueprint\\Features\\FeatureAdmin']),
+                ]),
                 'validation' => $this->validationTest($names, $fields),
+                'featureSetup' => $feature === null ? '' : "    app(FeatureAdmin::class)->enable('{$feature}');\n",
+                'featureTest' => $feature === null ? '' : $this->featureTest($names, $feature),
             ]),
         ];
 
@@ -393,6 +414,33 @@ class MakeCrudCommand extends Command
             ."        ->assertUnprocessable()\n"
             ."        ->assertJsonValidationErrors([".implode(', ', $required)."]);\n"
             ."});\n";
+    }
+
+    private function featureTest(CrudNames $names, string $feature): string
+    {
+        $url = $names->tenant ? "\$this->tenantUrl('/api/{$names->uri}')" : "'/api/{$names->uri}'";
+
+        return "\nit('is blocked when the {$feature} feature is disabled', function (): void {\n"
+            ."    app(FeatureAdmin::class)->disable('{$feature}');\n\n"
+            ."    \$this->actingAs(\$this->user)->getJson({$url})->assertForbidden();\n"
+            ."});\n";
+    }
+
+    private function featureError(string $feature): ?string
+    {
+        $profile = Profile::current();
+
+        if ($profile === null || ! $profile->usesFeatures()) {
+            return '--feature needs the saas or tenant-saas profile.';
+        }
+
+        $class = config('blueprint.features');
+
+        if (! is_string($class) || ! class_exists($class)) {
+            return 'Feature definitions not found; run php artisan engineering:install.';
+        }
+
+        return array_key_exists($feature, $class::defaults()) ? null : "Unknown feature \"{$feature}\". Add it to {$class} first.";
     }
 
     /**

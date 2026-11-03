@@ -7,7 +7,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     $this->user = User::factory()->create();
-});
+{{ featureSetup }}});
 
 it('denies guests', function (): void {
     ${{ variable }} = {{ entity }}::factory()->create();
@@ -35,7 +35,7 @@ it('creates a {{ variable }}', function (): void {
 
     expect({{ entity }}::count())->toBe(1);
 });
-{{ validation }}
+{{ validation }}{{ featureTest }}
 it('shows a {{ variable }}', function (): void {
     ${{ variable }} = {{ entity }}::factory()->create();
 
