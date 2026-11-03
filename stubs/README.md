@@ -25,3 +25,6 @@ To customize, publish them with `php artisan vendor:publish --tag=blueprint-stub
 | `resource.stub` | `make:crud` — API resource |
 | `policy.stub` | `make:crud` — policy |
 | `test.stub` | `make:crud` — Pest feature tests |
+| `test-tenant.stub` | `make:crud` in a tenant module (tenant-saas) — Pest tests on a real test tenant |
+| `tenant-model.stub` | `engineering:install --profile=tenant-saas` — `app/Models/Tenant.php` |
+| `tenant-routes.stub` | `engineering:install --profile=tenant-saas` — empty `routes/tenant.php` group |

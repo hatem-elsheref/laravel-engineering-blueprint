@@ -28,6 +28,16 @@ Target module layout: `docs/ARCHITECTURE.md` (`Requests/`, `Controllers/`, `rout
 - Entity name (PascalCase): `Order`
 - Entity must be singular. Fields: `--fields="name:string,quantity:int,price:?float,active:bool,tags:array,shippedAt:?Carbon\CarbonImmutable"` (types: string, int, float, bool, array, Carbon\CarbonImmutable; `?` = nullable)
 
+## tenant-saas profile (multi-tenancy)
+
+Requires `composer require stancl/tenancy:^3.10`, then `php artisan engineering:install --profile=tenant-saas` and `php artisan migrate`.
+
+- Create tenants only with `php artisan tenant:create acme` (domain `acme.<base>`, database `tenant_acme`); safe to re-run after a failure.
+- `make:module Orders` makes a **tenant** module (routes answer only on tenant domains); `make:module Admin --central` makes a **platform** module (routes answer only on central domains).
+- `make:crud` in a tenant module writes its migration to `database/migrations/tenant/`; run it with `php artisan tenants:migrate`. Never put tenant tables in `database/migrations/`.
+- Generated tenant tests use `Best\Blueprint\Testing\InteractsWithTenancy` (real test tenant per test).
+- Schedule tenant work with `tenants:run <command>`; the queue's database connection must be the central one.
+
 ## Customizing output
 
 All stubs are rendered by the commands above. To customize them, run `php artisan vendor:publish --tag=blueprint-stubs` and edit `stubs/blueprint/*.stub` in the project; never hand-fill placeholders.
