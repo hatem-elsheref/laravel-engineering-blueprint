@@ -7,32 +7,36 @@ namespace {{ namespace }};
 {{ imports }}
 /**
  * Guests are always denied: every method requires a User.
- * Tighten these rules for your app.
  */
 final class {{ entity }}Policy
 {
     public function viewAny(User $user): bool
     {
+        // Tighten for your app.
         return true;
     }
 
     public function view(User $user, {{ entity }} ${{ variable }}): bool
     {
+        // Tighten for your app.
         return true;
     }
 
     public function create(User $user): bool
     {
+        // Tighten for your app.
         return true;
     }
 
     public function update(User $user, {{ entity }} ${{ variable }}): bool
     {
+        // Tighten for your app.
         return true;
     }
 
     public function delete(User $user, {{ entity }} ${{ variable }}): bool
     {
+        // Tighten for your app.
         return true;
     }
 }

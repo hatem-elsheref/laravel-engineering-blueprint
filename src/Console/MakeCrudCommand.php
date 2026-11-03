@@ -76,10 +76,17 @@ class MakeCrudCommand extends Command
             return $this->refuse("\"{$collision}\" already exists. make:crud never overwrites files.");
         }
 
+        $controller = "{$names->entity}Controller";
+
         try {
             $generated = $this->render($stubs, $names, $fields);
+            $routeLine = $stubs->render('route.stub', ['uri' => $names->uri, 'controller' => $controller]);
         } catch (StubException $e) {
             return $this->refuse($this->invalidStub($e->path, $e->reason));
+        }
+
+        if (! str_contains($routeLine, "{$controller}::class")) {
+            return $this->refuse('Stub '.$stubs->path('route.stub')." did not produce a valid route (no {$controller}::class). Update or delete it, then re-run.");
         }
 
         foreach ($generated as $path => $contents) {
@@ -113,9 +120,8 @@ class MakeCrudCommand extends Command
             $writer->write($absolute);
             $files->put($routesPath, RouteFile::addResource(
                 $routes,
-                "{$names->moduleNamespace}\\Controllers\\{$names->entity}Controller",
-                $names->uri,
-                "{$names->entity}Controller",
+                "{$names->moduleNamespace}\\Controllers\\{$controller}",
+                $routeLine,
             ));
         } catch (Throwable $e) {
             $writer->rollback();

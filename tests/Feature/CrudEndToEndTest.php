@@ -60,8 +60,20 @@ function purchaseOrderPayload(array $overrides = []): array
     ], $overrides);
 }
 
-it('denies guests', function () {
+it('denies guests on every endpoint', function () {
+    $id = App\Modules\Shop\Models\PurchaseOrder::factory()->create()->id;
+
     $this->getJson('/api/purchase-orders')->assertForbidden();
+    $this->postJson('/api/purchase-orders', purchaseOrderPayload())->assertForbidden();
+    $this->getJson("/api/purchase-orders/{$id}")->assertForbidden();
+    $this->putJson("/api/purchase-orders/{$id}", purchaseOrderPayload())->assertForbidden();
+    $this->deleteJson("/api/purchase-orders/{$id}")->assertForbidden();
+});
+
+it('rejects out-of-range numbers with 422', function () {
+    $this->actingAs($this->user)->postJson('/api/purchase-orders', purchaseOrderPayload(['quantity' => 99999999999, 'price' => 1e13]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['quantity', 'price']);
 });
 
 it('lists purchase orders', function () {

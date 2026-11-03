@@ -60,8 +60,9 @@ final readonly class CrudField
 
         return [$presence, ...match ($this->kind()) {
             'string' => ['string', 'max:255'],
-            'int' => ['integer'],
-            'float' => ['numeric'],
+            // Ranges match the migration columns (integer, decimal(12, 2)) so bad input is a 422, not a 500.
+            'int' => ['integer', 'between:-2147483648,2147483647'],
+            'float' => ['numeric', 'between:-9999999999.99,9999999999.99'],
             'bool' => ['boolean'],
             'array' => ['array'],
             'date' => ['date'],

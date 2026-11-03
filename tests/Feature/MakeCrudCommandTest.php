@@ -267,3 +267,41 @@ it('refuses module folders that are not namespace names', function () {
         ->expectsOutputToContain('Module folder "shared-utils" is not a valid PHP namespace name.')
         ->assertExitCode(1);
 });
+
+it('uses the route stub', function () {
+    File::ensureDirectoryExists(base_path('stubs/blueprint'));
+    file_put_contents(base_path('stubs/blueprint/route.stub'), "Route::apiResource('{{ uri }}', {{ controller }}::class)->middleware('auth:sanctum');\n");
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])->assertExitCode(0);
+
+    expect(file_get_contents(app_path('Modules/Orders/routes/api.php')))
+        ->toEndWith("Route::apiResource('orders', OrderController::class)->middleware('auth:sanctum');\n");
+});
+
+it('refuses a route stub without the controller', function () {
+    File::ensureDirectoryExists(base_path('stubs/blueprint'));
+    file_put_contents(base_path('stubs/blueprint/route.stub'), "Route::get('/{{ uri }}', fn () => 'x');\n");
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])
+        ->expectsOutputToContain('did not produce a valid route (no OrderController::class)')
+        ->assertExitCode(1);
+
+    assertNothingWritten($this);
+});
+
+it('marks every policy method to tighten', function () {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])->assertExitCode(0);
+
+    expect(substr_count(file_get_contents(app_path('Modules/Orders/Policies/OrderPolicy.php')), '// Tighten for your app.'))->toBe(5);
+});
+
+it('generates guest checks for every endpoint', function () {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])->assertExitCode(0);
+
+    expect(file_get_contents(base_path('tests/Feature/Modules/Orders/OrderApiTest.php')))
+        ->toContain("\$this->getJson('/api/orders')->assertForbidden();")
+        ->toContain("\$this->postJson('/api/orders', Order::factory()->raw())->assertForbidden();")
+        ->toContain("\$this->getJson(\"/api/orders/{\$order->id}\")->assertForbidden();")
+        ->toContain("\$this->putJson(\"/api/orders/{\$order->id}\", Order::factory()->raw())->assertForbidden();")
+        ->toContain("\$this->deleteJson(\"/api/orders/{\$order->id}\")->assertForbidden();");
+});

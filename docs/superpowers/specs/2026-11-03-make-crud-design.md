@@ -69,11 +69,11 @@ Names derived from `<Entity>` (e.g. `Order`, `PurchaseOrder`):
 | Field type | Migration | Cast | Rules (store & update) | Factory | Data from request |
 |---|---|---|---|---|---|
 | `string` | `string(col)` | — | `required`, `string`, `max:255` | `fake()->words(3, true)` | `$request->string(key)->toString()` |
-| `int` | `integer(col)` | `integer` | `required`, `integer` | `fake()->numberBetween(1, 100)` | `$request->integer(key)` |
-| `float` | `decimal(col, 12, 2)` | `float` | `required`, `numeric` | `fake()->randomFloat(2, 1, 1000)` | `$request->float(key)` |
+| `int` | `integer(col)` | `integer` | `required`, `integer`, `between:-2147483648,2147483647` | `fake()->numberBetween(1, 100)` | `$request->integer(key)` |
+| `float` | `decimal(col, 12, 2)` | `float` | `required`, `numeric`, `between:-9999999999.99,9999999999.99` | `fake()->randomFloat(2, 1, 1000)` | `$request->float(key)` |
 | `bool` | `boolean(col)` | `boolean` | `required`, `boolean` | `fake()->boolean()` | `$request->boolean(key)` |
 | `array` | `json(col)` | `array` | `present`, `array` *(builder-check call: `required` rejects `[]`)* | `[]` | `(array) $request->validated(key)` |
-| `Carbon\CarbonImmutable` | `timestamp(col)` | `immutable_datetime` | `required`, `date` | `CarbonImmutable::now()` | `CarbonImmutable::parse($request->validated(key))` |
+| `Carbon\CarbonImmutable` | `timestamp(col)` | `immutable_datetime` | `required`, `date` | `CarbonImmutable::now()` | `CarbonImmutable::parse($request->validated(key))->setTimezone(config('app.timezone'))` |
 
 Nullable (`?type`): migration `->nullable()`; rule `nullable` instead of `required`; factory value unchanged; Data mapping returns `null` when the validated value is `null` (e.g. `$request->validated(key) === null ? null : $request->integer(key)`). Rules are written as arrays: `'quantity' => ['required', 'integer'],`.
 
@@ -114,7 +114,7 @@ Append to the module's `routes/api.php`: `use <ns>\Controllers\OrderController;`
 
 ### 6.7 Stubs
 
-Phase-1 stubs `model`, `migration`, `request`, `controller`, `resource`, `policy`, `route`, `test` are **rewritten** for this design (placeholders named by the builder); new stubs: `factory.stub`, `crud-data.stub`, `crud-create-action.stub`, `crud-update-action.stub`, `crud-delete-action.stub`, `query.stub`. `dto.stub` and `action.stub` (Phase 4) are not touched. `stubs/README.md` and `kit/skills/leb-generate-crud/SKILL.md` updated: the skill tells agents to use `make:crud` and drops the hand-fill section.
+Phase-1 stubs `model`, `migration`, `request`, `controller`, `resource`, `policy`, `route` (now the single route line, placeholders `{{ uri }}`, `{{ controller }}`; must contain `<Controller>::class`), `test` are **rewritten** for this design (placeholders named by the builder); new stubs: `factory.stub`, `crud-data.stub`, `crud-create-action.stub`, `crud-update-action.stub`, `crud-delete-action.stub`, `query.stub`. `dto.stub` and `action.stub` (Phase 4) are not touched. `stubs/README.md` and `kit/skills/leb-generate-crud/SKILL.md` updated: the skill tells agents to use `make:crud` and drops the hand-fill section.
 
 ## 7. Testing (acceptance — green on Laravel 12 and 13)
 
@@ -136,3 +136,12 @@ Package tests:
 - Placeholder names in stubs; how per-field lines are assembled.
 - Test fixture approach for `App\Models\User` in Testbench.
 - Exact comment text in generated files.
+
+## Amendments (post-review fixes, 2026-11-03)
+
+- Number rules carry ranges matching the columns (422 instead of a DB error).
+- Dates are converted to `app.timezone` so offsets keep the right moment.
+- Entity names that clash with an imported class in any generated file are refused.
+- The controller `use` line is inserted in sorted position; CRLF route files keep CRLF.
+- Generated guest test covers all five endpoints; each policy method carries `// Tighten for your app.`
+- Known limit: implicit route-model binding runs before the policy, so guests get 404 for ids that don't exist and 403 for ids that do. Adding auth middleware (as the success note says) closes this.

@@ -24,14 +24,14 @@ it('maps each type', function (string $spec, array $expected) {
     'int' => ['quantity:int', [
         'migration' => "\$table->integer('quantity')",
         'cast' => 'integer',
-        'rules' => ['required', 'integer'],
+        'rules' => ['required', 'integer', 'between:-2147483648,2147483647'],
         'factory' => 'fake()->numberBetween(1, 100)',
         'fromRequest' => "\$request->integer('quantity')",
     ]],
     'float' => ['price:float', [
         'migration' => "\$table->decimal('price', 12, 2)",
         'cast' => 'float',
-        'rules' => ['required', 'numeric'],
+        'rules' => ['required', 'numeric', 'between:-9999999999.99,9999999999.99'],
         'factory' => 'fake()->randomFloat(2, 1, 1000)',
         'fromRequest' => "\$request->float('price')",
     ]],
@@ -59,7 +59,7 @@ it('maps each type', function (string $spec, array $expected) {
     'nullable int' => ['quantity:?int', [
         'migration' => "\$table->integer('quantity')->nullable()",
         'cast' => 'integer',
-        'rules' => ['nullable', 'integer'],
+        'rules' => ['nullable', 'integer', 'between:-2147483648,2147483647'],
         'factory' => 'fake()->numberBetween(1, 100)',
         'fromRequest' => "\$request->validated('quantity') === null ? null : \$request->integer('quantity')",
     ]],

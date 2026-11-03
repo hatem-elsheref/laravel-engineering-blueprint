@@ -10,7 +10,13 @@ beforeEach(function (): void {
 });
 
 it('denies guests', function (): void {
+    ${{ variable }} = {{ entity }}::factory()->create();
+
     $this->getJson('/api/{{ uri }}')->assertForbidden();
+    $this->postJson('/api/{{ uri }}', {{ entity }}::factory()->raw())->assertForbidden();
+    $this->getJson("/api/{{ uri }}/{${{ variable }}->id}")->assertForbidden();
+    $this->putJson("/api/{{ uri }}/{${{ variable }}->id}", {{ entity }}::factory()->raw())->assertForbidden();
+    $this->deleteJson("/api/{{ uri }}/{${{ variable }}->id}")->assertForbidden();
 });
 
 it('lists {{ uri }}', function (): void {

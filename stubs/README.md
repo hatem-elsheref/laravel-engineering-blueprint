@@ -21,6 +21,7 @@ To customize, publish them with `php artisan vendor:publish --tag=blueprint-stub
 | `crud-delete-action.stub` | `make:crud` — Delete action |
 | `query.stub` | `make:crud` — paginated list query |
 | `controller.stub` | `make:crud` — API resource controller |
+| `route.stub` | `make:crud` — route line added to the module's `routes/api.php` (e.g. add `->middleware('auth:sanctum')`) |
 | `resource.stub` | `make:crud` — API resource |
 | `policy.stub` | `make:crud` — policy |
 | `test.stub` | `make:crud` — Pest feature tests |

@@ -21,7 +21,7 @@ final class StoreOrderRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'quantity' => ['required', 'integer'],
+            'quantity' => ['required', 'integer', 'between:-2147483648,2147483647'],
             'note' => ['nullable', 'string', 'max:255'],
         ];
     }
