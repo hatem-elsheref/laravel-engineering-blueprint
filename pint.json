@@ -1,6 +1,7 @@
 {
     "preset": "laravel",
     "exclude": [
-        "tests/Fixtures/crud"
+        "tests/Fixtures/crud",
+        "tests/Fixtures/crud-snapshots"
     ]
 }
