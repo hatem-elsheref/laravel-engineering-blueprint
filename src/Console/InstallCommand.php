@@ -3,6 +3,8 @@
 namespace Best\Blueprint\Console;
 
 use Best\Blueprint\Flags\FlagSetup;
+use Best\Blueprint\Permissions\PermissionsDetector;
+use Best\Blueprint\Permissions\PermissionSetup;
 use Best\Blueprint\Support\Compatibility;
 use Best\Blueprint\Support\ConfigWriter;
 use Best\Blueprint\Support\Profile;
@@ -18,6 +20,7 @@ class InstallCommand extends Command
     protected $signature = 'engineering:install
         {--profile= : basic, modular, saas or tenant-saas}
         {--force : Overwrite the published config file}
+        {--permissions : Set up roles and permissions (needs spatie/laravel-permission)}
         {--allow-downgrade : Allow switching to a profile with fewer capabilities}';
 
     protected $description = 'Set up this app with a Laravel Engineering Blueprint project profile';
@@ -38,6 +41,13 @@ class InstallCommand extends Command
         $profile = $this->chooseProfile($writer);
 
         if ($profile === null) {
+            return self::FAILURE;
+        }
+
+        if ($this->option('permissions') && ! $this->laravel->make(PermissionsDetector::class)->spatie()) {
+            $this->error('--permissions needs spatie/laravel-permission. Run: composer require spatie/laravel-permission');
+            $this->line('Nothing was changed.');
+
             return self::FAILURE;
         }
 
@@ -75,6 +85,12 @@ class InstallCommand extends Command
                 if ($this->hasTenants()) {
                     $this->line('Existing tenants: php artisan tenants:migrate && php artisan features:sync');
                 }
+            }
+        }
+
+        if ($this->option('permissions')) {
+            foreach ($this->laravel->make(PermissionSetup::class)->run($profile) as $line) {
+                $this->line($line);
             }
         }
 
@@ -249,6 +265,10 @@ class InstallCommand extends Command
 
     private function renderSummary(Profile $profile, bool $tenancyReady = true): void
     {
+        if ($this->option('permissions')) {
+            $this->line('Permissions: define roles in the Permissions class, then run php artisan permissions:sync');
+        }
+
         $this->newLine();
         $this->info('Installed profile: '.$profile->label());
 

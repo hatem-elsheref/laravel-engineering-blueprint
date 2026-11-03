@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+/**
+ * Every {{ side }} permission and role lives here. Run permissions:sync after changing it.
+ */
+final class {{ class }}
+{
+    /**
+     * Permission groups: prefix => abilities. make:crud --permissions adds entries here.
+     *
+     * @return array<string, list<string>>
+     */
+    public static function groups(): array
+    {
+        return [
+            // 'products' => ['view', 'create', 'update', 'delete'],
+        ];
+    }
+
+    /**
+     * Roles and their permissions. Patterns: 'products.view', 'products.*', '*'.
+     * The super-admin role (config blueprint.super_admin) is implicit and passes every check.
+     *
+     * @return array<string, list<string>>
+     */
+    public static function roles(): array
+    {
+        return [
+            // 'admin' => ['*'],
+            // 'editor' => ['products.view', 'products.update'],
+        ];
+    }
+}

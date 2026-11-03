@@ -17,6 +17,9 @@
         <testsuite name="Permissions">
             <directory>tests/Permissions</directory>
         </testsuite>
+        <testsuite name="PermissionsTenancy">
+            <directory>tests/PermissionsTenancy</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>
