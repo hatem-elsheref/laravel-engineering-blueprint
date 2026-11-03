@@ -26,3 +26,17 @@ it('fails when requirements are not met', function () {
         ->expectsOutputToContain('Environment is not compatible')
         ->assertExitCode(1);
 });
+
+it('shows profile not installed', function () {
+    $this->artisan('engineering:about')
+        ->expectsOutputToContain('Profile: not installed (run php artisan engineering:install)')
+        ->assertExitCode(0);
+});
+
+it('shows installed profile', function () {
+    config()->set('blueprint.profile', 'saas');
+
+    $this->artisan('engineering:about')
+        ->expectsOutputToContain('Profile: saas')
+        ->assertExitCode(0);
+});
