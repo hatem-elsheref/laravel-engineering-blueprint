@@ -189,4 +189,4 @@ All phases (0–10) are done; version 1.0.0 is prepared. Publishing steps: [RELE
 
 ## License
 
-Use freely in your projects; adjust `docs/` and rules to your team.
+MIT — see [LICENSE](LICENSE).

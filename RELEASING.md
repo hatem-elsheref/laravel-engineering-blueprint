@@ -4,7 +4,7 @@ Everything up to the tag is prepared in the repository. These steps need your ac
 
 ## Before the first release (once)
 
-1. **License.** `composer.json` declares `MIT`. Confirm it, then add a `LICENSE` file with the copyright holder's name (e.g. `MIT License — Copyright (c) 2026 <name>`).
+1. **License.** MIT, Copyright (c) 2026 Hatem Mohamed — done (`LICENSE`).
 2. **Package name.** `best/laravel-engineering-blueprint` needs the `best` vendor on Packagist. If it is taken, pick another vendor and replace it everywhere: `grep -rl "best/laravel-engineering-blueprint" --exclude-dir=vendor .`
 3. **Repository.** Create the GitHub repository, then:
    ```bash
