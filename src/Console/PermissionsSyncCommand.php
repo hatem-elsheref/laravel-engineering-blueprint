@@ -46,7 +46,7 @@ class PermissionsSyncCommand extends Command
         }
 
         if (! $tenancy) {
-            $this->report('', $sync->run($set, $prune));
+            $this->report('', '', $sync->run($set, $prune));
 
             return self::SUCCESS;
         }
@@ -60,7 +60,7 @@ class PermissionsSyncCommand extends Command
         }
 
         if ($central) {
-            $this->report('central: ', $sync->run($set, $prune));
+            $this->report('central: ', '--central ', $sync->run($set, $prune));
 
             return self::SUCCESS;
         }
@@ -88,7 +88,7 @@ class PermissionsSyncCommand extends Command
 
         foreach ($tenants as $id => $tenant) {
             try {
-                $this->report("tenant \"{$id}\": ", $tenant->run(fn () => $sync->run($set, $prune)));
+                $this->report("tenant \"{$id}\": ", "--tenant={$id} ", $tenant->run(fn () => $sync->run($set, $prune)));
             } catch (Throwable $e) {
                 // stancl's run() leaves tenancy on when the callback throws; end() is a no-op otherwise.
                 tenancy()->end();
@@ -101,7 +101,8 @@ class PermissionsSyncCommand extends Command
         return $failed ? self::FAILURE : self::SUCCESS;
     }
 
-    private function report(string $prefix, SyncResult $result): void
+    /** @param  string  $side  Options naming the synced side, so the --prune hint targets the same database(s). */
+    private function report(string $prefix, string $side, SyncResult $result): void
     {
         $this->line("{$prefix}added {$result->permissionsAdded} permission(s) and {$result->rolesAdded} role(s)");
 
@@ -109,7 +110,7 @@ class PermissionsSyncCommand extends Command
             $this->line($prefix.($result->pruned ? 'pruned: ' : 'stale: ').implode(', ', $result->stale));
 
             if (! $result->pruned) {
-                $this->line('Run permissions:sync --prune to delete them.');
+                $this->line("Run permissions:sync {$side}--prune to delete them.");
             }
         }
     }

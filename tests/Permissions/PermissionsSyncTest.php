@@ -103,3 +103,11 @@ it('rolls back everything when the sync fails midway', function () {
     expect(fn () => $this->artisan('permissions:sync')->run())->toThrow(RuntimeException::class);
     expect(DB::table('permissions')->count())->toBe(0);
 });
+
+it('hints at a plain --prune outside tenant-saas', function () {
+    Permission::create(['name' => 'legacy.view', 'guard_name' => 'web']);
+
+    $this->artisan('permissions:sync')
+        ->expectsOutputToContain('Run permissions:sync --prune to delete them.')
+        ->assertExitCode(0);
+});

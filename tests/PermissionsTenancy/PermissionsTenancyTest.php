@@ -202,3 +202,22 @@ it('does not reuse one tenant\'s permissions in another', function () {
     expect($key)->toBe('spatie.permission.cache.tenant.b')
         ->and(app(PermissionRegistrar::class)->cacheKey)->toBe('spatie.permission.cache');
 });
+
+it('hints at pruning the central database after a central sync', function () {
+    DB::connection('testing')->table('permissions')->insert(['name' => 'legacy.view', 'guard_name' => 'web']);
+
+    $this->artisan('permissions:sync', ['--central' => true])
+        ->expectsOutputToContain('central: stale: legacy.view')
+        ->expectsOutputToContain('Run permissions:sync --central --prune to delete them.')
+        ->assertExitCode(0);
+});
+
+it('hints at pruning only the tenant that has stale entries', function () {
+    tenancy()->find('b')->run(fn () => DB::table('permissions')->insert(['name' => 'legacy.view', 'guard_name' => 'web']));
+
+    $this->artisan('permissions:sync')
+        ->expectsOutputToContain('tenant "b": stale: legacy.view')
+        ->expectsOutputToContain('Run permissions:sync --tenant=b --prune to delete them.')
+        ->doesntExpectOutputToContain('Run permissions:sync --prune to delete them.')
+        ->assertExitCode(0);
+});
