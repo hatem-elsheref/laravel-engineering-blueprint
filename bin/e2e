@@ -50,7 +50,7 @@ new_app() {
   run "$app" composer require "best/laravel-engineering-blueprint:*" -W --no-interaction -q || return 1
   run "$app" composer remove phpunit/phpunit --dev --no-interaction -q || return 1
   run "$app" composer require pestphp/pest --dev -W --no-interaction -q || return 1
-  (cd "$app" && ./vendor/bin/pest --init >/dev/null 2>&1) || true
+  (cd "$app" && ./vendor/bin/pest --init --no-interaction </dev/null >/dev/null 2>&1) || true
   if [[ "$tenancy" == 1 ]]; then
     run "$app" composer require "stancl/tenancy:^3.10" -W --no-interaction -q || return 1
     # Tenant cache isolation needs a taggable store (see the install output).
