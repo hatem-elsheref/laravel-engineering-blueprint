@@ -140,3 +140,116 @@ it('accepts trailing slash in module_path', function () {
 
     expect(moduleFile('Orders/Provider.php'))->toContain('namespace App\Modules\Orders;');
 });
+
+const PHASE_ONE_PROVIDER_STUB = <<<'STUB'
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\{{ moduleNamespace }};
+
+use Illuminate\Support\ServiceProvider;
+
+final class {{ module }}ServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        $this->loadRoutesFrom(__DIR__.'/Routes/api.php');
+        $this->loadRoutesFrom(__DIR__.'/Routes/web.php');
+    }
+}
+STUB;
+
+function overrideProviderStub(string $contents): void
+{
+    File::ensureDirectoryExists(base_path('stubs/blueprint'));
+    file_put_contents(base_path('stubs/blueprint/module-provider.stub'), $contents);
+}
+
+it('refuses existing module', function (string $again) {
+    $this->artisan('make:module', ['name' => 'Orders'])->assertExitCode(0);
+    $providers = file_get_contents($this->providersPath);
+
+    $this->artisan('make:module', ['name' => $again])
+        ->expectsOutputToContain('Module "Orders" already exists at app/Modules/Orders.')
+        ->assertExitCode(1);
+
+    expect(file_get_contents($this->providersPath))->toBe($providers);
+})->with(['Orders', 'orders']);
+
+it('refuses old published stub', function () {
+    overrideProviderStub(PHASE_ONE_PROVIDER_STUB);
+
+    $this->artisan('make:module', ['name' => 'Orders'])
+        ->expectsOutputToContain('did not produce a valid module provider (unknown placeholder {{ moduleNamespace }}). Update or delete it, then re-run.')
+        ->assertExitCode(1);
+
+    expect(is_dir(app_path('Modules')))->toBeFalse()
+        ->and(file_get_contents($this->providersPath))->toBe($this->providers);
+});
+
+it('refuses stub without Provider class', function () {
+    overrideProviderStub(str_replace('final class Provider', 'final class Thing', file_get_contents(__DIR__.'/../../stubs/module-provider.stub')));
+
+    $this->artisan('make:module', ['name' => 'Orders'])
+        ->expectsOutputToContain('did not produce a valid module provider (no Provider class in namespace App\Modules\Orders)')
+        ->assertExitCode(1);
+
+    expect(is_dir(app_path('Modules')))->toBeFalse();
+});
+
+it('uses a valid override stub', function () {
+    overrideProviderStub(file_get_contents(__DIR__.'/../../stubs/module-provider.stub')."// custom\n");
+
+    $this->artisan('make:module', ['name' => 'Orders'])->assertExitCode(0);
+
+    expect(moduleFile('Orders/Provider.php'))->toContain('// custom');
+});
+
+it('warns when bootstrap providers file is missing', function () {
+    unlink($this->providersPath);
+
+    $this->artisan('make:module', ['name' => 'Orders'])
+        ->expectsOutputToContain('bootstrap/providers.php not found. Register App\Modules\Orders\Provider manually.')
+        ->doesntExpectOutputToContain('registered App')
+        ->assertExitCode(0);
+
+    expect(file_exists(app_path('Modules/Orders/Provider.php')))->toBeTrue();
+});
+
+it('clears caches', function () {
+    file_put_contents(app()->getCachedConfigPath(), '<?php return [];');
+    file_put_contents(app()->getCachedRoutesPath(), '<?php');
+
+    $this->artisan('make:module', ['name' => 'Orders'])
+        ->expectsOutputToContain('cleared config cache')
+        ->expectsOutputToContain('cleared route cache')
+        ->assertExitCode(0);
+
+    expect(file_exists(app()->getCachedConfigPath()))->toBeFalse()
+        ->and(file_exists(app()->getCachedRoutesPath()))->toBeFalse();
+});
+
+it('generated files are valid php', function () {
+    $this->artisan('make:module', ['name' => 'Orders', '--api' => true, '--web' => true])->assertExitCode(0);
+
+    foreach (['Orders/Provider.php', 'Orders/routes/api.php', 'Orders/routes/web.php'] as $file) {
+        $lint = new Symfony\Component\Process\Process([PHP_BINARY, '-l', app_path('Modules/'.$file)]);
+        $lint->run();
+        expect($lint->getExitCode())->toBe(0, $lint->getOutput());
+    }
+});
+
+it('generated provider loads its api routes', function () {
+    $this->artisan('make:module', ['name' => 'RouteCheck', '--api' => true])->assertExitCode(0);
+    file_put_contents(
+        app_path('Modules/RouteCheck/routes/api.php'),
+        "Route::get('/route-check', fn () => 'ok');\n",
+        FILE_APPEND,
+    );
+
+    require_once app_path('Modules/RouteCheck/Provider.php');
+    app()->register('App\Modules\RouteCheck\Provider');
+
+    $this->get('/api/route-check')->assertOk()->assertSee('ok');
+});

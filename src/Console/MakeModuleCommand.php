@@ -4,6 +4,7 @@ namespace Best\Blueprint\Console;
 
 use Best\Blueprint\Support\ModuleName;
 use Best\Blueprint\Support\Profile;
+use Best\Blueprint\Support\StubException;
 use Best\Blueprint\Support\StubRenderer;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
@@ -45,7 +46,19 @@ class MakeModuleCommand extends Command
         $namespace = 'App\\'.str_replace('/', '\\', substr($modulePath, strlen('app/'))).'\\'.$name;
         $directory = base_path($modulePath.'/'.$name);
 
-        $generated = $this->render($stubs, $namespace, $name);
+        if (($existing = $this->existingModule($files, base_path($modulePath), $name)) !== null) {
+            return $this->refuse("Module \"{$name}\" already exists at {$modulePath}/{$existing}.");
+        }
+
+        try {
+            $generated = $this->render($stubs, $namespace, $name);
+        } catch (StubException $e) {
+            return $this->refuse($this->invalidStub($e->path, $e->reason));
+        }
+
+        if (! $this->declaresProvider($generated['Provider.php'], $namespace)) {
+            return $this->refuse($this->invalidStub($stubs->path('module-provider.stub'), "no Provider class in namespace {$namespace}"));
+        }
 
         foreach ($generated as $relative => $contents) {
             $files->ensureDirectoryExists(dirname($directory.'/'.$relative));
@@ -57,11 +70,57 @@ class MakeModuleCommand extends Command
 
         if (ServiceProvider::addProviderToBootstrapFile($provider)) {
             $this->line("registered {$provider} in bootstrap/providers.php");
+        } else {
+            $this->warn("bootstrap/providers.php not found. Register {$provider} manually.");
         }
+
+        $this->clearCaches();
 
         $this->line('Next: add Actions, Models and Controllers as you need them. See docs/ARCHITECTURE.md.');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The existing directory name matching $name case-insensitively, if any.
+     */
+    private function existingModule(Filesystem $files, string $path, string $name): ?string
+    {
+        if (! $files->isDirectory($path)) {
+            return null;
+        }
+
+        foreach ($files->directories($path) as $directory) {
+            if (strcasecmp(basename($directory), $name) === 0) {
+                return basename($directory);
+            }
+        }
+
+        return null;
+    }
+
+    private function declaresProvider(string $contents, string $namespace): bool
+    {
+        return str_contains($contents, "namespace {$namespace};")
+            && preg_match('/\bclass\s+Provider\b/', $contents) === 1;
+    }
+
+    private function invalidStub(?string $path, ?string $reason): string
+    {
+        return "Stub {$path} did not produce a valid module provider ({$reason}). Update or delete it, then re-run.";
+    }
+
+    private function clearCaches(): void
+    {
+        if (is_file($this->laravel->getCachedConfigPath())) {
+            $this->callSilently('config:clear');
+            $this->line('cleared config cache');
+        }
+
+        if (is_file($this->laravel->getCachedRoutesPath())) {
+            $this->callSilently('route:clear');
+            $this->line('cleared route cache');
+        }
     }
 
     private function profileError(): ?string
