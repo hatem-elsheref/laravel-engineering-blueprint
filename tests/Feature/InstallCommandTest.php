@@ -10,6 +10,8 @@ beforeEach(function () {
 
 afterEach(function () {
     File::delete([config_path('blueprint.php'), app()->getCachedConfigPath()]);
+    File::deleteDirectory(app_path('Shared'));
+    File::cleanDirectory(database_path('migrations'));
 });
 
 function installedConfig(): string
@@ -23,9 +25,9 @@ it('installs with an explicit profile', function () {
         ->expectsOutputToContain('Installed profile: SaaS')
         ->expectsOutputToContain('✓ Modules')
         ->doesntExpectOutputToContain('Modules (coming')
-        ->expectsOutputToContain('✓ Features (coming in Phase 7)')
+        ->expectsOutputToContain('✓ Features')
         ->expectsOutputToContain('– Tenancy (not in this profile)')
-        ->expectsOutputToContain('Next: php artisan make:module <Name>')
+        ->expectsOutputToContain('Next: php artisan migrate && php artisan features:sync')
         ->assertExitCode(0);
 
     expect(installedConfig())->toContain("'profile' => 'saas',");
@@ -82,8 +84,9 @@ it('aborts on incompatible environment', function () {
 it('creates no folders', function () {
     $this->artisan('engineering:install', ['--profile' => 'tenant-saas', '--no-interaction' => true])->assertExitCode(0);
 
+    // Only folders with files in them: app/Shared holds the generated feature/setting definitions.
     expect(is_dir(app_path('Modules')))->toBeFalse()
-        ->and(is_dir(app_path('Shared')))->toBeFalse();
+        ->and(array_map('basename', File::allFiles(app_path('Shared'))))->toEqualCanonicalizing(['Features.php', 'Settings.php']);
 });
 
 function install(array $options = []): \Illuminate\Testing\PendingCommand

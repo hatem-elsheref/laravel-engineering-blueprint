@@ -16,6 +16,7 @@ afterEach(function () {
         app_path('Models/Tenant.php'), app_path('Providers/TenancyServiceProvider.php'),
     ]);
     File::cleanDirectory(database_path('migrations'));
+    File::deleteDirectory(app_path('Shared'));
     file_put_contents($this->providersPath, $this->providers);
 });
 

@@ -1,0 +1,30 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+/**
+ * Every setting key, its type and default (docs/SETTINGS.md). Read with Setting::get(),
+ * write with Setting::set() (tenant settings, behind their Gate ability) or setting:set (platform).
+ */
+final class Settings
+{
+    public const APP_NAME = 'app.name';
+
+    public const APP_LANGUAGE = 'app.language';
+
+    public const ORDERS_AUTO_CONFIRM = 'orders.auto_confirm';
+
+    /**
+     * @return array<string, array{type: 'string'|'int'|'float'|'bool'|'array', default: mixed, editable_by: 'tenant'|'platform', ability?: string}>
+     */
+    public static function definitions(): array
+    {
+        return [
+            self::APP_NAME => ['type' => 'string', 'default' => 'My App', 'editable_by' => 'tenant', 'ability' => 'manage-settings'],
+            self::APP_LANGUAGE => ['type' => 'string', 'default' => 'en', 'editable_by' => 'tenant', 'ability' => 'manage-settings'],
+            self::ORDERS_AUTO_CONFIRM => ['type' => 'bool', 'default' => false, 'editable_by' => 'platform'],
+        ];
+    }
+}

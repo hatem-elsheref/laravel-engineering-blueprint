@@ -2,6 +2,7 @@
 
 namespace Best\Blueprint\Console;
 
+use Best\Blueprint\Flags\FlagSetup;
 use Best\Blueprint\Support\Compatibility;
 use Best\Blueprint\Support\ConfigWriter;
 use Best\Blueprint\Support\Profile;
@@ -24,7 +25,7 @@ class InstallCommand extends Command
     /**
      * Capabilities whose phase has not shipped yet. Delete an entry when its phase ships.
      */
-    private const UPCOMING = ['Features' => 7, 'Settings' => 7];
+    private const UPCOMING = [];
 
     private const ALL_CAPABILITIES = ['Modules', 'Features', 'Settings', 'Tenancy'];
 
@@ -57,6 +58,12 @@ class InstallCommand extends Command
         }
 
         $tenancyReady = true;
+
+        if ($profile->usesFeatures()) {
+            foreach ($this->laravel->make(FlagSetup::class)->run($profile) as $line) {
+                $this->line($line);
+            }
+        }
 
         if ($profile->usesTenancy()) {
             $setup = $this->laravel->make(TenancySetup::class);
@@ -208,6 +215,16 @@ class InstallCommand extends Command
         }
 
         $modulesShipped = ! isset(self::UPCOMING['Modules']);
+
+        if ($profile->usesSettings()) {
+            $this->line('Define the manage-settings Gate ability to let tenant owners change settings.');
+        }
+
+        if ($profile->usesFeatures() && ! $profile->usesTenancy()) {
+            $this->line('Next: php artisan migrate && php artisan features:sync');
+
+            return;
+        }
 
         if ($profile->usesTenancy() && ! $tenancyReady) {
             $this->line('Next: composer require stancl/tenancy:^3.10');

@@ -1,0 +1,29 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+/**
+ * Every feature key lives here (docs/FEATURES.md §4.3). Check them with
+ * Feature::enabled(Features::ORDERS); change them only with the feature:* commands.
+ */
+final class Features
+{
+    public const ORDERS = 'orders';
+
+    public const REPORTS = 'reports';
+
+    /**
+     * Every feature key and its default state for new tenants.
+     *
+     * @return array<string, bool>
+     */
+    public static function defaults(): array
+    {
+        return [
+            self::ORDERS => true,
+            self::REPORTS => false,
+        ];
+    }
+}
