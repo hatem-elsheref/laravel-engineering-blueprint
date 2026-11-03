@@ -1,0 +1,15 @@
+@extends(config('blueprint.layout'))
+
+@section('title', 'New {{ headline }}')
+
+@section('content')
+    <h1>New {{ headline }}</h1>
+
+    <form method="POST" action="{{ route('{{ routeName }}.store') }}">
+        @csrf
+        @include('{{ viewPath }}._form')
+        <button type="submit">Create</button>
+    </form>
+
+    <p><a href="{{ route('{{ routeName }}.index') }}">Back to {{ headlinePluralLower }}</a></p>
+@endsection

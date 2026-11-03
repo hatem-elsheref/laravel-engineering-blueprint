@@ -1,0 +1,34 @@
+@extends(config('blueprint.layout'))
+
+@section('title', '{{ headlinePlural }}')
+
+@section('content')
+    <h1>{{ headlinePlural }}</h1>
+
+    @can('create', {{ modelClass }}::class)
+        <p><a href="{{ route('{{ routeName }}.create') }}">New {{ headline }}</a></p>
+    @endcan
+
+    @if (${{ variablePlural }}->isEmpty())
+        <p>No {{ headlinePluralLower }} yet.</p>
+    @else
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+{{ headerCells }}                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (${{ variablePlural }} as ${{ variable }})
+                    <tr>
+                        <td>{{ ${{ variable }}->id }}</td>
+{{ rowCells }}                        <td><a href="{{ route('{{ routeName }}.show', ${{ variable }}) }}">View</a></td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        {{ ${{ variablePlural }}->links() }}
+    @endif
+@endsection

@@ -93,7 +93,8 @@ final readonly class CrudField
             'int' => "\$request->integer({$key})",
             'float' => "\$request->float({$key})",
             'bool' => "\$request->boolean({$key})",
-            'array' => "(array) \$request->validated({$key})",
+            // Browser forms send one input per value; empty inputs arrive as null/'' and are dropped.
+            'array' => "array_values(array_filter((array) \$request->validated({$key}), fn (\$value) => \$value !== null && \$value !== ''))",
             'date' => "CarbonImmutable::parse(\$request->validated({$key}))->setTimezone(config('app.timezone'))",
             default => throw $this->unknownKind(),
         };
@@ -101,6 +102,52 @@ final readonly class CrudField
         return $this->nullable
             ? "\$request->validated({$key}) === null ? null : {$expression}"
             : $expression;
+    }
+
+    /**
+     * Blade label + input + error for the create/edit form; $variable is the model variable (no $).
+     */
+    public function formInput(string $variable): string
+    {
+        $col = $this->column;
+        $label = \Illuminate\Support\Str::headline($col);
+        $current = "\${$variable}->{$col}";
+
+        $input = match ($this->kind()) {
+            'string' => "    <input id=\"{$col}\" name=\"{$col}\" type=\"text\" value=\"{{ old('{$col}', {$current}) }}\">",
+            'int' => "    <input id=\"{$col}\" name=\"{$col}\" type=\"number\" step=\"1\" value=\"{{ old('{$col}', {$current}) }}\">",
+            'float' => "    <input id=\"{$col}\" name=\"{$col}\" type=\"number\" step=\"any\" value=\"{{ old('{$col}', {$current}) }}\">",
+            'bool' => "    <input type=\"hidden\" name=\"{$col}\" value=\"0\">\n"
+                ."    <input id=\"{$col}\" name=\"{$col}\" type=\"checkbox\" value=\"1\" @checked(old('{$col}', {$current}))>",
+            'date' => "    <input id=\"{$col}\" name=\"{$col}\" type=\"datetime-local\" value=\"{{ old('{$col}', {$current}?->format('Y-m-d\\TH:i')) }}\">",
+            'array' => "    @foreach ([...(array) old('{$col}', {$current} ?? []), ''] as \$value)\n"
+                ."        <input name=\"{$col}[]\" type=\"text\" value=\"{{ \$value }}\" aria-label=\"{$label}\">\n"
+                .'    @endforeach',
+            default => throw $this->unknownKind(),
+        };
+
+        $for = $this->kind() === 'array' ? '' : " for=\"{$col}\"";
+
+        return "<div>\n"
+            ."    <label{$for}>{$label}</label>\n"
+            ."{$input}\n"
+            ."    @error('{$col}') <p role=\"alert\">{{ \$message }}</p> @enderror\n"
+            .'</div>';
+    }
+
+    /**
+     * Blade expression showing the value on index/show pages (always escaped by {{ }}).
+     */
+    public function display(string $variable): string
+    {
+        $value = "\${$variable}->{$this->column}";
+
+        return match ($this->kind()) {
+            'bool' => "{{ {$value} ? 'Yes' : 'No' }}",
+            'date' => "{{ {$value}?->format('Y-m-d H:i') }}",
+            'array' => "{{ implode(', ', {$value} ?? []) }}",
+            default => "{{ {$value} }}",
+        };
     }
 
     private function unknownKind(): \LogicException

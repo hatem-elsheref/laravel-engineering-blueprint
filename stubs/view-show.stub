@@ -1,0 +1,25 @@
+@extends(config('blueprint.layout'))
+
+@section('title', '{{ headline }} #'.${{ variable }}->id)
+
+@section('content')
+    <h1>{{ headline }} #{{ ${{ variable }}->id }}</h1>
+
+    <dl>
+{{ details }}    </dl>
+
+    <p>
+        @can('update', ${{ variable }})
+            <a href="{{ route('{{ routeName }}.edit', ${{ variable }}) }}">Edit</a>
+        @endcan
+        <a href="{{ route('{{ routeName }}.index') }}">Back to {{ headlinePluralLower }}</a>
+    </p>
+
+    @can('delete', ${{ variable }})
+        <form method="POST" action="{{ route('{{ routeName }}.destroy', ${{ variable }}) }}">
+            @csrf
+            @method('DELETE')
+            <button type="submit">Delete</button>
+        </form>
+    @endcan
+@endsection

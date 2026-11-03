@@ -29,6 +29,7 @@ it('lists every generated file', function () {
     expect(array_keys($files))->toBe([
         'model', 'migration', 'factory', 'store', 'update', 'data', 'create', 'updateAction',
         'delete', 'query', 'controller', 'resource', 'policy', 'test',
+        'pageController', 'viewIndex', 'viewCreate', 'viewEdit', 'viewShow', 'viewForm', 'webTest',
     ])
         ->and($files['store'])->toBe('app/Modules/Orders/Requests/StoreOrderRequest.php')
         ->and($files['updateAction'])->toBe('app/Modules/Orders/Actions/UpdateOrder.php')

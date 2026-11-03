@@ -1,0 +1,16 @@
+@extends(config('blueprint.layout'))
+
+@section('title', 'Edit {{ headline }} #'.${{ variable }}->id)
+
+@section('content')
+    <h1>Edit {{ headline }} #{{ ${{ variable }}->id }}</h1>
+
+    <form method="POST" action="{{ route('{{ routeName }}.update', ${{ variable }}) }}">
+        @csrf
+        @method('PUT')
+        @include('{{ viewPath }}._form')
+        <button type="submit">Save</button>
+    </form>
+
+    <p><a href="{{ route('{{ routeName }}.show', ${{ variable }}) }}">Cancel</a></p>
+@endsection

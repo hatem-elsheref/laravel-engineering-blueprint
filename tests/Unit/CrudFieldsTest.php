@@ -47,7 +47,7 @@ it('maps each type', function (string $spec, array $expected) {
         'cast' => 'array',
         'rules' => ['present', 'array'],
         'factory' => '[]',
-        'fromRequest' => "(array) \$request->validated('tags')",
+        'fromRequest' => "array_values(array_filter((array) \$request->validated('tags'), fn (\$value) => \$value !== null && \$value !== ''))",
     ]],
     'date' => ['shippedAt:Carbon\CarbonImmutable', [
         'migration' => "\$table->timestamp('shipped_at')",
@@ -68,7 +68,7 @@ it('maps each type', function (string $spec, array $expected) {
         'cast' => 'array',
         'rules' => ['nullable', 'array'],
         'factory' => '[]',
-        'fromRequest' => "\$request->validated('tags') === null ? null : (array) \$request->validated('tags')",
+        'fromRequest' => "\$request->validated('tags') === null ? null : array_values(array_filter((array) \$request->validated('tags'), fn (\$value) => \$value !== null && \$value !== ''))",
     ]],
 ]);
 

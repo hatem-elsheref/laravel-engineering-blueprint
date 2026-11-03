@@ -1,0 +1,78 @@
+<?php
+
+declare(strict_types=1);
+
+{{ imports }}
+uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    $this->user = User::factory()->create();
+{{ featureSetup }}});
+
+function {{ variable }}FormInput(array $overrides = []): array
+{
+    // Factory values as a browser form would send them.
+    return array_map(
+        fn ($value) => $value instanceof DateTimeInterface ? $value->format('Y-m-d\TH:i') : (is_bool($value) ? (int) $value : $value),
+        array_merge({{ entity }}::factory()->raw(), $overrides),
+    );
+}
+
+it('denies guests', function (): void {
+    ${{ variable }} = {{ entity }}::factory()->create();
+
+    $this->get({{ url }}('/{{ uri }}'))->assertForbidden();
+    $this->get({{ url }}('/{{ uri }}/create'))->assertForbidden();
+    $this->post({{ url }}('/{{ uri }}'), {{ variable }}FormInput())->assertForbidden();
+    $this->get({{ url }}("/{{ uri }}/{${{ variable }}->id}"))->assertForbidden();
+    $this->get({{ url }}("/{{ uri }}/{${{ variable }}->id}/edit"))->assertForbidden();
+    $this->put({{ url }}("/{{ uri }}/{${{ variable }}->id}"), {{ variable }}FormInput())->assertForbidden();
+    $this->delete({{ url }}("/{{ uri }}/{${{ variable }}->id}"))->assertForbidden();
+});
+
+it('hides which {{ uri }} exist from guests', function (): void {
+    $this->get({{ url }}('/{{ uri }}/999999'))->assertForbidden();
+    $this->actingAs($this->user)->get({{ url }}('/{{ uri }}/999999'))->assertNotFound();
+});
+
+it('lists {{ uri }}', function (): void {
+    ${{ variable }} = {{ entity }}::factory()->create();
+
+    $this->actingAs($this->user)->get({{ url }}('/{{ uri }}'))->assertOk()->assertSee("/{{ uri }}/{${{ variable }}->id}");
+});
+
+it('shows the create form', function (): void {
+    $this->actingAs($this->user)->get({{ url }}('/{{ uri }}/create'))->assertOk()->assertSee('name="_token"', false);
+});
+
+it('creates a {{ variable }}', function (): void {
+    $this->actingAs($this->user)->post({{ url }}('/{{ uri }}'), {{ variable }}FormInput())
+        ->assertSessionHasNoErrors()
+        ->assertRedirectContains('/{{ uri }}/');
+
+    expect({{ entity }}::count())->toBe(1);
+});
+{{ validation }}
+it('shows and edits a {{ variable }}', function (): void {
+    ${{ variable }} = {{ entity }}::factory()->create();
+
+    $this->actingAs($this->user)->get({{ url }}("/{{ uri }}/{${{ variable }}->id}"))->assertOk();
+    $this->actingAs($this->user)->get({{ url }}("/{{ uri }}/{${{ variable }}->id}/edit"))->assertOk();
+});
+
+it('updates a {{ variable }}', function (): void {
+    ${{ variable }} = {{ entity }}::factory()->create();
+
+    $this->actingAs($this->user)->put({{ url }}("/{{ uri }}/{${{ variable }}->id}"), {{ variable }}FormInput())
+        ->assertSessionHasNoErrors()
+        ->assertRedirectContains("/{{ uri }}/{${{ variable }}->id}");
+});
+
+it('deletes a {{ variable }}', function (): void {
+    ${{ variable }} = {{ entity }}::factory()->create();
+
+    $this->actingAs($this->user)->delete({{ url }}("/{{ uri }}/{${{ variable }}->id}"))->assertRedirectContains('/{{ uri }}');
+
+    expect({{ entity }}::count())->toBe(0);
+});
+{{ featureTest }}

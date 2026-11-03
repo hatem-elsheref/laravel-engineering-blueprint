@@ -1,0 +1,60 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+{{ imports }}
+final class {{ entity }}PageController
+{
+    public function index(List{{ plural }} $query): View
+    {
+        Gate::authorize('viewAny', {{ entity }}::class);
+
+        return view('{{ viewPath }}.index', ['{{ variablePlural }}' => $query->handle()]);
+    }
+
+    public function create(): View
+    {
+        Gate::authorize('create', {{ entity }}::class);
+
+        return view('{{ viewPath }}.create', ['{{ variable }}' => new {{ entity }}]);
+    }
+
+    public function store(Store{{ entity }}Request $request, Create{{ entity }} $action): RedirectResponse
+    {
+        ${{ variable }} = $action->handle({{ entity }}Data::fromRequest($request));
+
+        return redirect()->route('{{ routeName }}.show', ${{ variable }})->with('status', '{{ entity }} created.');
+    }
+
+    public function show({{ entity }} ${{ variable }}): View
+    {
+        Gate::authorize('view', ${{ variable }});
+
+        return view('{{ viewPath }}.show', ['{{ variable }}' => ${{ variable }}]);
+    }
+
+    public function edit({{ entity }} ${{ variable }}): View
+    {
+        Gate::authorize('update', ${{ variable }});
+
+        return view('{{ viewPath }}.edit', ['{{ variable }}' => ${{ variable }}]);
+    }
+
+    public function update(Update{{ entity }}Request $request, {{ entity }} ${{ variable }}, Update{{ entity }} $action): RedirectResponse
+    {
+        ${{ variable }} = $action->handle(${{ variable }}, {{ entity }}Data::fromRequest($request));
+
+        return redirect()->route('{{ routeName }}.show', ${{ variable }})->with('status', '{{ entity }} updated.');
+    }
+
+    public function destroy({{ entity }} ${{ variable }}, Delete{{ entity }} $action): RedirectResponse
+    {
+        Gate::authorize('delete', ${{ variable }});
+
+        $action->handle(${{ variable }});
+
+        return redirect()->route('{{ routeName }}.index')->with('status', '{{ entity }} deleted.');
+    }
+}

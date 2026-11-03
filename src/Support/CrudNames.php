@@ -9,6 +9,15 @@ use Illuminate\Support\Str;
  */
 final readonly class CrudNames
 {
+    /** Files both sides use. */
+    public const SHARED = ['model', 'migration', 'factory', 'store', 'update', 'data', 'create', 'updateAction', 'delete', 'query', 'policy'];
+
+    /** JSON API side. */
+    public const API = ['controller', 'resource', 'test'];
+
+    /** Blade (web) side. */
+    public const WEB = ['pageController', 'viewIndex', 'viewCreate', 'viewEdit', 'viewShow', 'viewForm', 'webTest'];
+
     private function __construct(
         public string $entity,
         public string $plural,
@@ -67,6 +76,24 @@ final readonly class CrudNames
             'resource' => "{$m}/Resources/{$e}Resource.php",
             'policy' => "{$m}/Policies/{$e}Policy.php",
             'test' => "tests/Feature/Modules/{$this->module}/{$e}ApiTest.php",
+            'pageController' => "{$m}/Controllers/{$e}PageController.php",
+            'viewIndex' => "resources/views/{$this->viewFolder()}/index.blade.php",
+            'viewCreate' => "resources/views/{$this->viewFolder()}/create.blade.php",
+            'viewEdit' => "resources/views/{$this->viewFolder()}/edit.blade.php",
+            'viewShow' => "resources/views/{$this->viewFolder()}/show.blade.php",
+            'viewForm' => "resources/views/{$this->viewFolder()}/_form.blade.php",
+            'webTest' => "tests/Feature/Modules/{$this->module}/{$e}WebTest.php",
         ];
+    }
+
+    /** View name prefix, e.g. "orders.orders" (module/entity plural, kebab-case). */
+    public function viewPath(): string
+    {
+        return Str::kebab($this->module).'.'.$this->uri;
+    }
+
+    private function viewFolder(): string
+    {
+        return Str::kebab($this->module).'/'.$this->uri;
     }
 }

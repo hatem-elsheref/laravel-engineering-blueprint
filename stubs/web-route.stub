@@ -1,0 +1,2 @@
+Route::resource('{{ uri }}', {{ controller }}::class){{ middleware }}
+    ->missing(fn ($request) => abort($request->user() === null ? 403 : 404));
