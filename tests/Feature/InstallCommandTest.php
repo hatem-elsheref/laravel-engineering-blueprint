@@ -46,6 +46,7 @@ it('falls back when default_profile invalid', function () {
 
 it('asks interactively', function () {
     $this->artisan('engineering:install')
+        ->expectsOutputToContain('tenant-saas: Tenant SaaS (SaaS, plus multi-tenancy with a database per tenant)')
         ->expectsQuestion('Which project profile?', 'tenant-saas')
         ->assertExitCode(0);
 
@@ -99,7 +100,7 @@ it('rerun changes only the profile line', function () {
     editConfig("'app/Modules'", "'src/Modules'");
 
     install(['--profile' => 'saas'])
-        ->expectsOutputToContain('updated profile: modular → saas')
+        ->expectsOutputToContain('updated profile from modular to saas')
         ->assertExitCode(0);
 
     expect(installedConfig())->toContain("'src/Modules'")->toContain("'profile' => 'saas',");
@@ -138,7 +139,7 @@ it('refuses downgrade without force', function () {
     install(['--profile' => 'tenant-saas'])->assertExitCode(0);
 
     install(['--profile' => 'modular'])
-        ->expectsOutputToContain('Refusing to drop Features, Settings, Tenancy without --force.')
+        ->expectsOutputToContain('Refusing to drop Features, Settings, Tenancy. Re-run with --allow-downgrade.')
         ->assertExitCode(1);
 
     expect(installedConfig())->toContain("'profile' => 'tenant-saas',");
@@ -186,6 +187,29 @@ it('clears cached config', function () {
     file_put_contents(app()->getCachedConfigPath(), '<?php return [];');
 
     install(['--profile' => 'saas'])
+        ->expectsOutputToContain('cleared config cache')
+        ->assertExitCode(0);
+
+    expect(file_exists(app()->getCachedConfigPath()))->toBeFalse();
+});
+
+it('allows downgrade without losing edits', function () {
+    install(['--profile' => 'tenant-saas'])->assertExitCode(0);
+    editConfig("'app/Modules'", "'src/Modules'");
+
+    install(['--profile' => 'modular', '--allow-downgrade' => true])
+        ->expectsOutputToContain('updated profile from tenant-saas to modular')
+        ->assertExitCode(0);
+
+    expect(installedConfig())->toContain("'src/Modules'")->toContain("'profile' => 'modular',");
+});
+
+it('clears cached config even when the profile is unchanged', function () {
+    install(['--profile' => 'saas'])->assertExitCode(0);
+    file_put_contents(app()->getCachedConfigPath(), '<?php return [];');
+
+    install(['--profile' => 'saas'])
+        ->expectsOutputToContain('profile unchanged: saas')
         ->expectsOutputToContain('cleared config cache')
         ->assertExitCode(0);
 

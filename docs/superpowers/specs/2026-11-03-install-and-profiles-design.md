@@ -81,7 +81,9 @@ The enum replaces the `profiles` config list as the source of truth. The `profil
 
 ## 6. `engineering:install` behavior
 
-Signature: `engineering:install {--profile= : basic, modular, saas or tenant-saas} {--force : Overwrite the published config file}`
+Signature: `engineering:install {--profile= : basic, modular, saas or tenant-saas} {--force : Overwrite the published config file} {--allow-downgrade : Allow switching to a profile with fewer capabilities}`
+
+*(Final-review amendment: `--allow-downgrade` added so CI can downgrade without `--force` wiping the user's config edits — anti-goal §4.)*
 
 Steps, in order:
 
@@ -90,7 +92,7 @@ Steps, in order:
    - `--profile` given → validate against `Profile::tryFrom`. Invalid → `Unknown profile "<x>". Choose one of: basic, modular, saas, tenant-saas.`; exit 1.
    - Not given, interactive → `choice` prompt listing the four labels. Default = the saved profile (`Profile::current()`) if there is one, else `config('blueprint.default_profile')`, else `modular` if that value isn't a valid profile.
    - Not given, `--no-interaction` → use that same default silently. A re-run without `--profile` therefore keeps the saved profile.
-   - **Downgrade guard** *(builder-check call)*: if the chosen profile drops a capability the saved profile has (e.g. `tenant-saas` → `modular`), interactive mode asks `This removes <capabilities> from the project. Continue?` (default no); `--no-interaction` refuses with `Refusing to drop <capabilities> without --force.` and exits 1 unless `--force` is given. Nothing is written on refusal.
+   - **Downgrade guard** *(builder-check call)*: if the chosen profile drops a capability the saved profile has (e.g. `tenant-saas` → `modular`), interactive mode asks `This removes <capabilities> from the project. Continue?` (default no); `--no-interaction` refuses with `Refusing to drop <capabilities>. Re-run with --allow-downgrade.` and exits 1 unless `--allow-downgrade` (or `--force`) is given. Nothing is written on refusal.
 3. **Write config** (`config_path('blueprint.php')`):
    - File absent → publish the package config, then set `'profile' => '<name>'`. Report `created config/blueprint.php`.
    - File present, `--force` → republish (overwrite) the package config, then set the profile. Report `overwrote config/blueprint.php`.

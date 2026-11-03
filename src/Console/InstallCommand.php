@@ -14,7 +14,8 @@ class InstallCommand extends Command
 
     protected $signature = 'engineering:install
         {--profile= : basic, modular, saas or tenant-saas}
-        {--force : Overwrite the published config file}';
+        {--force : Overwrite the published config file}
+        {--allow-downgrade : Allow switching to a profile with fewer capabilities}';
 
     protected $description = 'Set up this app with a Laravel Engineering Blueprint project profile';
 
@@ -77,13 +78,9 @@ class InstallCommand extends Command
                 return false;
             }
 
-            if ($write->status === ProfileWrite::UNCHANGED) {
-                $this->line("profile unchanged: {$profile->value}");
-
-                return true;
-            }
-
-            $this->line(sprintf('updated profile: %s → %s', $write->old ?? 'none', $profile->value));
+            $this->line($write->status === ProfileWrite::UNCHANGED
+                ? "profile unchanged: {$profile->value}"
+                : sprintf('updated profile from %s to %s', $write->old ?? 'none', $profile->value));
         }
 
         config()->set('blueprint.profile', $profile->value);
@@ -101,14 +98,14 @@ class InstallCommand extends Command
         $saved = Profile::current();
         $dropped = $saved === null ? [] : array_values(array_diff($saved->capabilities(), $profile->capabilities()));
 
-        if ($dropped === [] || $this->option('force')) {
+        if ($dropped === [] || $this->option('force') || $this->option('allow-downgrade')) {
             return true;
         }
 
         $list = implode(', ', $dropped);
 
         if (! $this->input->isInteractive()) {
-            $this->error("Refusing to drop {$list} without --force.");
+            $this->error("Refusing to drop {$list}. Re-run with --allow-downgrade.");
 
             return false;
         }
@@ -134,6 +131,10 @@ class InstallCommand extends Command
 
         if (! $this->input->isInteractive()) {
             return $default;
+        }
+
+        foreach (Profile::cases() as $case) {
+            $this->line("  {$case->value}: {$case->label()}");
         }
 
         return Profile::from($this->choice('Which project profile?', Profile::values(), $default->value));

@@ -45,10 +45,10 @@ enum Profile: string
     public function label(): string
     {
         return match ($this) {
-            self::Basic => 'Basic — standard Laravel app following the blueprint conventions',
-            self::Modular => 'Modular — business modules in app/Modules',
-            self::Saas => 'SaaS — modular, plus Features and Settings',
-            self::TenantSaas => 'Tenant SaaS — SaaS, plus multi-tenancy (database per tenant)',
+            self::Basic => 'Basic (standard Laravel app following the blueprint conventions)',
+            self::Modular => 'Modular (business modules in app/Modules)',
+            self::Saas => 'SaaS (modular, plus Features and Settings)',
+            self::TenantSaas => 'Tenant SaaS (SaaS, plus multi-tenancy with a database per tenant)',
         };
     }
 
