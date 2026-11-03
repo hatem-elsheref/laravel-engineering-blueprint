@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>الترقية · Laravel Engineering Blueprint</title>
+    <meta name="description" content="إصدارات PHP وLaravel المدعومة، وخطوات الترقية، وما الذي تغيّر بين 0.x و1.0 في best/laravel-engineering-blueprint.">
+    <link rel="stylesheet" href="../assets/blueprint.css">
+    <link rel="alternate" hreflang="en" href="../upgrading.html">
+</head>
+<body>
+    <a class="skip" href="#content">تخطَّ إلى المحتوى</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html"><span lang="en" dir="ltr">Laravel Engineering Blueprint</span> <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="الموقع">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="../upgrading.html" lang="en" hreflang="en">English</a>
+            </nav>
+            <ul class="tabs" aria-label="الدليل">
+                <li><a href="index.html">البداية</a></li>
+                <li><a href="profiles.html">الأنماط</a></li>
+                <li><a href="generators.html">المولّدات</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html">المستأجرون</a></li>
+                <li><a href="features.html">الميزات</a></li>
+                <li><a href="languages.html">اللغات</a></li>
+                <li><a href="upgrading.html" aria-current="page">الترقية</a></li>
+                <li><a href="reference.html">المرجع</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>الترقية</h1>
+            <p class="lede">كيف تنتقل إلى إصدار جديد من <code>best/laravel-engineering-blueprint</code>، وما الذي تغيّر بين 0.x و1.0. الترقية لا تغيّر أبدًا الكود الذي ولّدته سابقًا، وإنما يتبع ناتج <code>make:*</code> الجديد وحده القواعد الجديدة.</p>
+
+            <ul class="contents" aria-label="في هذه البطاقة">
+                <li><a href="#requirements">المتطلبات</a></li>
+                <li><a href="#steps">خطوات أي ترقية</a></li>
+                <li><a href="#to-1-0">من 0.x إلى 1.0</a></li>
+                <li><a href="#versions">الإصدارات</a></li>
+            </ul>
+
+            <h2 id="requirements">المتطلبات</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">الاعتمادية</th><th scope="col">المدعوم</th></tr></thead>
+                    <tbody>
+                        <tr><td><bdi>PHP</bdi></td><td>8.3 أو أحدث (التكامل المستمر يختبر 8.3 و8.4)</td></tr>
+                        <tr><td><bdi>Laravel</bdi></td><td>12 و13</td></tr>
+                        <tr><td><bdi>stancl/tenancy</bdi></td><td><bdi>^3.10</bdi>، للنمط <code>tenant-saas</code> فقط</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p><code>php artisan engineering:about</code> يطبع الإصدار المثبّت ويفحص بيئتك مقابل هذه الحدود الدنيا.</p>
+
+            <h2 id="steps">خطوات أي ترقية</h2>
+            <ol>
+                <li>حدّث الحزمة:
+<pre><code><span class="prompt">$ </span>composer update best/laravel-engineering-blueprint</code></pre></li>
+                <li>اقرأ القسم الخاص بالإصدار الذي تنتقل إليه أدناه.</li>
+                <li>إذا نشرت القوالب في <code>stubs/blueprint/</code>، فقارنها بقوالب الحزمة الجديدة. احفظ نسخة من تعديلاتك، ثم استبدلها بالأمر:
+<pre><code><span class="prompt">$ </span>php artisan vendor:publish --tag=blueprint-stubs --force</code></pre></li>
+                <li>امسح الذاكرة المؤقتة وشغّل اختباراتك:
+<pre><code><span class="prompt">$ </span>php artisan optimize:clear
+<span class="prompt">$ </span>php artisan test</code></pre></li>
+            </ol>
+            <section class="index-card" aria-labelledby="card-stale-stubs">
+                <h3 class="index-card__title" id="card-stale-stubs"><span dir="rtl">القوالب المنشورة بعد الترقية</span></h3>
+                <ul class="outcomes">
+                    <li><span class="stamp">مرفوض</span> القالب القديم (عنصر نائب غير مملوء، أو صنف مفقود، أو غياب <code>-&gt;names('api.{{ uri }}')</code>، أو بوابة ميزة محذوفة) يوقف المولّد برسالة تذكر اسم القالب. لا يُكتب شيء.</li>
+                    <li><span class="stamp stamp--note">ملاحظة</span> أصلح القالب أو احذفه، ثم أعد تشغيل الأمر.</li>
+                </ul>
+                <p class="see-also">انظر أيضًا: <a href="generators.html#stubs">تخصيص القوالب</a></p>
+            </section>
+
+            <h2 id="to-1-0">من 0.x إلى 1.0</h2>
+            <p>معظم تطبيقات 0.x تُرقّى بلا تغييرات. افحص هذه النقاط:</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">المجال</th><th scope="col">ما الذي تغيّر</th><th scope="col">ماذا تفعل</th></tr></thead>
+                    <tbody>
+                        <tr><td>أسماء مسارات <bdi>API</bdi></td><td><code>make:crud</code> يسمّي مسارات <bdi>API</bdi> بـ <code>api.&lt;uri&gt;.*</code>، وصفحات الويب تستخدم <code>&lt;uri&gt;.*</code>. مسارات <bdi>API</bdi> الأقدم اسمها <code>&lt;uri&gt;.*</code>.</td><td>لا شيء للمسارات الموجودة. قبل إضافة صفحات ويب (<code>make:crud … --web</code>) لكيان مسار <bdi>API</bdi> الخاص به بلا اسم، أضف <code>-&gt;names('api.&lt;uri&gt;')</code> إلى ذلك المسار. يخبرك الأمر إذا كان الاسم مستخدمًا.</td></tr>
+                        <tr><td><code>route.stub</code> المنشور</td><td>يجب أن يحتفظ بـ <code>-&gt;names('api.{{ uri }}')</code>.</td><td>أعد نشره أو أضف الاستدعاء.</td></tr>
+                        <tr><td><code>config/blueprint.php</code></td><td>مفاتيح جديدة: <code>layout</code>، <code>locales</code>، <code>rtl_locales</code>، <code>tenant_seeder</code>، <code>tenant_domain</code>. القيمة الافتراضية لـ <code>features</code> و<code>settings</code> أصبحت <code>null</code> (تُشتق من <code>shared_path</code>).</td><td>انسخ المفاتيح الناقصة من إعدادات الحزمة، أو شغّل <code>php artisan engineering:install --force</code> (يحتفظ بنمطك، ويُحفظ الملف القديم بكل تعديلاتك الأخرى باسم <code>config/blueprint.php.bak</code>). في الحالتين، تعود المفاتيح الناقصة إلى قيم الحزمة الافتراضية وقت التشغيل.</td></tr>
+                        <tr><td>حقول المصفوفات</td><td>قواعد جديدة: بحد أقصى 100 عنصر، كل منها نص لا يتجاوز 255 حرفًا.</td><td>الطلبات المولّدة في 0.x تحتفظ بقواعدها. شدّدها يدويًا إن أردت الحماية نفسها.</td></tr>
+                        <tr><td>جلسات <bdi>tenant-saas</bdi></td><td>جلسات الويب مرتبطة بالمستأجر (أو التطبيق المركزي) الذي بدأت فيه، وفي غيره تحصل على 403.</td><td>لا شيء. المستخدمون المسجَّل دخولهم في مستأجر يسجّلون الدخول من جديد في مستأجر آخر.</td></tr>
+                        <tr><td>التخزين المؤقت في <bdi>tenant-saas</bdi></td><td>التخزين المؤقت للمستأجر يحتاج إلى مخزن يدعم الوسوم.</td><td>اضبط <code>CACHE_STORE=redis</code> (أو <code>memcached</code>).</td></tr>
+                        <tr><td>الإعداد <code>app.language</code></td><td>التعريف المولّد أصبحت قيمته الافتراضية <code>config('app.locale')</code>.</td><td>اختياري: غيّر <code>'default' =&gt; 'en'</code> في <code>app/Shared/Settings/Settings.php</code>.</td></tr>
+                        <tr><td>اللغات</td><td>الصفحات المولّدة تستخدم <code>__()</code>.</td><td>لمزيد من اللغات، اضبط <code>'locales' =&gt; ['en', 'ar']</code> في <code>config/blueprint.php</code> وترجم <code>lang/&lt;locale&gt;.json</code>. راجع <a href="languages.html">اللغات</a>.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 id="versions">الإصدارات</h2>
+            <p>تتبع الإصدارات <a href="https://semver.org/">الترقيم الدلالي للإصدارات (<bdi>Semantic Versioning</bdi>)</a>. الملاحظات الكاملة في <code>CHANGELOG.md</code> داخل <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">المستودع</a> وفي <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">صفحة الإصدارات</a>.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">الإصدار</th><th scope="col">أهم التغييرات</th></tr></thead>
+                    <tbody>
+                        <tr><td>1.0.0</td><td>أول إصدار مستقر: الأنماط، والمولّدات، وتعدد المستأجرين، والميزات والإعدادات، وترجمات الواجهة، و<code>engineering:about</code>، و<code>bin/new-app</code>.</td></tr>
+                        <tr><td>0.9.0</td><td><code>bin/new-app</code>، وترجمة رسائل التفويض وصفحات الأخطاء في <bdi>Laravel</bdi>.</td></tr>
+                        <tr><td>0.8.0</td><td><bdi>CRUD</bdi> بصفحات <bdi>Blade</bdi> (<code>make:crud --web</code>)، وترجمات الواجهة، ومراجعة أمنية (تقييد الجلسات، وحماية قواعد بيانات المستأجرين، والتحقق من عناصر المصفوفات). تسمية مسارات <bdi>CRUD</bdi> لواجهة <bdi>API</bdi> بـ <code>api.&lt;uri&gt;.*</code>.</td></tr>
+                        <tr><td>0.7.0</td><td>الميزات والإعدادات.</td></tr>
+                        <tr><td>0.6.0</td><td>تعدد المستأجرين مع <bdi>stancl/tenancy</bdi>.</td></tr>
+                        <tr><td>0.5.0</td><td><code>make:crud</code> (<bdi>JSON API</bdi>)، و<code>make:dto</code>، و<code>make:action</code>، و<code>make:module</code>، و<code>engineering:install</code>، والأنماط، و<code>engineering:about</code>.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <nav class="next" aria-label="البطاقة التالية">
+                <a href="languages.html">→ اللغات</a>
+                <a href="reference.html">المرجع ←</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · حقوق النشر 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">الإصدارات</a></p>
+    </footer>
+</body>
+</html>

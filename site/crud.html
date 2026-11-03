@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CRUD: Blade &amp; API · Laravel Engineering Blueprint</title>
+    <meta name="description" content="make:crud in depth: JSON API and Blade pages on one backend, the --fields syntax, feature gates, generated files, route names, validation, policy and Pest tests.">
+    <link rel="stylesheet" href="assets/blueprint.css">
+    <link rel="alternate" hreflang="ar" href="ar/crud.html">
+</head>
+<body>
+    <a class="skip" href="#content">Skip to content</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html">Laravel Engineering Blueprint <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="Site">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="ar/crud.html" lang="ar" hreflang="ar">العربية</a>
+            </nav>
+            <ul class="tabs" aria-label="Guide">
+                <li><a href="index.html">Start</a></li>
+                <li><a href="profiles.html">Profiles</a></li>
+                <li><a href="generators.html">Generators</a></li>
+                <li><a href="crud.html" aria-current="page">CRUD</a></li>
+                <li><a href="tenancy.html">Tenancy</a></li>
+                <li><a href="features.html">Features</a></li>
+                <li><a href="languages.html">Languages</a></li>
+                <li><a href="upgrading.html">Upgrading</a></li>
+                <li><a href="reference.html">Reference</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>CRUD: Blade &amp; API</h1>
+            <p class="lede"><code>make:crud</code> writes a complete create, read, update and delete feature for one entity in a module: a JSON API, Blade pages, or both, on one shared backend.</p>
+
+            <ul class="contents" aria-label="On this card">
+                <li><a href="#command">The command</a></li>
+                <li><a href="#fields">Fields</a></li>
+                <li><a href="#files">Generated files</a></li>
+                <li><a href="#routes">Routes</a></li>
+                <li><a href="#responses">Responses and validation</a></li>
+                <li><a href="#policy">Policy</a></li>
+                <li><a href="#feature">Feature gate</a></li>
+                <li><a href="#tests">Tests</a></li>
+                <li><a href="#add-side">Adding a side later</a></li>
+            </ul>
+
+            <h2 id="command">The command</h2>
+<pre><code><span class="prompt">$ </span>php artisan make:module Orders --api --web
+<span class="prompt">$ </span>php artisan make:crud Orders Order --api --web --fields="name:string,quantity:int,note:?string"
+<span class="prompt">$ </span>php artisan migrate</code></pre>
+            <ul>
+                <li>The first argument is an existing module, the second a <strong>singular</strong> entity name (<code>Order</code>, not <code>Orders</code>).</li>
+                <li><code>--api</code> writes the JSON API, <code>--web</code> the Blade pages. With neither flag you get <code>--api</code>.</li>
+                <li>The module needs <code>routes/api.php</code> for <code>--api</code> and <code>routes/web.php</code> for <code>--web</code>. Create the module with the same flags.</li>
+                <li>For <code>--web</code>, the entity's singular and plural must differ: <code>Sheep</code> is refused, choose another name.</li>
+            </ul>
+
+            <section class="index-card" aria-labelledby="card-make-crud">
+                <h3 class="index-card__title" id="card-make-crud">make:crud Orders Order --api --web</h3>
+                <ul class="outcomes">
+                    <li><span class="stamp stamp--ok">Generated</span> Shared backend: model, migration, factory, <code>StoreOrderRequest</code>, <code>UpdateOrderRequest</code>, <code>OrderData</code>, <code>CreateOrder</code>, <code>UpdateOrder</code>, <code>DeleteOrder</code>, <code>ListOrders</code>, <code>OrderPolicy</code>.</li>
+                    <li><span class="stamp stamp--ok">Generated</span> API side: <code>OrderController</code>, <code>OrderResource</code>, a route in <code>routes/api.php</code>, <code>OrderApiTest</code>.</li>
+                    <li><span class="stamp stamp--ok">Generated</span> Web side: <code>OrderPageController</code>, five Blade views, a route in <code>routes/web.php</code>, <code>OrderWebTest</code>.</li>
+                    <li><span class="stamp">Refused</span> before anything is written: a file already exists, the route file already has a route for the controller, a route name is taken, the entity is plural or reserved, a field is invalid, or a stub is out of date.</li>
+                </ul>
+                <p class="see-also">See also: <a href="reference.html#make-crud">make:crud options</a></p>
+            </section>
+
+            <h2 id="fields">Fields</h2>
+            <p><code>--fields</code> takes comma-separated <code>name:type</code> pairs. A leading <code>?</code> on the type makes the field nullable. Names become camelCase properties and snake_case columns (<code>dueAt</code> is the column <code>due_at</code>). <code>id</code>, <code>created_at</code> and <code>updated_at</code> are added automatically and refused as fields.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Type</th><th scope="col">Column</th><th scope="col">Validation</th><th scope="col">Form input</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>string</code></td><td><code>string</code></td><td><code>string</code>, <code>max:255</code></td><td>text</td></tr>
+                        <tr><td><code>int</code></td><td><code>integer</code></td><td><code>integer</code>, 32-bit range</td><td>number</td></tr>
+                        <tr><td><code>float</code></td><td><code>decimal(12, 2)</code></td><td><code>numeric</code>, up to 9999999999.99</td><td>number</td></tr>
+                        <tr><td><code>bool</code></td><td><code>boolean</code></td><td><code>boolean</code></td><td>checkbox</td></tr>
+                        <tr><td><code>array</code></td><td><code>json</code></td><td><code>array</code>, at most 100 elements, each a string up to 255 characters</td><td>one text input per value</td></tr>
+                        <tr><td><code>Carbon\CarbonImmutable</code></td><td><code>timestamp</code></td><td><code>date</code></td><td>datetime-local</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>Fields are <code>required</code> unless nullable; <code>array</code> fields are <code>present</code>. Other class types are refused by <code>make:crud</code>.</p>
+
+            <h2 id="files">Generated files</h2>
+            <p>For <code>make:crud Orders Order --api --web</code>, paths relative to <code>app/Modules/Orders/</code> unless shown in full:</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Side</th><th scope="col">Files</th></tr></thead>
+                    <tbody>
+                        <tr><td>Shared</td><td><code>Models/Order.php</code>, <code>database/migrations/…_create_orders_table.php</code>, <code>database/factories/Orders/OrderFactory.php</code>, <code>Requests/StoreOrderRequest.php</code>, <code>Requests/UpdateOrderRequest.php</code>, <code>Data/OrderData.php</code>, <code>Actions/CreateOrder.php</code>, <code>Actions/UpdateOrder.php</code>, <code>Actions/DeleteOrder.php</code>, <code>Queries/ListOrders.php</code>, <code>Policies/OrderPolicy.php</code></td></tr>
+                        <tr><td><code>--api</code></td><td><code>Controllers/OrderController.php</code>, <code>Resources/OrderResource.php</code>, a route added to <code>routes/api.php</code>, <code>tests/Feature/Modules/Orders/OrderApiTest.php</code></td></tr>
+                        <tr><td><code>--web</code></td><td><code>Controllers/OrderPageController.php</code>, <code>resources/views/orders/orders/{index,create,edit,show,_form}.blade.php</code>, a route added to <code>routes/web.php</code>, <code>tests/Feature/Modules/Orders/OrderWebTest.php</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <ul>
+                <li>Views go to <code>resources/views/&lt;module-kebab&gt;/&lt;entity-plural-kebab&gt;/</code>.</li>
+                <li>Pages are plain Blade, with no JavaScript, and extend <code>config('blueprint.layout')</code>. The first <code>--web</code> run creates <code>resources/views/layouts/blueprint.blade.php</code>; later runs leave it alone.</li>
+                <li>With <code>--web</code>, the entity and field names are added to <code>lang/&lt;locale&gt;.json</code> for every configured language other than <code>en</code>. See <a href="languages.html">Languages</a>.</li>
+                <li><code>ListOrders</code> returns the newest records first, 15 per page.</li>
+                <li>In a tenant module (tenant-saas) the migration goes to <code>database/migrations/tenant/</code>; run <code>php artisan tenants:migrate</code> instead of <code>migrate</code>.</li>
+            </ul>
+
+            <h2 id="routes">Routes</h2>
+            <p><code>&lt;uri&gt;</code> is the plural, kebab-case entity name: <code>Order</code> gives <code>orders</code>, <code>OrderItem</code> gives <code>order-items</code>.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Side</th><th scope="col">Route</th><th scope="col">Names</th></tr></thead>
+                    <tbody>
+                        <tr><td>API</td><td><code>Route::apiResource('orders', …)</code> under <code>/api</code></td><td><code>api.orders.index</code>, <code>api.orders.store</code>, <code>api.orders.show</code>, <code>api.orders.update</code>, <code>api.orders.destroy</code></td></tr>
+                        <tr><td>Web</td><td><code>Route::resource('orders', …)</code></td><td><code>orders.index</code>, <code>orders.create</code>, <code>orders.store</code>, <code>orders.show</code>, <code>orders.edit</code>, <code>orders.update</code>, <code>orders.destroy</code></td></tr>
+                        <tr><td>Central module (tenant-saas)</td><td>Same, on central domains only</td><td><code>central.api.orders.*</code>, <code>central.orders.*</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 id="responses">Responses and validation</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Action</th><th scope="col">API (<code>OrderController</code>)</th><th scope="col">Web (<code>OrderPageController</code>)</th></tr></thead>
+                    <tbody>
+                        <tr><td>List</td><td><code>OrderResource</code> collection, paginated</td><td><code>index</code> view, paginated</td></tr>
+                        <tr><td>Create</td><td>201 with the new <code>OrderResource</code></td><td>Redirect to <code>orders.show</code> with the status message "Order created."</td></tr>
+                        <tr><td>Show</td><td><code>OrderResource</code></td><td><code>show</code> view</td></tr>
+                        <tr><td>Update</td><td>The updated <code>OrderResource</code></td><td>Redirect to <code>orders.show</code>, "Order updated."</td></tr>
+                        <tr><td>Delete</td><td>204, no content</td><td>Redirect to <code>orders.index</code>, "Order deleted."</td></tr>
+                        <tr><td>Invalid input</td><td>422 JSON with an <code>errors</code> object per field</td><td>Redirect back; the form keeps the old input and shows each error under its field</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>Both controllers only take the request and return a response. The work happens in the shared Requests, <code>OrderData</code>, the actions and <code>ListOrders</code>. Create, update and delete run inside a database transaction.</p>
+
+            <h2 id="policy">Policy</h2>
+            <p><code>OrderPolicy</code> allows every signed-in user every action and denies guests. Guests get 403 on every route, also for ids that do not exist, so they cannot probe which records exist. Signed-in users get 404 for a missing id.</p>
+            <div class="note">
+                <p><strong>Tighten it.</strong> Each policy method has a <code>// Tighten for your app.</code> comment. For a token API, add auth middleware such as <code>auth:sanctum</code> to the API route group in the module's <code>Provider.php</code>. The Blade pages need a login of your own (Breeze, Jetstream or similar).</p>
+            </div>
+
+            <h2 id="feature">Feature gate</h2>
+<pre><code><span class="prompt">$ </span>php artisan make:crud Orders Order --api --web --feature=orders</code></pre>
+            <p>Adds <code>-&gt;middleware('feature:orders')</code> to the generated routes, so they return 403 while the feature is off. It needs the <code>saas</code> or <code>tenant-saas</code> profile and a key defined in your <code>Features</code> class. It is refused for central modules, which have no tenant. See <a href="features.html">Features</a>.</p>
+
+            <h2 id="tests">Tests</h2>
+            <p>Each side gets a Pest test file. They cover:</p>
+            <ul>
+                <li>guests are denied on every route, and cannot tell which ids exist;</li>
+                <li>list, create, show, update and delete as a signed-in user (the web tests also open the create and edit forms);</li>
+                <li>validation of the required fields (JSON errors for the API, session errors for the web);</li>
+                <li>with <code>--feature</code>: the routes are blocked when the feature is disabled;</li>
+                <li>in a tenant module: the routes are not served on the central domain. These tests run against a real test tenant.</li>
+            </ul>
+<pre><code><span class="prompt">$ </span>php artisan test --filter="OrderApiTest|OrderWebTest"</code></pre>
+            <div class="note">
+                <p><strong>Before running tests.</strong> If Pest is not installed, the test files are skipped with a message. Web tests fail with 419 when config is cached (<code>php artisan optimize</code>); run <code>php artisan optimize:clear</code> first.</p>
+            </div>
+
+            <h2 id="add-side">Adding a side later</h2>
+<pre><code><span class="prompt">$ </span>php artisan make:crud Orders Order --api
+<span class="prompt">$ </span>php artisan make:crud Orders Order --web</code></pre>
+            <p>The second run writes only the web side. It reads the fields back from <code>OrderData</code>, so leave <code>--fields</code> out; a different <code>--fields</code> is refused. If the existing routes are gated by a feature, pass the same <code>--feature</code>.</p>
+
+            <nav class="next" aria-label="Next card">
+                <a href="generators.html">← Generators</a>
+                <a href="tenancy.html">Tenancy →</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · Copyright 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">Releases</a></p>
+    </footer>
+</body>
+</html>

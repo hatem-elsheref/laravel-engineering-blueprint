@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Getting started · Laravel Engineering Blueprint</title>
+    <meta name="description" content="Install best/laravel-engineering-blueprint, pick a profile and generate your first module and CRUD (Blade pages and JSON API) in a Laravel 12 or 13 app.">
+    <link rel="stylesheet" href="assets/blueprint.css">
+    <link rel="alternate" hreflang="ar" href="ar/index.html">
+</head>
+<body>
+    <a class="skip" href="#content">Skip to content</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html">Laravel Engineering Blueprint <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="Site">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="ar/index.html" lang="ar" hreflang="ar">العربية</a>
+            </nav>
+            <ul class="tabs" aria-label="Guide">
+                <li><a href="index.html" aria-current="page">Start</a></li>
+                <li><a href="profiles.html">Profiles</a></li>
+                <li><a href="generators.html">Generators</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html">Tenancy</a></li>
+                <li><a href="features.html">Features</a></li>
+                <li><a href="languages.html">Languages</a></li>
+                <li><a href="upgrading.html">Upgrading</a></li>
+                <li><a href="reference.html">Reference</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>Getting started</h1>
+            <p class="lede">A Laravel 12 and 13 package (PHP 8.3+) that turns one engineering standard into working code: profiles, module and CRUD generators for Blade pages and JSON APIs, multi-tenancy, features, settings and translations.</p>
+
+            <ul class="contents" aria-label="On this card">
+                <li><a href="#install">Install</a></li>
+                <li><a href="#new-app">Or start a new app</a></li>
+                <li><a href="#first-crud">Your first CRUD</a></li>
+                <li><a href="#what-you-got">What you got</a></li>
+            </ul>
+
+            <h2 id="install">Install</h2>
+            <p>In an existing Laravel 12 or 13 app:</p>
+<pre><code><span class="prompt">$ </span>composer require best/laravel-engineering-blueprint
+<span class="prompt">$ </span>php artisan engineering:install --profile=modular</code></pre>
+            <p>The profile decides what the app gets: <code>basic</code>, <code>modular</code>, <code>saas</code> or <code>tenant-saas</code>. Not sure? Start with <code>modular</code>; you can move up later. See <a href="profiles.html">Profiles</a>.</p>
+            <p>Check the environment and the recorded profile at any time:</p>
+<pre><code><span class="prompt">$ </span>php artisan engineering:about</code></pre>
+
+            <h2 id="new-app">Or start a new app</h2>
+            <p>From a clone of the repository, one command builds a fresh app with the package, Pest, your profile and languages, migrations, and an example module whose generated tests pass:</p>
+<pre><code><span class="prompt">$ </span>bin/new-app ~/Sites/shop --profile=saas --locales=en,ar</code></pre>
+
+            <h2 id="first-crud">Your first CRUD</h2>
+<pre><code><span class="prompt">$ </span>php artisan make:module Orders --api --web
+<span class="prompt">$ </span>php artisan make:crud Orders Order --api --web --fields="name:string,quantity:int,note:?string"
+<span class="prompt">$ </span>php artisan migrate
+<span class="prompt">$ </span>php artisan test --filter="OrderApiTest|OrderWebTest"</code></pre>
+
+            <section class="index-card" aria-labelledby="card-make-crud">
+                <h3 class="index-card__title" id="card-make-crud">make:crud Orders Order --api --web</h3>
+                <p>Writes the model, migration, factory, Store/Update requests, <code>OrderData</code>, the <code>CreateOrder</code>, <code>UpdateOrder</code> and <code>DeleteOrder</code> actions, the <code>ListOrders</code> query and <code>OrderPolicy</code>, then both sides:</p>
+                <ul class="outcomes">
+                    <li><span class="stamp stamp--ok">Generated</span> JSON API: <code>OrderController</code>, <code>OrderResource</code>, routes <code>api.orders.*</code>, Pest API tests.</li>
+                    <li><span class="stamp stamp--ok">Generated</span> Blade pages: <code>OrderPageController</code>, five views, routes <code>orders.*</code>, Pest web tests.</li>
+                    <li><span class="stamp">Refused</span> before anything is written when a file already exists, a name is reserved or a stub is out of date.</li>
+                </ul>
+                <p class="see-also">See also: <a href="crud.html">CRUD: Blade &amp; API</a> · <a href="reference.html#make-crud">make:crud options</a></p>
+            </section>
+
+            <h2 id="what-you-got">What you got</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Request</th><th scope="col">Answer</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>GET /orders</code> in a browser</td><td>The list page (signed-in users)</td></tr>
+                        <tr><td><code>GET /api/orders</code></td><td>JSON, paginated</td></tr>
+                        <tr><td>Any page as a guest</td><td>403: the generated policy denies guests</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="note">
+                <p><strong>Tighten the policy.</strong> <code>OrderPolicy</code> lets every signed-in user do everything. Change it before going live, and add a login (Breeze, Jetstream or your own) for the Blade pages.</p>
+            </div>
+
+            <nav class="next" aria-label="Next card">
+                <span></span>
+                <a href="profiles.html">Profiles →</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · Copyright 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">Releases</a></p>
+    </footer>
+</body>
+</html>

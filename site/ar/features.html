@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>الميزات والإعدادات · Laravel Engineering Blueprint</title>
+    <meta name="description" content="مفاتيح الميزات والإعدادات محددة الأنواع في النمطين saas وtenant-saas: تعريفها في الكود، وبوابات المسارات والمهام، وأوامر الطرفية لمدير المنصة.">
+    <link rel="stylesheet" href="../assets/blueprint.css">
+    <link rel="alternate" hreflang="en" href="../features.html">
+</head>
+<body>
+    <a class="skip" href="#content">تخطَّ إلى المحتوى</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html"><span lang="en" dir="ltr">Laravel Engineering Blueprint</span> <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="الموقع">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="../features.html" lang="en" hreflang="en">English</a>
+            </nav>
+            <ul class="tabs" aria-label="الدليل">
+                <li><a href="index.html">البداية</a></li>
+                <li><a href="profiles.html">الأنماط</a></li>
+                <li><a href="generators.html">المولّدات</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html">المستأجرون</a></li>
+                <li><a href="features.html" aria-current="page">الميزات</a></li>
+                <li><a href="languages.html">اللغات</a></li>
+                <li><a href="upgrading.html">الترقية</a></li>
+                <li><a href="reference.html">المرجع</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>الميزات والإعدادات</h1>
+            <p class="lede">في النمطين <code>saas</code> و<code>tenant-saas</code>، تشغّل الميزات القدرات وتوقفها، وتحفظ الإعدادات قيمًا محددة الأنواع. وكلاهما معرَّف في الكود. في <code>saas</code> توجد مجموعة واحدة للتطبيق، وفي <code>tenant-saas</code> مجموعة لكل مستأجر، مخزّنة في قاعدة بياناته.</p>
+
+            <ul class="contents" aria-label="في هذه البطاقة">
+                <li><a href="#feature-definitions">تعريف الميزات</a></li>
+                <li><a href="#feature-checks">فحص الميزات وحماية الكود بها</a></li>
+                <li><a href="#feature-commands">أوامر الميزات</a></li>
+                <li><a href="#setting-definitions">تعريف الإعدادات</a></li>
+                <li><a href="#setting-access">قراءة الإعدادات وكتابتها</a></li>
+                <li><a href="#setting-commands">أوامر الإعدادات</a></li>
+                <li><a href="#guards">من يستطيع الكتابة</a></li>
+            </ul>
+
+            <h2 id="feature-definitions">تعريف الميزات</h2>
+            <p><code>engineering:install</code> ينشئ <code>app/Shared/Features/Features.php</code> (مفتاح الإعداد <code>blueprint.features</code>). كل مفتاح ميزة وحالته الافتراضية موجودان هناك فقط:</p>
+<pre><code>final class Features
+{
+    public const ORDERS = 'orders';
+    public const REPORTS = 'reports';
+
+    public static function defaults(): array
+    {
+        return [
+            self::ORDERS =&gt; true,
+            self::REPORTS =&gt; false,
+        ];
+    }
+}</code></pre>
+            <p>تُخزَّن الحالة في جدول <code>features</code> (<code>key</code>، <code>enabled</code>). المستأجرون الجدد يحصلون على القيم الافتراضية من <code>tenant:create</code>. في <code>saas</code>، شغّل <code>php artisan features:sync</code> مرة واحدة بعد الترحيل. المفتاح الذي لا صف له يُعدّ معطّلًا.</p>
+
+            <h2 id="feature-checks">فحص الميزات وحماية الكود بها</h2>
+            <p>الواجهة <code>Feature</code> للقراءة فقط. المفتاح غير المعروف يرمي خطأ.</p>
+<pre><code>Feature::enabled(Features::REPORTS);
+Feature::disabled(Features::REPORTS);
+Feature::ensure(Features::REPORTS); // throws when disabled
+Feature::all();                     // key =&gt; bool</code></pre>
+            <p>إخفاء زر ليس حماية. افحص في الخلفية:</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">أين</th><th scope="col">كيف</th></tr></thead>
+                    <tbody>
+                        <tr><td>المسارات</td><td>الوسيط <code>feature:orders</code>، أو <code>feature:orders,reports</code> (يجب أن تكون كل الميزات المذكورة مفعّلة). 403 عند التعطيل.</td></tr>
+                        <tr><td><bdi>CRUD</bdi> المولّد</td><td><code>make:crud Orders Order --feature=orders</code> يضيف وسيط المسار واختبارًا له. راجع <a href="crud.html#feature"><bdi>CRUD</bdi></a>.</td></tr>
+                        <tr><td>المهام (<bdi>Jobs</bdi>)</td><td><code>new RequireFeature(Features::ORDERS)</code> في دالة <code>middleware()</code> الخاصة بالمهمة (<code>Best\Blueprint\Features\RequireFeature</code>)</td></tr>
+                        <tr><td>الإجراءات، والمتحكمات، والمهام المجدولة</td><td><code>Feature::ensure(...)</code></td></tr>
+                        <tr><td>التنقل، والعناصر المرئية</td><td><bdi>Blade</bdi> <code>@feature('orders') … @endfeature</code>. للعرض فقط.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>في <code>tenant-saas</code>، إذا لم يكن هناك مستأجر نشط، تُقرأ كل الميزات على أنها معطّلة.</p>
+
+            <h2 id="feature-commands">أوامر الميزات</h2>
+            <p>حالة الميزات لا تتغير إلا عبر الطرفية، وعلى يد مديري المنصة.</p>
+<pre><code><span class="prompt">$ </span>php artisan feature:list --tenant=acme
+<span class="prompt">$ </span>php artisan feature:enable reports --tenant=acme
+<span class="prompt">$ </span>php artisan feature:disable reports --tenant=acme
+<span class="prompt">$ </span>php artisan features:sync</code></pre>
+            <section class="index-card" aria-labelledby="card-feature-enable">
+                <h3 class="index-card__title" id="card-feature-enable">feature:enable reports --tenant=acme</h3>
+                <ul class="outcomes">
+                    <li><span class="stamp stamp--note">ملاحظة</span> يكتب الصف <code>reports</code> في جدول <code>features</code> الخاص بالمستأجر <code>acme</code> بحالة مفعّل، داخل قاعدة بيانات ذلك المستأجر.</li>
+                    <li><span class="stamp">مرفوض</span> بدون <code>--tenant</code> في <bdi>tenant-saas</bdi>، أو مع <code>--tenant</code> في <bdi>saas</bdi>، أو لمستأجر غير معروف، أو لمفتاح غير موجود في <code>Features</code>.</li>
+                </ul>
+                <p class="see-also">انظر أيضًا: <a href="reference.html#feature-enable"><code>feature:enable</code></a> · <a href="reference.html#feature-disable"><code>feature:disable</code></a> · <a href="reference.html#feature-list"><code>feature:list</code></a> · <a href="reference.html#features-sync"><code>features:sync</code></a></p>
+            </section>
+            <p><code>features:sync</code> يضيف المفاتيح المعرّفة التي لا صف لها بعد، بحالتها الافتراضية. لا يغيّر الصفوف الموجودة أبدًا. في <bdi>tenant-saas</bdi> يعمل على كل المستأجرين، أو على من تمرّرهم فقط: <code>--tenant=acme --tenant=beta</code>. يُفحص كل المستأجرين المذكورين قبل تغيير أي منهم.</p>
+
+            <h2 id="setting-definitions">تعريف الإعدادات</h2>
+            <p><code>engineering:install</code> ينشئ <code>app/Shared/Settings/Settings.php</code> (مفتاح الإعداد <code>blueprint.settings</code>):</p>
+<pre><code>self::APP_NAME =&gt; ['type' =&gt; 'string', 'default' =&gt; 'My App', 'editable_by' =&gt; 'tenant', 'ability' =&gt; 'manage-settings'],
+self::APP_LANGUAGE =&gt; ['type' =&gt; 'string', 'default' =&gt; config('app.locale', 'en'), 'editable_by' =&gt; 'tenant', 'ability' =&gt; 'manage-settings'],
+self::ORDERS_AUTO_CONFIRM =&gt; ['type' =&gt; 'bool', 'default' =&gt; false, 'editable_by' =&gt; 'platform'],</code></pre>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">المفتاح</th><th scope="col">المعنى</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>type</code></td><td><code>string</code> أو <code>int</code> أو <code>float</code> أو <code>bool</code> أو <code>array</code></td></tr>
+                        <tr><td><code>default</code></td><td>القيمة المُعادة عندما لا يكون هناك شيء مخزّن</td></tr>
+                        <tr><td><code>editable_by</code></td><td><code>tenant</code> (يُغيَّر من كود التطبيق) أو <code>platform</code> (من الطرفية فقط)</td></tr>
+                        <tr><td><code>ability</code></td><td>صلاحية <bdi>Gate</bdi> التي يحتاجها المستخدم لتغيير إعداد <code>tenant</code>، وهي إلزامية لهذه الإعدادات</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>لا يوجد صف في جدول <code>settings</code> إلا بعد ضبط قيمة. المستأجرون الجدد لا يحتاجون إلى صفوف إعدادات.</p>
+
+            <h2 id="setting-access">قراءة الإعدادات وكتابتها</h2>
+<pre><code>Setting::get('app.language');        // typed value, or the default
+Setting::set('app.language', 'ar');  // tenant settings only, through their Gate ability</code></pre>
+            <p><code>Setting::set()</code> يرفض إعدادات <code>platform</code>، والقيم ذات النوع الخاطئ، والمستخدمين الذين يرفضهم <bdi>Gate</bdi>. عرّف الصلاحية التي تستخدمها الإعدادات المولّدة، مثلًا في <code>AppServiceProvider::boot()</code>:</p>
+<pre><code>// Example only: decide who may change tenant settings in your app.
+Gate::define('manage-settings', fn (User $user) =&gt; $user-&gt;is_owner);</code></pre>
+
+            <h2 id="setting-commands">أوامر الإعدادات</h2>
+<pre><code><span class="prompt">$ </span>php artisan setting:list --tenant=acme
+<span class="prompt">$ </span>php artisan setting:set orders.auto_confirm true --tenant=acme</code></pre>
+            <section class="index-card" aria-labelledby="card-setting-set">
+                <h3 class="index-card__title" id="card-setting-set">setting:set orders.auto_confirm true --tenant=acme</h3>
+                <p>يستطيع مديرو المنصة ضبط أي إعداد، <code>tenant</code> أو <code>platform</code>. تُقرأ القيمة بصيغة <bdi>JSON</bdi> (<code>true</code>، <code>5</code>، <code>["a"]</code>، <code>"text"</code>)، وأي قيمة ليست <bdi>JSON</bdi> صالحًا تُؤخذ نصًا عاديًا. ضع <code>--</code> قبل الأرقام السالبة.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">مرفوض</span> مفتاح غير معروف، أو قيمة من نوع خاطئ، أو غياب <code>--tenant</code> في <bdi>tenant-saas</bdi>، أو وجود <code>--tenant</code> في <bdi>saas</bdi>.</li>
+                </ul>
+                <p class="see-also">انظر أيضًا: <a href="reference.html#setting-set"><code>setting:set</code></a> · <a href="reference.html#setting-list"><code>setting:list</code></a></p>
+            </section>
+
+            <h2 id="guards">من يستطيع الكتابة</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">الكتابة</th><th scope="col">مسموحة من</th></tr></thead>
+                    <tbody>
+                        <tr><td>حالة الميزات</td><td>أوامر الطرفية فقط (مديرو المنصة)</td></tr>
+                        <tr><td>إعدادات <code>platform</code></td><td>أوامر الطرفية فقط</td></tr>
+                        <tr><td>إعدادات <code>tenant</code></td><td>كود التطبيق عبر <code>Setting::set()</code> مع صلاحية <bdi>Gate</bdi>، أو الطرفية</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>أصناف الكتابة الإدارية التي تقف خلف الأوامر ترفض العمل أثناء معالجة طلب <bdi>HTTP</bdi>، بما في ذلك اختبارات <bdi>HTTP</bdi> في تطبيقك، وفي <bdi>tenant-saas</bdi> عندما لا يكون هناك مستأجر نشط. في اختبارات <code>saas</code> يبدأ جدول <code>features</code> فارغًا، فتكون كل الميزات معطّلة، لذا استدعِ <code>app(\Best\Blueprint\Features\FeatureAdmin::class)-&gt;sync()</code> أو <code>-&gt;enable('orders')</code> في <code>beforeEach</code>.</p>
+
+            <nav class="next" aria-label="البطاقة التالية">
+                <a href="tenancy.html">→ المستأجرون</a>
+                <a href="languages.html">اللغات ←</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · حقوق النشر 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">الإصدارات</a></p>
+    </footer>
+</body>
+</html>

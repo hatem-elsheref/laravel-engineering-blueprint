@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Features &amp; settings · Laravel Engineering Blueprint</title>
+    <meta name="description" content="Feature flags and typed settings in the saas and tenant-saas profiles: definitions in code, route and job gates, and the platform-admin console commands.">
+    <link rel="stylesheet" href="assets/blueprint.css">
+    <link rel="alternate" hreflang="ar" href="ar/features.html">
+</head>
+<body>
+    <a class="skip" href="#content">Skip to content</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html">Laravel Engineering Blueprint <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="Site">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="ar/features.html" lang="ar" hreflang="ar">العربية</a>
+            </nav>
+            <ul class="tabs" aria-label="Guide">
+                <li><a href="index.html">Start</a></li>
+                <li><a href="profiles.html">Profiles</a></li>
+                <li><a href="generators.html">Generators</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html">Tenancy</a></li>
+                <li><a href="features.html" aria-current="page">Features</a></li>
+                <li><a href="languages.html">Languages</a></li>
+                <li><a href="upgrading.html">Upgrading</a></li>
+                <li><a href="reference.html">Reference</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>Features &amp; settings</h1>
+            <p class="lede">In the <code>saas</code> and <code>tenant-saas</code> profiles, features switch capabilities on and off, and settings hold typed values. Both are defined in code. In <code>saas</code> there is one set for the app; in <code>tenant-saas</code> one set per tenant, stored in the tenant's database.</p>
+
+            <ul class="contents" aria-label="On this card">
+                <li><a href="#feature-definitions">Feature definitions</a></li>
+                <li><a href="#feature-checks">Checking and gating features</a></li>
+                <li><a href="#feature-commands">Feature commands</a></li>
+                <li><a href="#setting-definitions">Setting definitions</a></li>
+                <li><a href="#setting-access">Reading and writing settings</a></li>
+                <li><a href="#setting-commands">Setting commands</a></li>
+                <li><a href="#guards">Who can write</a></li>
+            </ul>
+
+            <h2 id="feature-definitions">Feature definitions</h2>
+            <p><code>engineering:install</code> creates <code>app/Shared/Features/Features.php</code> (config <code>blueprint.features</code>). Every feature key and its default state live there and nowhere else:</p>
+<pre><code>final class Features
+{
+    public const ORDERS = 'orders';
+    public const REPORTS = 'reports';
+
+    public static function defaults(): array
+    {
+        return [
+            self::ORDERS =&gt; true,
+            self::REPORTS =&gt; false,
+        ];
+    }
+}</code></pre>
+            <p>State is stored in a <code>features</code> table (<code>key</code>, <code>enabled</code>). New tenants get the defaults from <code>tenant:create</code>. In <code>saas</code>, run <code>php artisan features:sync</code> once after migrating. A key with no row is off.</p>
+
+            <h2 id="feature-checks">Checking and gating features</h2>
+            <p>The <code>Feature</code> facade is read-only. An unknown key throws an error.</p>
+<pre><code>Feature::enabled(Features::REPORTS);
+Feature::disabled(Features::REPORTS);
+Feature::ensure(Features::REPORTS); // throws when disabled
+Feature::all();                     // key =&gt; bool</code></pre>
+            <p>Hiding a button is not security. Check on the backend:</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Where</th><th scope="col">How</th></tr></thead>
+                    <tbody>
+                        <tr><td>Routes</td><td>Middleware <code>feature:orders</code>, or <code>feature:orders,reports</code> (every listed feature must be on). 403 when off.</td></tr>
+                        <tr><td>Generated CRUD</td><td><code>make:crud Orders Order --feature=orders</code> adds the route middleware and a test for it. See <a href="crud.html#feature">CRUD</a>.</td></tr>
+                        <tr><td>Jobs</td><td><code>new RequireFeature(Features::ORDERS)</code> in the job's <code>middleware()</code> (<code>Best\Blueprint\Features\RequireFeature</code>)</td></tr>
+                        <tr><td>Actions, controllers, scheduled tasks</td><td><code>Feature::ensure(...)</code></td></tr>
+                        <tr><td>Navigation, widgets</td><td>Blade <code>@feature('orders') … @endfeature</code>. Display only.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>In <code>tenant-saas</code>, when no tenant is active every feature reads as off.</p>
+
+            <h2 id="feature-commands">Feature commands</h2>
+            <p>Feature state changes only through the console, by platform admins.</p>
+<pre><code><span class="prompt">$ </span>php artisan feature:list --tenant=acme
+<span class="prompt">$ </span>php artisan feature:enable reports --tenant=acme
+<span class="prompt">$ </span>php artisan feature:disable reports --tenant=acme
+<span class="prompt">$ </span>php artisan features:sync</code></pre>
+            <section class="index-card" aria-labelledby="card-feature-enable">
+                <h3 class="index-card__title" id="card-feature-enable">feature:enable reports --tenant=acme</h3>
+                <ul class="outcomes">
+                    <li><span class="stamp stamp--note">Note</span> Writes the <code>reports</code> row in tenant <code>acme</code>'s <code>features</code> table as enabled, inside that tenant's database.</li>
+                    <li><span class="stamp">Refused</span> without <code>--tenant</code> in tenant-saas, with <code>--tenant</code> in saas, for an unknown tenant, or for a key not in <code>Features</code>.</li>
+                </ul>
+                <p class="see-also">See also: <a href="reference.html#feature-enable">feature:enable</a> · <a href="reference.html#feature-disable">feature:disable</a> · <a href="reference.html#feature-list">feature:list</a> · <a href="reference.html#features-sync">features:sync</a></p>
+            </section>
+            <p><code>features:sync</code> adds keys that are defined but have no row yet, with their default state. It never changes existing rows. In tenant-saas it runs for every tenant, or only for the ones you pass: <code>--tenant=acme --tenant=beta</code>. All listed tenants are checked before any is changed.</p>
+
+            <h2 id="setting-definitions">Setting definitions</h2>
+            <p><code>engineering:install</code> creates <code>app/Shared/Settings/Settings.php</code> (config <code>blueprint.settings</code>):</p>
+<pre><code>self::APP_NAME =&gt; ['type' =&gt; 'string', 'default' =&gt; 'My App', 'editable_by' =&gt; 'tenant', 'ability' =&gt; 'manage-settings'],
+self::APP_LANGUAGE =&gt; ['type' =&gt; 'string', 'default' =&gt; config('app.locale', 'en'), 'editable_by' =&gt; 'tenant', 'ability' =&gt; 'manage-settings'],
+self::ORDERS_AUTO_CONFIRM =&gt; ['type' =&gt; 'bool', 'default' =&gt; false, 'editable_by' =&gt; 'platform'],</code></pre>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Key</th><th scope="col">Meaning</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>type</code></td><td><code>string</code>, <code>int</code>, <code>float</code>, <code>bool</code> or <code>array</code></td></tr>
+                        <tr><td><code>default</code></td><td>Returned when nothing is stored</td></tr>
+                        <tr><td><code>editable_by</code></td><td><code>tenant</code> (changed from app code) or <code>platform</code> (console only)</td></tr>
+                        <tr><td><code>ability</code></td><td>Gate ability a user needs to change a <code>tenant</code> setting; required for those</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>A row in the <code>settings</code> table exists only after a value was set. New tenants need no setting rows.</p>
+
+            <h2 id="setting-access">Reading and writing settings</h2>
+<pre><code>Setting::get('app.language');        // typed value, or the default
+Setting::set('app.language', 'ar');  // tenant settings only, through their Gate ability</code></pre>
+            <p><code>Setting::set()</code> refuses <code>platform</code> settings, values of the wrong type, and users the Gate denies. Define the ability the generated settings use, for example in <code>AppServiceProvider::boot()</code>:</p>
+<pre><code>// Example only: decide who may change tenant settings in your app.
+Gate::define('manage-settings', fn (User $user) =&gt; $user-&gt;is_owner);</code></pre>
+
+            <h2 id="setting-commands">Setting commands</h2>
+<pre><code><span class="prompt">$ </span>php artisan setting:list --tenant=acme
+<span class="prompt">$ </span>php artisan setting:set orders.auto_confirm true --tenant=acme</code></pre>
+            <section class="index-card" aria-labelledby="card-setting-set">
+                <h3 class="index-card__title" id="card-setting-set">setting:set orders.auto_confirm true --tenant=acme</h3>
+                <p>Platform admins can set any setting, <code>tenant</code> or <code>platform</code>. The value is read as JSON (<code>true</code>, <code>5</code>, <code>["a"]</code>, <code>"text"</code>); anything that is not valid JSON is taken as plain text. Put <code>--</code> before negative numbers.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">Refused</span> an unknown key, a value of the wrong type, a missing <code>--tenant</code> in tenant-saas, or <code>--tenant</code> in saas.</li>
+                </ul>
+                <p class="see-also">See also: <a href="reference.html#setting-set">setting:set</a> · <a href="reference.html#setting-list">setting:list</a></p>
+            </section>
+
+            <h2 id="guards">Who can write</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Write</th><th scope="col">Allowed from</th></tr></thead>
+                    <tbody>
+                        <tr><td>Feature state</td><td>Console commands only (platform admins)</td></tr>
+                        <tr><td><code>platform</code> settings</td><td>Console commands only</td></tr>
+                        <tr><td><code>tenant</code> settings</td><td>App code via <code>Setting::set()</code> with the Gate ability, or the console</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>The admin writers behind the commands refuse to run while an HTTP request is being handled, including in your app's own HTTP tests, and in tenant-saas when no tenant is active. In <code>saas</code> tests the <code>features</code> table starts empty, so every feature is off; call <code>app(\Best\Blueprint\Features\FeatureAdmin::class)-&gt;sync()</code> or <code>-&gt;enable('orders')</code> in <code>beforeEach</code>.</p>
+
+            <nav class="next" aria-label="Next card">
+                <a href="tenancy.html">← Tenancy</a>
+                <a href="languages.html">Languages →</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · Copyright 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">Releases</a></p>
+    </footer>
+</body>
+</html>

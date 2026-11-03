@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CRUD: Blade وAPI · Laravel Engineering Blueprint</title>
+    <meta name="description" content="شرح مفصّل لـ make:crud: واجهة JSON API وصفحات Blade فوق خلفية واحدة، وصيغة --fields، وبوابات الميزات، والملفات المولّدة، وأسماء المسارات، والتحقق، والسياسة، واختبارات Pest.">
+    <link rel="stylesheet" href="../assets/blueprint.css">
+    <link rel="alternate" hreflang="en" href="../crud.html">
+</head>
+<body>
+    <a class="skip" href="#content">تخطَّ إلى المحتوى</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html"><span lang="en" dir="ltr">Laravel Engineering Blueprint</span> <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="الموقع">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="../crud.html" lang="en" hreflang="en">English</a>
+            </nav>
+            <ul class="tabs" aria-label="الدليل">
+                <li><a href="index.html">البداية</a></li>
+                <li><a href="profiles.html">الأنماط</a></li>
+                <li><a href="generators.html">المولّدات</a></li>
+                <li><a href="crud.html" aria-current="page">CRUD</a></li>
+                <li><a href="tenancy.html">المستأجرون</a></li>
+                <li><a href="features.html">الميزات</a></li>
+                <li><a href="languages.html">اللغات</a></li>
+                <li><a href="upgrading.html">الترقية</a></li>
+                <li><a href="reference.html">المرجع</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1><bdi>CRUD</bdi>: <bdi>Blade</bdi> و<bdi>API</bdi></h1>
+            <p class="lede"><code>make:crud</code> يكتب ميزة كاملة للإنشاء والقراءة والتحديث والحذف لكيان واحد داخل وحدة: واجهة <bdi>JSON API</bdi>، أو صفحات <bdi>Blade</bdi>، أو كليهما، فوق خلفية مشتركة واحدة.</p>
+
+            <ul class="contents" aria-label="في هذه البطاقة">
+                <li><a href="#command">الأمر</a></li>
+                <li><a href="#fields">الحقول</a></li>
+                <li><a href="#files">الملفات المولّدة</a></li>
+                <li><a href="#routes">المسارات</a></li>
+                <li><a href="#responses">الاستجابات والتحقق</a></li>
+                <li><a href="#policy">السياسة</a></li>
+                <li><a href="#feature">بوابة الميزة</a></li>
+                <li><a href="#tests">الاختبارات</a></li>
+                <li><a href="#add-side">إضافة جانب لاحقًا</a></li>
+            </ul>
+
+            <h2 id="command">الأمر</h2>
+<pre><code><span class="prompt">$ </span>php artisan make:module Orders --api --web
+<span class="prompt">$ </span>php artisan make:crud Orders Order --api --web --fields="name:string,quantity:int,note:?string"
+<span class="prompt">$ </span>php artisan migrate</code></pre>
+            <ul>
+                <li>الوسيط الأول وحدة موجودة، والثاني اسم كيان <strong>مفرد</strong> (<code>Order</code> وليس <code>Orders</code>).</li>
+                <li><code>--api</code> يكتب واجهة <bdi>JSON API</bdi>، و<code>--web</code> يكتب صفحات <bdi>Blade</bdi>. بدون أي منهما تحصل على <code>--api</code>.</li>
+                <li>تحتاج الوحدة إلى <code>routes/api.php</code> من أجل <code>--api</code>، وإلى <code>routes/web.php</code> من أجل <code>--web</code>. أنشئ الوحدة بالخيارات نفسها.</li>
+                <li>مع <code>--web</code> يجب أن يختلف المفرد عن الجمع في اسم الكيان: <code>Sheep</code> مرفوض، اختر اسمًا آخر.</li>
+            </ul>
+
+            <section class="index-card" aria-labelledby="card-make-crud">
+                <h3 class="index-card__title" id="card-make-crud">make:crud Orders Order --api --web</h3>
+                <ul class="outcomes">
+                    <li><span class="stamp stamp--ok">أُنشئ</span> الخلفية المشتركة: النموذج، والترحيل، والمصنع، و<code>StoreOrderRequest</code>، و<code>UpdateOrderRequest</code>، و<code>OrderData</code>، و<code>CreateOrder</code>، و<code>UpdateOrder</code>، و<code>DeleteOrder</code>، و<code>ListOrders</code>، و<code>OrderPolicy</code>.</li>
+                    <li><span class="stamp stamp--ok">أُنشئ</span> جانب <bdi>API</bdi>: <code>OrderController</code>، و<code>OrderResource</code>، ومسار في <code>routes/api.php</code>، و<code>OrderApiTest</code>.</li>
+                    <li><span class="stamp stamp--ok">أُنشئ</span> جانب الويب: <code>OrderPageController</code>، وخمسة قوالب عرض <bdi>Blade</bdi>، ومسار في <code>routes/web.php</code>، و<code>OrderWebTest</code>.</li>
+                    <li><span class="stamp">مرفوض</span> قبل كتابة أي شيء: إذا كان أحد الملفات موجودًا، أو كان ملف المسارات يحتوي مسبقًا على مسار للمتحكم، أو كان اسم مسار مستخدمًا، أو كان الكيان بصيغة الجمع أو اسمًا محجوزًا، أو كان أحد الحقول غير صالح، أو كان أحد القوالب قديمًا.</li>
+                </ul>
+                <p class="see-also">انظر أيضًا: <a href="reference.html#make-crud">خيارات <code>make:crud</code></a></p>
+            </section>
+
+            <h2 id="fields">الحقول</h2>
+            <p><code>--fields</code> يأخذ أزواج <code>name:type</code> مفصولة بفواصل. علامة <code>?</code> قبل النوع تجعل الحقل قابلًا لأن يكون <code>null</code>. تصبح الأسماء خصائص بصيغة <bdi>camelCase</bdi> وأعمدة بصيغة <bdi>snake_case</bdi> (<code>dueAt</code> هو العمود <code>due_at</code>). تُضاف <code>id</code> و<code>created_at</code> و<code>updated_at</code> تلقائيًا، وتُرفض إذا مُرّرت كحقول.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">النوع</th><th scope="col">العمود</th><th scope="col">التحقق</th><th scope="col">حقل النموذج</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>string</code></td><td><code>string</code></td><td><code>string</code>، <code>max:255</code></td><td><bdi>text</bdi></td></tr>
+                        <tr><td><code>int</code></td><td><code>integer</code></td><td><code>integer</code>، ضمن نطاق 32 بت</td><td><bdi>number</bdi></td></tr>
+                        <tr><td><code>float</code></td><td><code>decimal(12, 2)</code></td><td><code>numeric</code>، حتى <bdi>9999999999.99</bdi></td><td><bdi>number</bdi></td></tr>
+                        <tr><td><code>bool</code></td><td><code>boolean</code></td><td><code>boolean</code></td><td><bdi>checkbox</bdi></td></tr>
+                        <tr><td><code>array</code></td><td><code>json</code></td><td><code>array</code>، بحد أقصى 100 عنصر، كل منها نص لا يتجاوز 255 حرفًا</td><td>حقل نصي لكل قيمة</td></tr>
+                        <tr><td><code>Carbon\CarbonImmutable</code></td><td><code>timestamp</code></td><td><code>date</code></td><td><bdi>datetime-local</bdi></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>الحقول <code>required</code> ما لم تكن قابلة لـ <code>null</code>، وحقول <code>array</code> تكون <code>present</code>. أنواع الأصناف الأخرى يرفضها <code>make:crud</code>.</p>
+
+            <h2 id="files">الملفات المولّدة</h2>
+            <p>للأمر <code>make:crud Orders Order --api --web</code>، المسارات نسبية إلى <code>app/Modules/Orders/</code> ما لم تُكتب كاملة:</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">الجانب</th><th scope="col">الملفات</th></tr></thead>
+                    <tbody>
+                        <tr><td>مشترك</td><td><code>Models/Order.php</code>، <code>database/migrations/…_create_orders_table.php</code>، <code>database/factories/Orders/OrderFactory.php</code>، <code>Requests/StoreOrderRequest.php</code>، <code>Requests/UpdateOrderRequest.php</code>، <code>Data/OrderData.php</code>، <code>Actions/CreateOrder.php</code>، <code>Actions/UpdateOrder.php</code>، <code>Actions/DeleteOrder.php</code>، <code>Queries/ListOrders.php</code>، <code>Policies/OrderPolicy.php</code></td></tr>
+                        <tr><td><code>--api</code></td><td><code>Controllers/OrderController.php</code>، <code>Resources/OrderResource.php</code>، مسار يُضاف إلى <code>routes/api.php</code>، <code>tests/Feature/Modules/Orders/OrderApiTest.php</code></td></tr>
+                        <tr><td><code>--web</code></td><td><code>Controllers/OrderPageController.php</code>، <code>resources/views/orders/orders/{index,create,edit,show,_form}.blade.php</code>، مسار يُضاف إلى <code>routes/web.php</code>، <code>tests/Feature/Modules/Orders/OrderWebTest.php</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <ul>
+                <li>قوالب العرض تُكتب في <code>resources/views/&lt;module-kebab&gt;/&lt;entity-plural-kebab&gt;/</code>.</li>
+                <li>الصفحات <bdi>Blade</bdi> بسيطة بلا <bdi>JavaScript</bdi>، وترث <code>config('blueprint.layout')</code>. أول تشغيل بـ <code>--web</code> ينشئ <code>resources/views/layouts/blueprint.blade.php</code>، والتشغيلات اللاحقة لا تمسّه.</li>
+                <li>مع <code>--web</code>، يُضاف اسم الكيان وأسماء الحقول إلى <code>lang/&lt;locale&gt;.json</code> لكل لغة مُعدّة غير <code>en</code>. راجع <a href="languages.html">اللغات</a>.</li>
+                <li><code>ListOrders</code> يعيد أحدث السجلات أولًا، 15 في كل صفحة.</li>
+                <li>في وحدة مستأجر (<bdi>tenant-saas</bdi>) يُكتب الترحيل في <code>database/migrations/tenant/</code>، فشغّل <code>php artisan tenants:migrate</code> بدلًا من <code>migrate</code>.</li>
+            </ul>
+
+            <h2 id="routes">المسارات</h2>
+            <p><code>&lt;uri&gt;</code> هو اسم الكيان بصيغة الجمع وبصيغة <bdi>kebab-case</bdi>: <code>Order</code> يعطي <code>orders</code>، و<code>OrderItem</code> يعطي <code>order-items</code>.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">الجانب</th><th scope="col">المسار</th><th scope="col">الأسماء</th></tr></thead>
+                    <tbody>
+                        <tr><td><bdi>API</bdi></td><td><code>Route::apiResource('orders', …)</code> تحت <code>/api</code></td><td><code>api.orders.index</code>، <code>api.orders.store</code>، <code>api.orders.show</code>، <code>api.orders.update</code>، <code>api.orders.destroy</code></td></tr>
+                        <tr><td>الويب</td><td><code>Route::resource('orders', …)</code></td><td><code>orders.index</code>، <code>orders.create</code>، <code>orders.store</code>، <code>orders.show</code>، <code>orders.edit</code>، <code>orders.update</code>، <code>orders.destroy</code></td></tr>
+                        <tr><td>وحدة مركزية (<bdi>tenant-saas</bdi>)</td><td>المسارات نفسها، على النطاقات المركزية فقط</td><td><code>central.api.orders.*</code>، <code>central.orders.*</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 id="responses">الاستجابات والتحقق</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">العملية</th><th scope="col"><bdi>API</bdi> (<code>OrderController</code>)</th><th scope="col">الويب (<code>OrderPageController</code>)</th></tr></thead>
+                    <tbody>
+                        <tr><td>القائمة</td><td>مجموعة <code>OrderResource</code> مقسّمة إلى صفحات</td><td>قالب العرض <code>index</code> مقسّمًا إلى صفحات</td></tr>
+                        <tr><td>الإنشاء</td><td>201 مع <code>OrderResource</code> الجديد</td><td>إعادة توجيه إلى <code>orders.show</code> مع رسالة الحالة <bdi lang="en">"Order created."</bdi></td></tr>
+                        <tr><td>العرض</td><td><code>OrderResource</code></td><td>قالب العرض <code>show</code></td></tr>
+                        <tr><td>التحديث</td><td><code>OrderResource</code> بعد التحديث</td><td>إعادة توجيه إلى <code>orders.show</code>، <bdi lang="en">"Order updated."</bdi></td></tr>
+                        <tr><td>الحذف</td><td>204، بلا محتوى</td><td>إعادة توجيه إلى <code>orders.index</code>، <bdi lang="en">"Order deleted."</bdi></td></tr>
+                        <tr><td>مدخلات غير صالحة</td><td>422 بصيغة <bdi>JSON</bdi> مع كائن <code>errors</code> لكل حقل</td><td>إعادة توجيه إلى الصفحة السابقة، ويحتفظ النموذج بالمدخلات القديمة ويعرض كل خطأ تحت حقله</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>المتحكمان يستقبلان الطلب ويعيدان الاستجابة فقط. العمل الفعلي يجري في أصناف الطلبات (<bdi>Requests</bdi>) المشتركة، و<code>OrderData</code>، والإجراءات، و<code>ListOrders</code>. الإنشاء والتحديث والحذف تجري داخل معاملة قاعدة بيانات.</p>
+
+            <h2 id="policy">السياسة</h2>
+            <p><code>OrderPolicy</code> تسمح لكل مستخدم مسجَّل دخوله بكل العمليات وترفض الزوار. يحصل الزوار على 403 في كل مسار، حتى للمعرّفات غير الموجودة، فلا يستطيعون اكتشاف السجلات الموجودة. ويحصل المستخدمون المسجَّلون على 404 للمعرّف غير الموجود.</p>
+            <div class="note">
+                <p><strong>شدّدها.</strong> كل دالة في السياسة فيها تعليق <code>// Tighten for your app.</code>. لواجهة <bdi>API</bdi> تعمل بالرموز، أضف وسيط مصادقة مثل <code>auth:sanctum</code> إلى مجموعة مسارات <bdi>API</bdi> في ملف <code>Provider.php</code> الخاص بالوحدة. صفحات <bdi>Blade</bdi> تحتاج إلى تسجيل دخول من عندك (<bdi>Breeze</bdi> أو <bdi>Jetstream</bdi> أو ما يشبههما).</p>
+            </div>
+
+            <h2 id="feature">بوابة الميزة</h2>
+<pre><code><span class="prompt">$ </span>php artisan make:crud Orders Order --api --web --feature=orders</code></pre>
+            <p>يضيف <code>-&gt;middleware('feature:orders')</code> إلى المسارات المولّدة، فتعيد 403 ما دامت الميزة معطّلة. يحتاج إلى النمط <code>saas</code> أو <code>tenant-saas</code> وإلى مفتاح معرَّف في صنف <code>Features</code>. يُرفض في الوحدات المركزية لأنها بلا مستأجر. راجع <a href="features.html">الميزات</a>.</p>
+
+            <h2 id="tests">الاختبارات</h2>
+            <p>يحصل كل جانب على ملف اختبار <bdi>Pest</bdi>. وتغطي الاختبارات:</p>
+            <ul>
+                <li>رفض الزوار في كل مسار، وعدم قدرتهم على معرفة المعرّفات الموجودة؛</li>
+                <li>القائمة والإنشاء والعرض والتحديث والحذف كمستخدم مسجَّل دخوله (اختبارات الويب تفتح أيضًا نموذجَي الإنشاء والتعديل)؛</li>
+                <li>التحقق من الحقول المطلوبة (أخطاء <bdi>JSON</bdi> لواجهة <bdi>API</bdi>، وأخطاء الجلسة للويب)؛</li>
+                <li>مع <code>--feature</code>: حجب المسارات عندما تكون الميزة معطّلة؛</li>
+                <li>في وحدة مستأجر: عدم تقديم المسارات على النطاق المركزي. هذه الاختبارات تعمل على مستأجر اختبار حقيقي.</li>
+            </ul>
+<pre><code><span class="prompt">$ </span>php artisan test --filter="OrderApiTest|OrderWebTest"</code></pre>
+            <div class="note">
+                <p><strong>قبل تشغيل الاختبارات.</strong> إذا لم تكن <bdi>Pest</bdi> مثبّتة، تُتخطى ملفات الاختبار مع رسالة. تفشل اختبارات الويب بالرمز 419 عندما تكون الإعدادات مخزّنة مؤقتًا (<code>php artisan optimize</code>)، فشغّل <code>php artisan optimize:clear</code> أولًا.</p>
+            </div>
+
+            <h2 id="add-side">إضافة جانب لاحقًا</h2>
+<pre><code><span class="prompt">$ </span>php artisan make:crud Orders Order --api
+<span class="prompt">$ </span>php artisan make:crud Orders Order --web</code></pre>
+            <p>التشغيل الثاني يكتب جانب الويب فقط. يقرأ الحقول من <code>OrderData</code>، فلا تمرّر <code>--fields</code>، وأي <code>--fields</code> مختلف يُرفض. إذا كانت المسارات الموجودة محمية ببوابة ميزة، فمرّر <code>--feature</code> نفسه.</p>
+
+            <nav class="next" aria-label="البطاقة التالية">
+                <a href="generators.html">→ المولّدات</a>
+                <a href="tenancy.html">المستأجرون ←</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · حقوق النشر 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">الإصدارات</a></p>
+    </footer>
+</body>
+</html>

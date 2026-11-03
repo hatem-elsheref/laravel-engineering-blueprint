@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Languages · Laravel Engineering Blueprint</title>
+    <meta name="description" content="Interface translations: blueprint.locales, right-to-left layout, how each request's language is chosen, and how to add a language.">
+    <link rel="stylesheet" href="assets/blueprint.css">
+    <link rel="alternate" hreflang="ar" href="ar/languages.html">
+</head>
+<body>
+    <a class="skip" href="#content">Skip to content</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html">Laravel Engineering Blueprint <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="Site">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="ar/languages.html" lang="ar" hreflang="ar">العربية</a>
+            </nav>
+            <ul class="tabs" aria-label="Guide">
+                <li><a href="index.html">Start</a></li>
+                <li><a href="profiles.html">Profiles</a></li>
+                <li><a href="generators.html">Generators</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html">Tenancy</a></li>
+                <li><a href="features.html">Features</a></li>
+                <li><a href="languages.html" aria-current="page">Languages</a></li>
+                <li><a href="upgrading.html">Upgrading</a></li>
+                <li><a href="reference.html">Reference</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>Languages</h1>
+            <p class="lede">The package translates the interface: generated Blade pages and the package's own messages. It does not translate your data; storing records in several languages is up to your app.</p>
+
+            <ul class="contents" aria-label="On this card">
+                <li><a href="#config">Configure languages</a></li>
+                <li><a href="#resolution">How a request's language is chosen</a></li>
+                <li><a href="#switcher">Language switcher</a></li>
+                <li><a href="#rtl">Right-to-left layout</a></li>
+                <li><a href="#strings">Translating strings</a></li>
+                <li><a href="#add">Adding a language</a></li>
+            </ul>
+
+            <h2 id="config">Configure languages</h2>
+<pre><code>// config/blueprint.php
+'locales' =&gt; ['en', 'ar'],                  // languages the app serves
+'rtl_locales' =&gt; ['ar', 'fa', 'he', 'ur'],  // shown right-to-left</code></pre>
+            <p><code>locales</code> defaults to <code>['en']</code>. The app's default language is Laravel's <code>app.locale</code> (<code>APP_LOCALE</code>), as configured when the app boots.</p>
+
+            <h2 id="resolution">How a request's language is chosen</h2>
+            <p>The <code>SetLocale</code> middleware is added to the <code>web</code> and <code>api</code> groups. Only languages in <code>blueprint.locales</code> are accepted; the first match wins.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Order</th><th scope="col">API requests (JSON or <code>/api/*</code>)</th><th scope="col">Web requests</th></tr></thead>
+                    <tbody>
+                        <tr><td>1</td><td><code>Accept-Language</code> header, by quality value</td><td>The visitor's choice, stored in the session by <code>/locale/{locale}</code></td></tr>
+                        <tr><td>2</td><td colspan="2">The <code>app.language</code> setting (saas and tenant-saas; in tenant-saas only inside a tenant)</td></tr>
+                        <tr><td>3</td><td colspan="2">The app default (<code>app.locale</code>)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>The language is set on every request, so a long-running worker never keeps the previous request's language.</p>
+
+            <h2 id="switcher">Language switcher</h2>
+            <p>The package registers <code>GET /locale/{locale}</code>, named <code>blueprint.locale</code>, in the <code>web</code> group. It stores the language in the session and redirects back. A language not in <code>blueprint.locales</code> returns 404.</p>
+<pre><code>&lt;a href="{{ route('blueprint.locale', 'ar') }}"&gt;العربية&lt;/a&gt;</code></pre>
+            <p>The generated layout shows these links on its own when more than one language is configured.</p>
+
+            <h2 id="rtl">Right-to-left layout</h2>
+            <p>The layout that <code>make:crud --web</code> creates (<code>resources/views/layouts/blueprint.blade.php</code>) sets <code>&lt;html lang dir&gt;</code> from the current language: <code>dir="rtl"</code> for languages in <code>rtl_locales</code>, <code>ltr</code> otherwise.</p>
+            <div class="note">
+                <p><strong>Error pages.</strong> Laravel's error pages (403, 404, …) show translated titles but use Laravel's own layout with <code>&lt;html lang="en"&gt;</code>. For right-to-left error pages, run <code>php artisan vendor:publish --tag=laravel-errors</code> and set <code>lang</code> and <code>dir</code> in <code>resources/views/errors/layout.blade.php</code> the way the blueprint layout does.</p>
+            </div>
+
+            <h2 id="strings">Translating strings</h2>
+            <ul>
+                <li>Generated pages and package messages use <code>__()</code> with English keys.</li>
+                <li>The package ships <code>lang/ar.json</code> with Arabic for its own strings: buttons such as Save and Delete, status messages such as ":item created.", "This feature is not enabled.", and Laravel's "This action is unauthorized." and error page titles.</li>
+                <li><code>make:crud --web</code> adds the entity and field names (for example "Order", "Orders", "Quantity") to <code>lang/&lt;locale&gt;.json</code> for every configured language other than <code>en</code>, with the English text as the value. Existing translations are kept. Translate the new values.</li>
+                <li>For Laravel's validation messages, run <code>php artisan lang:publish</code> and add <code>lang/ar/validation.php</code>.</li>
+            </ul>
+
+            <h2 id="add">Adding a language</h2>
+            <ol>
+                <li>Add the code to <code>blueprint.locales</code>, for example <code>['en', 'ar', 'fr']</code>. If it is written right-to-left and not already listed, add it to <code>rtl_locales</code>.</li>
+                <li>Create <code>lang/fr.json</code> and translate your strings. Package strings without a translation show in English.</li>
+                <li>Run <code>make:crud --web</code> as usual; new entities get their keys added to <code>lang/fr.json</code>. Entities generated before you added the language need their names added by hand.</li>
+                <li>Optionally set the <code>app.language</code> setting per tenant with <code>php artisan setting:set app.language fr</code> (add <code>--tenant=acme</code> in tenant-saas).</li>
+            </ol>
+            <p>For a new app, <code>bin/new-app</code> sets the languages for you. The first one becomes the default (<code>APP_LOCALE</code>):</p>
+<pre><code><span class="prompt">$ </span>bin/new-app ~/Sites/shop --profile=saas --locales=en,ar</code></pre>
+
+            <nav class="next" aria-label="Next card">
+                <a href="features.html">← Features</a>
+                <a href="upgrading.html">Upgrading →</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · Copyright 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">Releases</a></p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Generators · Laravel Engineering Blueprint</title>
+    <meta name="description" content="make:module, make:dto and make:action: what they write, the naming rules they follow, when they refuse, and how to customize the stubs.">
+    <link rel="stylesheet" href="assets/blueprint.css">
+    <link rel="alternate" hreflang="ar" href="ar/generators.html">
+</head>
+<body>
+    <a class="skip" href="#content">Skip to content</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html">Laravel Engineering Blueprint <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="Site">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="ar/generators.html" lang="ar" hreflang="ar">العربية</a>
+            </nav>
+            <ul class="tabs" aria-label="Guide">
+                <li><a href="index.html">Start</a></li>
+                <li><a href="profiles.html">Profiles</a></li>
+                <li><a href="generators.html" aria-current="page">Generators</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html">Tenancy</a></li>
+                <li><a href="features.html">Features</a></li>
+                <li><a href="languages.html">Languages</a></li>
+                <li><a href="upgrading.html">Upgrading</a></li>
+                <li><a href="reference.html">Reference</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>Generators</h1>
+            <p class="lede">Three commands create the building blocks of a module: <code>make:module</code> for the module itself, <code>make:dto</code> for a Data class and <code>make:action</code> for one business operation. For a full CRUD, see <a href="crud.html">CRUD</a>.</p>
+
+            <ul class="contents" aria-label="On this card">
+                <li><a href="#rules">Rules every generator follows</a></li>
+                <li><a href="#make-module">make:module</a></li>
+                <li><a href="#make-dto">make:dto</a></li>
+                <li><a href="#make-action">make:action</a></li>
+                <li><a href="#naming">Naming</a></li>
+                <li><a href="#stubs">Customizing stubs</a></li>
+            </ul>
+
+            <h2 id="rules">Rules every generator follows</h2>
+            <ul>
+                <li>They need a profile with modules (<code>modular</code>, <code>saas</code> or <code>tenant-saas</code>). With no profile or with <code>basic</code> they refuse.</li>
+                <li>Everything is rendered and checked in memory first. If a check fails, nothing is written.</li>
+                <li>They never overwrite. An existing file or module (compared case-insensitively) is a refusal.</li>
+                <li>Names are converted to StudlyCase (<code>orders</code> becomes <code>Orders</code>), and the command prints the name it used.</li>
+                <li>Use the commands. Do not copy or fill stubs by hand.</li>
+            </ul>
+
+            <h2 id="make-module">make:module</h2>
+<pre><code><span class="prompt">$ </span>php artisan make:module Orders --api --web</code></pre>
+            <section class="index-card" aria-labelledby="card-make-module">
+                <h3 class="index-card__title" id="card-make-module">make:module Orders --api --web</h3>
+                <ul class="outcomes">
+                    <li><span class="stamp stamp--ok">Generated</span> <code>app/Modules/Orders/Provider.php</code>, registered in <code>bootstrap/providers.php</code>.</li>
+                    <li><span class="stamp stamp--ok">Generated</span> <code>routes/api.php</code> (with <code>--api</code>, loaded with the <code>api</code> group and the <code>/api</code> prefix) and <code>routes/web.php</code> (with <code>--web</code>, loaded with the <code>web</code> group).</li>
+                    <li><span class="stamp">Refused</span> when the module exists, the name is invalid, or <code>--central</code> is used outside tenant-saas.</li>
+                </ul>
+                <p class="see-also">See also: <a href="reference.html#make-module">make:module options</a></p>
+            </section>
+            <p>With neither flag you get only <code>Provider.php</code>; add route files later by hand, loading them in <code>Provider.php</code> the same way. The module folder is <code>blueprint.module_path</code> (default <code>app/Modules</code>). Cached config and routes are cleared.</p>
+            <p>In <code>tenant-saas</code>, module routes use the <code>tenant</code> middleware group. Pass <code>--central</code> for a platform module whose routes answer only on central domains and whose route names start with <code>central.</code>. See <a href="tenancy.html#central-modules">Tenancy</a>.</p>
+            <p>Put module-wide middleware, such as <code>auth:sanctum</code> for a token API, on the route groups in <code>Provider.php</code>.</p>
+
+            <h2 id="make-dto">make:dto</h2>
+<pre><code><span class="prompt">$ </span>php artisan make:dto Orders OrderData --fields="name:string,quantity:int,note:?string"</code></pre>
+            <p>Writes <code>app/Modules/Orders/Data/OrderData.php</code>: a <code>final readonly</code> class whose constructor declares one public property per field. Without <code>--fields</code> the constructor is empty, with a commented example.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col"><code>--fields</code> part</th><th scope="col">Meaning</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>name:string</code></td><td>Comma-separated <code>name:type</code> pairs. Names become camelCase properties.</td></tr>
+                        <tr><td><code>string</code>, <code>int</code>, <code>float</code>, <code>bool</code>, <code>array</code></td><td>Scalar and array types</td></tr>
+                        <tr><td><code>Carbon\CarbonImmutable</code></td><td>Any fully qualified class name; it is imported</td></tr>
+                        <tr><td><code>?string</code></td><td>A leading <code>?</code> makes the property nullable</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>Refused: a missing type, an unknown type, an invalid or duplicate name, a stray comma, or the module not existing. If the class name does not end in <code>Data</code>, the command suggests one that does.</p>
+
+            <h2 id="make-action">make:action</h2>
+<pre><code><span class="prompt">$ </span>php artisan make:action Orders CancelOrder --data=OrderData --transaction</code></pre>
+            <section class="index-card" aria-labelledby="card-make-action">
+                <h3 class="index-card__title" id="card-make-action">make:action Orders CancelOrder --data=OrderData --transaction</h3>
+                <ul class="outcomes">
+                    <li><span class="stamp stamp--ok">Generated</span> <code>app/Modules/Orders/Actions/CancelOrder.php</code> with <code>handle(OrderData $data): void</code>, its body wrapped in <code>DB::transaction</code>.</li>
+                    <li><span class="stamp">Refused</span> when <code>OrderData</code> is not in <code>app/Modules/Orders/Data/</code>. Data classes must come from the same module.</li>
+                    <li><span class="stamp stamp--note">Note</span> A name ending in <code>Action</code> gets a tip: the folder already says it (<code>CancelOrder</code>, not <code>CancelOrderAction</code>).</li>
+                </ul>
+                <p class="see-also">See also: <a href="reference.html#make-action">make:action options</a> · <a href="reference.html#make-dto">make:dto options</a></p>
+            </section>
+
+            <h2 id="naming">Naming</h2>
+            <p>Use short, common English words. Code should be easy to read for developers whose first language is not English.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Kind</th><th scope="col">Good</th><th scope="col">Avoid</th></tr></thead>
+                    <tbody>
+                        <tr><td>Action</td><td><code>CreateOrder</code>, <code>CancelOrder</code></td><td><code>ExecuteOrderCreationWorkflow</code></td></tr>
+                        <tr><td>Data</td><td><code>OrderData</code></td><td><code>OrderPayloadTransferObject</code></td></tr>
+                        <tr><td>Query</td><td><code>ListOrders</code></td><td><code>OrderPersistenceOrchestrationManager</code></td></tr>
+                        <tr><td>Method</td><td><code>handle()</code>, <code>cancel()</code>, <code>find()</code></td><td><code>performOrderMutation()</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <ul>
+                <li>Prefer one or two words. No unclear abbreviations.</li>
+                <li>Singular for one record (<code>Order</code>), plural for collections (<code>ListOrders</code>).</li>
+                <li>Do not repeat the folder name in the class name without a reason.</li>
+            </ul>
+
+            <h2 id="stubs">Customizing stubs</h2>
+            <p>The generated code comes from stubs. To change it, publish them:</p>
+<pre><code><span class="prompt">$ </span>php artisan vendor:publish --tag=blueprint-stubs</code></pre>
+            <p>They are copied to <code>stubs/blueprint/</code> and used automatically. To keep them elsewhere, set <code>blueprint.stub_path</code>. A stub is looked up in <code>stub_path</code>, then <code>stubs/blueprint/</code>, then the package.</p>
+            <div class="note">
+                <p><strong>Broken stubs are refused.</strong> A stub that leaves a <code>{{ placeholder }}</code> unfilled, no longer declares the expected class, drops <code>-&gt;names('api.{{ uri }}')</code> from <code>route.stub</code>, or would drop a requested feature gate stops the command before anything is written.</p>
+            </div>
+
+            <nav class="next" aria-label="Next card">
+                <a href="profiles.html">← Profiles</a>
+                <a href="crud.html">CRUD →</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · Copyright 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">Releases</a></p>
+    </footer>
+</body>
+</html>

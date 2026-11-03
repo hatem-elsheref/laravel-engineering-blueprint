@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>تعدد المستأجرين · Laravel Engineering Blueprint</title>
+    <meta name="description" content="النمط tenant-saas مع stancl/tenancy ^3.10: قاعدة بيانات لكل مستأجر، والأمر tenant:create، ومجموعتا المسارات tenant وcentral، والجلسات، والطوابير، والتخزين المؤقت.">
+    <link rel="stylesheet" href="../assets/blueprint.css">
+    <link rel="alternate" hreflang="en" href="../tenancy.html">
+</head>
+<body>
+    <a class="skip" href="#content">تخطَّ إلى المحتوى</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html"><span lang="en" dir="ltr">Laravel Engineering Blueprint</span> <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="الموقع">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="../tenancy.html" lang="en" hreflang="en">English</a>
+            </nav>
+            <ul class="tabs" aria-label="الدليل">
+                <li><a href="index.html">البداية</a></li>
+                <li><a href="profiles.html">الأنماط</a></li>
+                <li><a href="generators.html">المولّدات</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html" aria-current="page">المستأجرون</a></li>
+                <li><a href="features.html">الميزات</a></li>
+                <li><a href="languages.html">اللغات</a></li>
+                <li><a href="upgrading.html">الترقية</a></li>
+                <li><a href="reference.html">المرجع</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>تعدد المستأجرين</h1>
+            <p class="lede">النمط <code>tenant-saas</code> يعطي كل مستأجر نطاقًا فرعيًا خاصًا به وقاعدة بيانات خاصة به، باستخدام <a href="https://tenancyforlaravel.com/"><bdi>stancl/tenancy</bdi></a> <bdi>^3.10</bdi>. قاعدة البيانات المركزية تحفظ سجل المستأجرين والنطاقات فقط.</p>
+
+            <ul class="contents" aria-label="في هذه البطاقة">
+                <li><a href="#setup">الإعداد</a></li>
+                <li><a href="#databases">قواعد البيانات</a></li>
+                <li><a href="#tenant-create">إنشاء مستأجر</a></li>
+                <li><a href="#route-groups">مجموعات المسارات</a></li>
+                <li><a href="#central-modules">الوحدات المركزية</a></li>
+                <li><a href="#runtime">الجلسات والطوابير والتخزين المؤقت</a></li>
+                <li><a href="#testing">الاختبار</a></li>
+            </ul>
+
+            <h2 id="setup">الإعداد</h2>
+<pre><code><span class="prompt">$ </span>composer require stancl/tenancy:^3.10
+<span class="prompt">$ </span>php artisan engineering:install --profile=tenant-saas
+<span class="prompt">$ </span>php artisan migrate
+<span class="prompt">$ </span>php artisan tenant:create acme</code></pre>
+            <p>خطوة التثبيت تشغّل <code>tenancy:install</code> مرة واحدة، وتنشئ <code>app/Models/Tenant.php</code>، وتضبط <code>tenant_model</code> و<code>central_domains</code> في <code>config/tenancy.php</code> (مضيف <code>APP_URL</code>، و<code>localhost</code>، و<code>127.0.0.1</code>)، وتنسخ ترحيل المستخدمين إلى <code>database/migrations/tenant/</code>، وتسجّل <code>App\Providers\TenancyServiceProvider</code>. يمكن إعادة تشغيل كل خطوة بأمان.</p>
+            <p>نطاق المستأجر على الشكل <code>&lt;name&gt;.&lt;base&gt;</code>. اضبط النطاق الأساسي عبر <code>BLUEPRINT_TENANT_DOMAIN</code> (مفتاح الإعداد <code>blueprint.tenant_domain</code>). إذا كان فارغًا، يُستخدم أول نطاق مركزي ليس عنوان <bdi>IP</bdi>، وإلا فـ <code>localhost</code>.</p>
+
+            <h2 id="databases">قواعد البيانات</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">قاعدة البيانات</th><th scope="col">تحتوي على</th><th scope="col">الترحيلات</th><th scope="col">تُشغَّل بـ</th></tr></thead>
+                    <tbody>
+                        <tr><td>المركزية</td><td><code>tenants</code>، <code>domains</code>، جداول الوحدات المركزية</td><td><code>database/migrations/</code></td><td><code>php artisan migrate</code></td></tr>
+                        <tr><td>واحدة لكل مستأجر</td><td>المستخدمون، <code>features</code>، <code>settings</code>، بيانات الأعمال</td><td><code>database/migrations/tenant/</code></td><td><code>php artisan tenants:migrate</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p><code>make:crud</code> في وحدة مستأجر يكتب ترحيله في <code>database/migrations/tenant/</code>، وفي وحدة مركزية يكتبه في <code>database/migrations/</code>. لا تضع مجلدات ترحيلات داخل الوحدات.</p>
+
+            <h2 id="tenant-create">إنشاء مستأجر</h2>
+<pre><code><span class="prompt">$ </span>php artisan tenant:create acme --domain=acme.example.com --database=tenant_acme</code></pre>
+            <section class="index-card" aria-labelledby="card-tenant-create">
+                <h3 class="index-card__title" id="card-tenant-create">tenant:create acme</h3>
+                <p>القيم الافتراضية: النطاق <code>acme.&lt;base&gt;</code>، وقاعدة البيانات <code>tenant_acme</code> (الشرطات في الاسم تصبح شرطات سفلية). يتحقق الأمر من الاسم والنطاق، ويفحص التكرار، ثم ينشئ سجل المستأجر وسجل النطاق وقاعدة البيانات، ويشغّل ترحيلات المستأجر، ويزرع البيانات الأولية، ويُدرج الميزات الافتراضية.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp stamp--ok">أُنشئ</span> مستأجر جاهز على نطاقه، مع طباعة كل خطوة بحالتها: تمّت، أو تمّت سابقًا، أو تُخطّيت.</li>
+                    <li><span class="stamp">مرفوض</span> قاعدة البيانات المركزية، وقاعدة بيانات مستأجر آخر، ونطاق يملكه مستأجر آخر، ونطاق خارج النطاق الأساسي، وقاعدة بيانات موجودة ما لم يُمرَّر <code>--existing-database</code>.</li>
+                    <li><span class="stamp stamp--note">ملاحظة</span> إعادة المحاولة آمنة. بعد أي فشل، أصلح السبب وشغّل الأمر نفسه، فتُتخطى الخطوات المكتملة.</li>
+                </ul>
+                <p class="see-also">انظر أيضًا: <a href="reference.html#tenant-create">خيارات <code>tenant:create</code></a></p>
+            </section>
+            <ul>
+                <li>الأسماء تتكون من أحرف إنجليزية صغيرة وأرقام وشرطات.</li>
+                <li>زرع البيانات يشغّل <code>blueprint.tenant_seeder</code> (القيمة الافتراضية <code>Database\Seeders\TenantSeeder</code>) إذا كان الصنف موجودًا، وإلا تُتخطى الخطوة.</li>
+                <li>الميزات الافتراضية تأتي من <code>Features::defaults()</code>. الإعدادات لا تحتاج إلى صفوف، فقيمها الافتراضية تأتي من التعريفات.</li>
+                <li>شغّله من التطبيق المركزي. لا تنشئ مستأجرين عبر نقطة نهاية موجّهة للمستأجرين.</li>
+            </ul>
+
+            <h2 id="route-groups">مجموعات المسارات</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">الوحدة</th><th scope="col">تُنشأ بـ</th><th scope="col">مجموعة الوسائط</th><th scope="col">تستجيب على</th></tr></thead>
+                    <tbody>
+                        <tr><td>وحدة مستأجر</td><td><code>make:module Orders</code></td><td><code>tenant</code>: <code>InitializeTenancyByDomain</code> و<code>PreventAccessFromCentralDomains</code></td><td>نطاقات المستأجرين</td></tr>
+                        <tr><td>وحدة مركزية (المنصة)</td><td><code>make:module Plans --central</code></td><td><code>central</code></td><td>النطاقات المركزية فقط</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <ul>
+                <li>نطاقات المستأجرين غير المعروفة تعيد 404.</li>
+                <li>مسارات وحدات المستأجرين تُسجَّل بعد المسارات المركزية، فتكون الأولوية للمسارات المركزية على المضيفات المركزية.</li>
+                <li>ملفا <code>routes/web.php</code> و<code>routes/api.php</code> الخاصان بتطبيقك يستجيبان على كل النطاقات ولهما الأولوية على مسارات المستأجر ذات <bdi>URI</bdi> نفسه. ضع المسارات المركزية فقط داخل <code>Route::domain(...)</code> أو انقلها إلى وحدة <code>--central</code>.</li>
+            </ul>
+
+            <h2 id="central-modules">الوحدات المركزية</h2>
+<pre><code><span class="prompt">$ </span>php artisan make:module Plans --api --web --central
+<span class="prompt">$ </span>php artisan make:crud Plans Plan --api --web --fields="name:string,price:float"</code></pre>
+            <p>الوحدة المركزية مخصّصة للمنصة نفسها، مثل الخطط أو الفوترة. مساراتها تستجيب على <code>tenancy.central_domains</code> فقط، وتبدأ أسماء مساراتها بـ <code>central.</code> (<code>central.plans.index</code>، <code>central.api.plans.index</code>)، وجداولها في قاعدة البيانات المركزية. <code>make:crud --feature</code> مرفوض هنا لأن الميزات خاصة بكل مستأجر.</p>
+
+            <h2 id="runtime">الجلسات والطوابير والتخزين المؤقت</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">المجال</th><th scope="col">السلوك</th></tr></thead>
+                    <tbody>
+                        <tr><td>الجلسات</td><td>جلسة الويب تخص المستأجر (أو التطبيق المركزي) الذي بدأت فيه. ملف تعريف الارتباط نفسه على مستأجر آخر أو على النطاق المركزي يحصل على 403، أيًا كان مشغّل الجلسات.</td></tr>
+                        <tr><td>الطوابير</td><td>اتصال الطابور <code>database</code> مثبّت على الاتصال المركزي (ما لم تضبط اتصالًا آخر)، حتى تجد العمليات العاملة (<bdi>workers</bdi>) المهام المُرسلة من داخل مستأجر.</td></tr>
+                        <tr><td>التخزين المؤقت</td><td>عزل ذاكرة التخزين المؤقت لكل مستأجر يحتاج إلى مخزن يدعم الوسوم (<bdi>tags</bdi>). اضبط <code>CACHE_STORE=redis</code> (أو <code>memcached</code>)، فالمخزنان <code>database</code> و<code>file</code> يفشلان داخل المستأجرين. أمر التثبيت ينبّهك إذا كان المخزن لا يدعم الوسوم.</td></tr>
+                        <tr><td>المجدول</td><td>شغّل أعمال المستأجرين بـ <code>php artisan tenants:run &lt;command&gt;</code>.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 id="testing">الاختبار</h2>
+            <p>استخدم <code>Best\Blueprint\Testing\InteractsWithTenancy</code> في الاختبارات: <code>createTestTenant()</code> ينشئ مستأجر اختبار حقيقيًا، و<code>tenantUrl('/orders')</code> يبني رابطًا على نطاقه. الاختبارات التي يولّدها <code>make:crud</code> لوحدات المستأجرين تستخدمه مسبقًا.</p>
+
+            <nav class="next" aria-label="البطاقة التالية">
+                <a href="crud.html">→ CRUD</a>
+                <a href="features.html">الميزات ←</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · حقوق النشر 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">الإصدارات</a></p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tenancy · Laravel Engineering Blueprint</title>
+    <meta name="description" content="The tenant-saas profile with stancl/tenancy ^3.10: one database per tenant, tenant:create, tenant and central route groups, sessions, queue and cache.">
+    <link rel="stylesheet" href="assets/blueprint.css">
+    <link rel="alternate" hreflang="ar" href="ar/tenancy.html">
+</head>
+<body>
+    <a class="skip" href="#content">Skip to content</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html">Laravel Engineering Blueprint <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="Site">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="ar/tenancy.html" lang="ar" hreflang="ar">العربية</a>
+            </nav>
+            <ul class="tabs" aria-label="Guide">
+                <li><a href="index.html">Start</a></li>
+                <li><a href="profiles.html">Profiles</a></li>
+                <li><a href="generators.html">Generators</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html" aria-current="page">Tenancy</a></li>
+                <li><a href="features.html">Features</a></li>
+                <li><a href="languages.html">Languages</a></li>
+                <li><a href="upgrading.html">Upgrading</a></li>
+                <li><a href="reference.html">Reference</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>Tenancy</h1>
+            <p class="lede">The <code>tenant-saas</code> profile gives each tenant its own subdomain and its own database, using <a href="https://tenancyforlaravel.com/">stancl/tenancy</a> ^3.10. The central database only keeps the tenant and domain registry.</p>
+
+            <ul class="contents" aria-label="On this card">
+                <li><a href="#setup">Set up</a></li>
+                <li><a href="#databases">Databases</a></li>
+                <li><a href="#tenant-create">Create a tenant</a></li>
+                <li><a href="#route-groups">Route groups</a></li>
+                <li><a href="#central-modules">Central modules</a></li>
+                <li><a href="#runtime">Sessions, queue, cache</a></li>
+                <li><a href="#testing">Testing</a></li>
+            </ul>
+
+            <h2 id="setup">Set up</h2>
+<pre><code><span class="prompt">$ </span>composer require stancl/tenancy:^3.10
+<span class="prompt">$ </span>php artisan engineering:install --profile=tenant-saas
+<span class="prompt">$ </span>php artisan migrate
+<span class="prompt">$ </span>php artisan tenant:create acme</code></pre>
+            <p>The install step runs <code>tenancy:install</code> once, creates <code>app/Models/Tenant.php</code>, sets <code>tenant_model</code> and <code>central_domains</code> in <code>config/tenancy.php</code> (the <code>APP_URL</code> host, <code>localhost</code> and <code>127.0.0.1</code>), copies the users migration to <code>database/migrations/tenant/</code> and registers <code>App\Providers\TenancyServiceProvider</code>. Every step can run again safely.</p>
+            <p>Tenants are <code>&lt;name&gt;.&lt;base&gt;</code>. Set the base domain with <code>BLUEPRINT_TENANT_DOMAIN</code> (config <code>blueprint.tenant_domain</code>). When it is empty, the first central domain that is not an IP address is used, or <code>localhost</code>.</p>
+
+            <h2 id="databases">Databases</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Database</th><th scope="col">Holds</th><th scope="col">Migrations</th><th scope="col">Run with</th></tr></thead>
+                    <tbody>
+                        <tr><td>Central</td><td><code>tenants</code>, <code>domains</code>, tables of central modules</td><td><code>database/migrations/</code></td><td><code>php artisan migrate</code></td></tr>
+                        <tr><td>One per tenant</td><td>Users, <code>features</code>, <code>settings</code>, business data</td><td><code>database/migrations/tenant/</code></td><td><code>php artisan tenants:migrate</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p><code>make:crud</code> in a tenant module writes its migration to <code>database/migrations/tenant/</code>; in a central module, to <code>database/migrations/</code>. Do not put migration folders inside modules.</p>
+
+            <h2 id="tenant-create">Create a tenant</h2>
+<pre><code><span class="prompt">$ </span>php artisan tenant:create acme --domain=acme.example.com --database=tenant_acme</code></pre>
+            <section class="index-card" aria-labelledby="card-tenant-create">
+                <h3 class="index-card__title" id="card-tenant-create">tenant:create acme</h3>
+                <p>Defaults: domain <code>acme.&lt;base&gt;</code>, database <code>tenant_acme</code> (dashes in the name become underscores). The command validates the name and domain, checks for duplicates, then creates the tenant record, the domain record and the database, runs tenant migrations, seeds, and inserts the default features.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp stamp--ok">Generated</span> A tenant ready at its domain, with each step printed as done, already done or skipped.</li>
+                    <li><span class="stamp">Refused</span> the central database, another tenant's database, a domain owned by another tenant, a domain outside the base domain, and an existing database unless <code>--existing-database</code> is passed.</li>
+                    <li><span class="stamp stamp--note">Note</span> Safe to retry. After a failure, fix the cause and run the same command; finished steps are skipped.</li>
+                </ul>
+                <p class="see-also">See also: <a href="reference.html#tenant-create">tenant:create options</a></p>
+            </section>
+            <ul>
+                <li>Names use lowercase letters, numbers and dashes.</li>
+                <li>Seeding runs <code>blueprint.tenant_seeder</code> (default <code>Database\Seeders\TenantSeeder</code>) when that class exists, otherwise the step is skipped.</li>
+                <li>Default features come from <code>Features::defaults()</code>. Settings need no rows: their defaults come from the definitions.</li>
+                <li>Run it from the central app. Do not create tenants through a tenant-facing endpoint.</li>
+            </ul>
+
+            <h2 id="route-groups">Route groups</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Module</th><th scope="col">Created with</th><th scope="col">Middleware group</th><th scope="col">Answers on</th></tr></thead>
+                    <tbody>
+                        <tr><td>Tenant module</td><td><code>make:module Orders</code></td><td><code>tenant</code>: <code>InitializeTenancyByDomain</code> and <code>PreventAccessFromCentralDomains</code></td><td>Tenant domains</td></tr>
+                        <tr><td>Central (platform) module</td><td><code>make:module Plans --central</code></td><td><code>central</code></td><td>Central domains only</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <ul>
+                <li>Unknown tenant domains return 404.</li>
+                <li>Tenant module routes are registered after central routes, so central routes win on central hosts.</li>
+                <li>Your app's own <code>routes/web.php</code> and <code>routes/api.php</code> answer on every domain and win over tenant routes with the same URI. Wrap central-only routes in <code>Route::domain(...)</code> or move them into a <code>--central</code> module.</li>
+            </ul>
+
+            <h2 id="central-modules">Central modules</h2>
+<pre><code><span class="prompt">$ </span>php artisan make:module Plans --api --web --central
+<span class="prompt">$ </span>php artisan make:crud Plans Plan --api --web --fields="name:string,price:float"</code></pre>
+            <p>A central module is for the platform itself, such as plans or billing. Its routes answer only on <code>tenancy.central_domains</code>, its route names start with <code>central.</code> (<code>central.plans.index</code>, <code>central.api.plans.index</code>) and its tables live in the central database. <code>make:crud --feature</code> is refused here, because features are per tenant.</p>
+
+            <h2 id="runtime">Sessions, queue, cache</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Area</th><th scope="col">Behaviour</th></tr></thead>
+                    <tbody>
+                        <tr><td>Sessions</td><td>A web session belongs to the tenant (or the central app) where it started. The same cookie on another tenant or on the central domain gets 403, whatever the session driver.</td></tr>
+                        <tr><td>Queue</td><td>The <code>database</code> queue connection is pinned to the central connection (unless you set one), so workers find jobs dispatched inside a tenant.</td></tr>
+                        <tr><td>Cache</td><td>Tenant cache isolation needs a store with tags. Set <code>CACHE_STORE=redis</code> (or <code>memcached</code>); the <code>database</code> and <code>file</code> stores fail inside tenants. The install command warns when the store has no tags.</td></tr>
+                        <tr><td>Scheduler</td><td>Run tenant work with <code>php artisan tenants:run &lt;command&gt;</code>.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 id="testing">Testing</h2>
+            <p>Use <code>Best\Blueprint\Testing\InteractsWithTenancy</code> in tests: <code>createTestTenant()</code> creates a real test tenant and <code>tenantUrl('/orders')</code> builds a URL on its domain. The tests <code>make:crud</code> generates for tenant modules already use it.</p>
+
+            <nav class="next" aria-label="Next card">
+                <a href="crud.html">← CRUD</a>
+                <a href="features.html">Features →</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · Copyright 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">Releases</a></p>
+    </footer>
+</body>
+</html>

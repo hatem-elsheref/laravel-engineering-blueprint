@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>البداية · Laravel Engineering Blueprint</title>
+    <meta name="description" content="ثبّت best/laravel-engineering-blueprint، واختر نمطًا، وولّد أول وحدة وأول CRUD (صفحات Blade وواجهة JSON API) في تطبيق Laravel 12 أو 13.">
+    <link rel="stylesheet" href="../assets/blueprint.css">
+    <link rel="alternate" hreflang="en" href="../index.html">
+</head>
+<body>
+    <a class="skip" href="#content">تخطَّ إلى المحتوى</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html"><span lang="en" dir="ltr">Laravel Engineering Blueprint</span> <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="الموقع">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="../index.html" lang="en" hreflang="en">English</a>
+            </nav>
+            <ul class="tabs" aria-label="الدليل">
+                <li><a href="index.html" aria-current="page">البداية</a></li>
+                <li><a href="profiles.html">الأنماط</a></li>
+                <li><a href="generators.html">المولّدات</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html">المستأجرون</a></li>
+                <li><a href="features.html">الميزات</a></li>
+                <li><a href="languages.html">اللغات</a></li>
+                <li><a href="upgrading.html">الترقية</a></li>
+                <li><a href="reference.html">المرجع</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>البداية</h1>
+            <p class="lede">حزمة لـ <bdi>Laravel</bdi> 12 و13 (<bdi>PHP 8.3+</bdi>) تحوّل معيارًا هندسيًا واحدًا إلى كود يعمل: أنماط، ومولّدات للوحدات و<bdi>CRUD</bdi> لصفحات <bdi>Blade</bdi> وواجهات <bdi>JSON API</bdi>، وتعدد المستأجرين، والميزات، والإعدادات، والترجمات.</p>
+
+            <ul class="contents" aria-label="في هذه البطاقة">
+                <li><a href="#install">التثبيت</a></li>
+                <li><a href="#new-app">أو ابدأ تطبيقًا جديدًا</a></li>
+                <li><a href="#first-crud">أول <bdi>CRUD</bdi></a></li>
+                <li><a href="#what-you-got">ما الذي حصلت عليه</a></li>
+            </ul>
+
+            <h2 id="install">التثبيت</h2>
+            <p>في تطبيق <bdi>Laravel</bdi> 12 أو 13 قائم:</p>
+<pre><code><span class="prompt">$ </span>composer require best/laravel-engineering-blueprint
+<span class="prompt">$ </span>php artisan engineering:install --profile=modular</code></pre>
+            <p>النمط يحدد ما يحصل عليه التطبيق: <code>basic</code> أو <code>modular</code> أو <code>saas</code> أو <code>tenant-saas</code>. لست متأكدًا؟ ابدأ بـ <code>modular</code>، ويمكنك الانتقال إلى نمط أعلى لاحقًا. راجع <a href="profiles.html">الأنماط</a>.</p>
+            <p>افحص البيئة والنمط المسجَّل في أي وقت:</p>
+<pre><code><span class="prompt">$ </span>php artisan engineering:about</code></pre>
+
+            <h2 id="new-app">أو ابدأ تطبيقًا جديدًا</h2>
+            <p>من نسخة مستنسخة من المستودع، يبني أمر واحد تطبيقًا جديدًا فيه الحزمة و<bdi>Pest</bdi> ونمطك ولغاتك والترحيلات، ووحدة مثال تنجح اختباراتها المولّدة:</p>
+<pre><code><span class="prompt">$ </span>bin/new-app ~/Sites/shop --profile=saas --locales=en,ar</code></pre>
+
+            <h2 id="first-crud">أول <bdi>CRUD</bdi></h2>
+<pre><code><span class="prompt">$ </span>php artisan make:module Orders --api --web
+<span class="prompt">$ </span>php artisan make:crud Orders Order --api --web --fields="name:string,quantity:int,note:?string"
+<span class="prompt">$ </span>php artisan migrate
+<span class="prompt">$ </span>php artisan test --filter="OrderApiTest|OrderWebTest"</code></pre>
+
+            <section class="index-card" aria-labelledby="card-make-crud">
+                <h3 class="index-card__title" id="card-make-crud">make:crud Orders Order --api --web</h3>
+                <p>يكتب النموذج، والترحيل، والمصنع، وطلبَي <bdi>Store/Update</bdi>، و<code>OrderData</code>، والإجراءات <code>CreateOrder</code> و<code>UpdateOrder</code> و<code>DeleteOrder</code>، والاستعلام <code>ListOrders</code> و<code>OrderPolicy</code>، ثم الجانبين:</p>
+                <ul class="outcomes">
+                    <li><span class="stamp stamp--ok">أُنشئ</span> واجهة <bdi>JSON API</bdi>: <code>OrderController</code> و<code>OrderResource</code>، والمسارات <code>api.orders.*</code>، واختبارات <bdi>Pest</bdi> للواجهة.</li>
+                    <li><span class="stamp stamp--ok">أُنشئ</span> صفحات <bdi>Blade</bdi>: <code>OrderPageController</code>، وخمسة قوالب عرض، والمسارات <code>orders.*</code>، واختبارات <bdi>Pest</bdi> للويب.</li>
+                    <li><span class="stamp">مرفوض</span> قبل كتابة أي شيء إذا كان أحد الملفات موجودًا، أو كان الاسم محجوزًا، أو كان أحد القوالب (<bdi>stub</bdi>) قديمًا.</li>
+                </ul>
+                <p class="see-also">انظر أيضًا: <a href="crud.html"><bdi>CRUD</bdi>: <bdi>Blade</bdi> و<bdi>API</bdi></a> · <a href="reference.html#make-crud">خيارات <code>make:crud</code></a></p>
+            </section>
+
+            <h2 id="what-you-got">ما الذي حصلت عليه</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">الطلب</th><th scope="col">الاستجابة</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>GET /orders</code> في المتصفح</td><td>صفحة القائمة (للمستخدمين المسجَّل دخولهم)</td></tr>
+                        <tr><td><code>GET /api/orders</code></td><td><bdi>JSON</bdi> مقسَّم إلى صفحات</td></tr>
+                        <tr><td>أي صفحة لزائر غير مسجَّل</td><td>403: السياسة المولّدة ترفض الزوار</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="note">
+                <p><strong>شدّد السياسة.</strong> <code>OrderPolicy</code> تسمح لكل مستخدم مسجَّل دخوله بفعل كل شيء. عدّلها قبل الإطلاق، وأضف تسجيل دخول (<bdi>Breeze</bdi> أو <bdi>Jetstream</bdi> أو حلك الخاص) لصفحات <bdi>Blade</bdi>.</p>
+            </div>
+
+            <nav class="next" aria-label="البطاقة التالية">
+                <span></span>
+                <a href="profiles.html">الأنماط ←</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · حقوق النشر 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">الإصدارات</a></p>
+    </footer>
+</body>
+</html>

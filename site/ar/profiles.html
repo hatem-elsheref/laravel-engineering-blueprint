@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>الأنماط · Laravel Engineering Blueprint</title>
+    <meta name="description" content="الأنماط الأربعة لحزمة best/laravel-engineering-blueprint (basic وmodular وsaas وtenant-saas): ما يثبّته كل نمط، وكيف تختار، وكيف تنتقل بينها.">
+    <link rel="stylesheet" href="../assets/blueprint.css">
+    <link rel="alternate" hreflang="en" href="../profiles.html">
+</head>
+<body>
+    <a class="skip" href="#content">تخطَّ إلى المحتوى</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html"><span lang="en" dir="ltr">Laravel Engineering Blueprint</span> <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="الموقع">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="../profiles.html" lang="en" hreflang="en">English</a>
+            </nav>
+            <ul class="tabs" aria-label="الدليل">
+                <li><a href="index.html">البداية</a></li>
+                <li><a href="profiles.html" aria-current="page">الأنماط</a></li>
+                <li><a href="generators.html">المولّدات</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html">المستأجرون</a></li>
+                <li><a href="features.html">الميزات</a></li>
+                <li><a href="languages.html">اللغات</a></li>
+                <li><a href="upgrading.html">الترقية</a></li>
+                <li><a href="reference.html">المرجع</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>الأنماط</h1>
+            <p class="lede">النمط (<bdi>profile</bdi>) يحدد ما تجهّزه الحزمة في تطبيقك. هناك أربعة أنماط، كل واحد منها يضيف إلى الذي قبله: <code>basic</code> و<code>modular</code> و<code>saas</code> و<code>tenant-saas</code>.</p>
+
+            <ul class="contents" aria-label="في هذه البطاقة">
+                <li><a href="#compare">مقارنة</a></li>
+                <li><a href="#install">تثبيت نمط</a></li>
+                <li><a href="#what-it-writes">ما يكتبه التثبيت</a></li>
+                <li><a href="#choose">كيف تختار</a></li>
+                <li><a href="#move-up">الانتقال إلى نمط أعلى</a></li>
+                <li><a href="#move-down">الانتقال إلى نمط أدنى</a></li>
+            </ul>
+
+            <h2 id="compare">مقارنة</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">النمط</th><th scope="col">الوحدات</th><th scope="col">الميزات والإعدادات</th><th scope="col">تعدد المستأجرين</th></tr></thead>
+                    <tbody>
+                        <tr><th scope="row"><code>basic</code></th><td>لا</td><td>لا</td><td>لا</td></tr>
+                        <tr><th scope="row"><code>modular</code></th><td>نعم، في <code>app/Modules/</code></td><td>لا</td><td>لا</td></tr>
+                        <tr><th scope="row"><code>saas</code></th><td>نعم</td><td>نعم، مجموعة واحدة للتطبيق كله، في قاعدة بيانات التطبيق</td><td>لا</td></tr>
+                        <tr><th scope="row"><code>tenant-saas</code></th><td>نعم</td><td>نعم، مجموعة لكل مستأجر، في قاعدة بيانات كل مستأجر</td><td><bdi>stancl/tenancy ^3.10</bdi>، قاعدة بيانات لكل مستأجر</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <ul>
+                <li><strong><bdi>basic</bdi></strong>: تطبيق <bdi>Laravel</bdi> عادي يتبع أعراف الحزمة. مولّدات الوحدات (<code>make:module</code> و<code>make:dto</code> و<code>make:action</code> و<code>make:crud</code>) ترفض التنفيذ.</li>
+                <li><strong><bdi>modular</bdi></strong>: كود الأعمال يعيش في وحدات داخل <code>app/Modules/</code>. هذا هو النمط الافتراضي.</li>
+                <li><strong><bdi>saas</bdi></strong>: <code>modular</code> مضافًا إليه <a href="features.html">الميزات والإعدادات</a> المخزّنة في قاعدة بيانات التطبيق.</li>
+                <li><strong><bdi>tenant-saas</bdi></strong>: <code>saas</code> مضافًا إليه <a href="tenancy.html">تعدد المستأجرين</a>. الميزات والإعدادات تُخزَّن في قاعدة بيانات كل مستأجر.</li>
+            </ul>
+
+            <h2 id="install">تثبيت نمط</h2>
+<pre><code><span class="prompt">$ </span>composer require best/laravel-engineering-blueprint
+<span class="prompt">$ </span>php artisan engineering:install --profile=saas</code></pre>
+            <p>بدون <code>--profile</code> يسألك الأمر، ويقترح النمط المسجَّل مسبقًا أو <code>blueprint.default_profile</code> (<code>modular</code>). في طرفية غير تفاعلية يستخدم تلك القيمة الافتراضية.</p>
+
+            <section class="index-card" aria-labelledby="card-install">
+                <h3 class="index-card__title" id="card-install">engineering:install --profile=saas</h3>
+                <p>يفحص إصدارَي <bdi>PHP</bdi> و<bdi>Laravel</bdi> أولًا، ثم يسجّل النمط ويجهّز ما يحتاجه. إعادة تشغيله آمنة: الخطوات المكتملة تطبع <code>already set up</code>.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp stamp--ok">أُنشئ</span> <code>config/blueprint.php</code> مع <code>'profile' =&gt; 'saas'</code> (يُنشأ الملف، أو يُحدَّث سطر النمط).</li>
+                    <li><span class="stamp stamp--ok">أُنشئ</span> <code>app/Shared/Features/Features.php</code> و<code>app/Shared/Settings/Settings.php</code> وترحيلا <code>features</code> و<code>settings</code> (في <bdi>saas</bdi> و<bdi>tenant-saas</bdi> فقط).</li>
+                    <li><span class="stamp">مرفوض</span> نمط غير معروف، أو بيئة غير متوافقة، أو انتقال إلى نمط بقدرات أقل بدون <code>--allow-downgrade</code>.</li>
+                </ul>
+                <p class="see-also">انظر أيضًا: <a href="reference.html#engineering-install">خيارات <code>engineering:install</code></a> · <a href="reference.html#engineering-about"><code>engineering:about</code></a></p>
+            </section>
+
+            <h2 id="what-it-writes">ما يكتبه التثبيت</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">النمط</th><th scope="col">الملفات والتغييرات</th></tr></thead>
+                    <tbody>
+                        <tr><td>كل الأنماط</td><td><code>config/blueprint.php</code> مع تسجيل النمط. تُمسح الإعدادات المخزّنة مؤقتًا (<bdi>config cache</bdi>).</td></tr>
+                        <tr><td><code>saas</code>، <code>tenant-saas</code></td><td>أصناف تعريف الميزات والإعدادات في <code>app/Shared/</code>، وترحيلات لجدولَي <code>features</code> و<code>settings</code> (في <code>database/migrations/</code> لـ <bdi>saas</bdi>، و<code>database/migrations/tenant/</code> لـ <bdi>tenant-saas</bdi>).</td></tr>
+                        <tr><td><code>tenant-saas</code></td><td>يشغّل <code>tenancy:install</code> (مرة واحدة)، وينشئ مجموعة مسارات فارغة للمستأجر في <code>routes/tenant.php</code>، و<code>app/Models/Tenant.php</code>، ويضبط <code>tenant_model</code> و<code>central_domains</code> في <code>config/tenancy.php</code>، وينسخ ترحيل المستخدمين إلى <code>database/migrations/tenant/</code>، ويسجّل <code>App\Providers\TenancyServiceProvider</code>. راجع <a href="tenancy.html">تعدد المستأجرين</a>.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>ينتهي الأمر بطباعة الخطوة التالية للنمط، مثل <code>php artisan migrate &amp;&amp; php artisan features:sync</code> لـ <bdi>saas</bdi>. افحص النمط المسجَّل والبيئة في أي وقت:</p>
+<pre><code><span class="prompt">$ </span>php artisan engineering:about</code></pre>
+
+            <h2 id="choose">كيف تختار</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">إذا كان تطبيقك</th><th scope="col">استخدم</th></tr></thead>
+                    <tbody>
+                        <tr><td>صغيرًا، أو تريد الأعراف فقط</td><td><code>basic</code></td></tr>
+                        <tr><td>يضم عدة مجالات أعمال (طلبات، منتجات، مخزون)</td><td><code>modular</code></td></tr>
+                        <tr><td>يحتاج إلى تشغيل قدرات وإيقافها، أو إلى إعدادات محددة الأنواع، لقاعدة عملاء واحدة</td><td><code>saas</code></td></tr>
+                        <tr><td>يخدم عملاء كثيرين، لكل منهم نطاقه الفرعي وقاعدة بياناته</td><td><code>tenant-saas</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>إن لم تكن متأكدًا، ابدأ بـ <code>modular</code>. الانتقال إلى نمط أعلى لاحقًا يحتفظ بوحداتك والكود المولّد.</p>
+
+            <h2 id="move-up">الانتقال إلى نمط أعلى</h2>
+            <p>شغّل أمر التثبيت مرة أخرى بالنمط الأكبر. تبقى الوحدات الموجودة والكود المولّد كما هي.</p>
+<pre><code><span class="prompt">$ </span>php artisan engineering:install --profile=saas
+<span class="prompt">$ </span>php artisan migrate
+<span class="prompt">$ </span>php artisan features:sync</code></pre>
+            <p>لـ <code>tenant-saas</code>، ثبّت <bdi>stancl/tenancy</bdi> أولًا:</p>
+<pre><code><span class="prompt">$ </span>composer require stancl/tenancy:^3.10
+<span class="prompt">$ </span>php artisan engineering:install --profile=tenant-saas
+<span class="prompt">$ </span>php artisan migrate
+<span class="prompt">$ </span>php artisan tenant:create acme</code></pre>
+            <div class="note">
+                <p><strong>وحدات أُنشئت قبل <bdi>tenant-saas</bdi>.</strong> مساراتها لا تستخدم مجموعة الوسائط <code>tenant</code> ولا <code>central</code>. أمر التثبيت يسردها، و<code>make:crud</code> يرفضها حتى تضيف <code>'tenant'</code> (بيانات لكل مستأجر) أو <code>'central'</code> (المنصة) إلى استدعاءات <code>Route::middleware(...)</code> في ملف <code>Provider.php</code> الخاص بكل منها.</p>
+            </div>
+
+            <h2 id="move-down">الانتقال إلى نمط أدنى</h2>
+            <p>النمط ذو القدرات الأقل (مثلًا من <code>saas</code> إلى <code>modular</code>) يُسقط الميزات أو الإعدادات أو تعدد المستأجرين. في الطرفية التفاعلية يطلب الأمر تأكيدك، وإلا فإنه يرفض ما لم تمرّر <code>--allow-downgrade</code>:</p>
+<pre><code><span class="prompt">$ </span>php artisan engineering:install --profile=modular --allow-downgrade</code></pre>
+            <p>ينبّهك إلى الوحدات التي يكسرها التغيير: الوحدات التي تستخدم مجموعتَي المسارات <code>tenant</code> أو <code>central</code>، والوحدات التي تستخدم مساراتها الوسيط <code>feature:</code>. لا يحذف أي ملفات.</p>
+            <p><code>--force</code> يعيد كتابة <code>config/blueprint.php</code> من نسخة الحزمة ويحفظ الملف القديم باسم <code>config/blueprint.php.bak</code>. ويتخطى أيضًا فحص الانتقال إلى نمط أدنى.</p>
+
+            <nav class="next" aria-label="البطاقة التالية">
+                <a href="index.html">→ البداية</a>
+                <a href="generators.html">المولّدات ←</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · حقوق النشر 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">الإصدارات</a></p>
+    </footer>
+</body>
+</html>

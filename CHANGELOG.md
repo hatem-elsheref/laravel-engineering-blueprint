@@ -2,6 +2,14 @@
 
 All notable changes to `best/laravel-engineering-blueprint`. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Documentation site (English and Arabic) in `site/`, published with GitHub Pages.
+
+### Fixed
+- README showed version 0.8.0; the language order, downgrade, `setting:set` value and docs examples (features, settings, tenant domains, upgrade steps) now match the code.
+
 ## [1.0.0] - 2026-11-03
 
 First stable release. Upgrading from a 0.x version: see [UPGRADE.md](UPGRADE.md).

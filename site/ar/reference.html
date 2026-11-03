@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>المرجع · Laravel Engineering Blueprint</title>
+    <meta name="description" content="كل أوامر Artisan ومفاتيح الإعدادات وأسماء المسارات ومجموعات الوسائط ووسوم النشر في best/laravel-engineering-blueprint 1.0.0.">
+    <link rel="stylesheet" href="../assets/blueprint.css">
+    <link rel="alternate" hreflang="en" href="../reference.html">
+</head>
+<body>
+    <a class="skip" href="#content">تخطَّ إلى المحتوى</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html"><span lang="en" dir="ltr">Laravel Engineering Blueprint</span> <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="الموقع">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="../reference.html" lang="en" hreflang="en">English</a>
+            </nav>
+            <ul class="tabs" aria-label="الدليل">
+                <li><a href="index.html">البداية</a></li>
+                <li><a href="profiles.html">الأنماط</a></li>
+                <li><a href="generators.html">المولّدات</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html">المستأجرون</a></li>
+                <li><a href="features.html">الميزات</a></li>
+                <li><a href="languages.html">اللغات</a></li>
+                <li><a href="upgrading.html">الترقية</a></li>
+                <li><a href="reference.html" aria-current="page">المرجع</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>المرجع</h1>
+            <p class="lede">الأوامر، ومفاتيح الإعدادات، والمسارات، والوسائط، ووسوم النشر، كما هي معرّفة في الكود المصدري للإصدار 1.0.0.</p>
+
+            <ul class="contents" aria-label="في هذه البطاقة">
+                <li><a href="#commands">الأوامر</a></li>
+                <li><a href="#config">مفاتيح الإعدادات</a></li>
+                <li><a href="#routes">المسارات والوسائط</a></li>
+                <li><a href="#publishing">النشر</a></li>
+            </ul>
+
+            <h2 id="commands">الأوامر</h2>
+            <p>تسجّل الحزمة 13 أمرًا من أوامر <bdi>Artisan</bdi>. كل رفض يطبع سطر خطأ واحدًا وينتهي برمز الخروج 1، والمولّدات لا تكتب شيئًا عند الرفض.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">الأمر</th><th scope="col">الوصف</th></tr></thead>
+                    <tbody>
+                        <tr><td><a href="#engineering-about"><code>engineering:about</code></a></td><td>يعرض إصدار <bdi lang="en">Laravel Engineering Blueprint</bdi> وتوافق البيئة</td></tr>
+                        <tr><td><a href="#engineering-install"><code>engineering:install</code></a></td><td>يجهّز التطبيق بأحد أنماط <bdi lang="en">Laravel Engineering Blueprint</bdi></td></tr>
+                        <tr><td><a href="#make-module"><code>make:module</code></a></td><td>ينشئ وحدة أعمال في <code>app/Modules</code> ويسجّل مزوّد الخدمة الخاص بها</td></tr>
+                        <tr><td><a href="#make-dto"><code>make:dto</code></a></td><td>ينشئ صنف بيانات (محدد الأنواع، غير قابل للتغيير) في وحدة</td></tr>
+                        <tr><td><a href="#make-action"><code>make:action</code></a></td><td>ينشئ إجراء (عملية أعمال واحدة) في وحدة</td></tr>
+                        <tr><td><a href="#make-crud"><code>make:crud</code></a></td><td>ينشئ <bdi>CRUD</bdi> لكيان في وحدة: <bdi>JSON API</bdi> (<code>--api</code>)، أو صفحات <bdi>Blade</bdi> (<code>--web</code>)، أو كليهما</td></tr>
+                        <tr><td><a href="#tenant-create"><code>tenant:create</code></a></td><td>ينشئ مستأجرًا: السجلات، والنطاق، وقاعدة البيانات، والترحيلات، والبيانات الأولية (إعادة تشغيله آمنة)</td></tr>
+                        <tr><td><a href="#feature-list"><code>feature:list</code></a></td><td>يسرد الميزات وحالتها (مدير المنصة)</td></tr>
+                        <tr><td><a href="#feature-enable"><code>feature:enable</code></a></td><td>يفعّل ميزة (مدير المنصة)</td></tr>
+                        <tr><td><a href="#feature-disable"><code>feature:disable</code></a></td><td>يعطّل ميزة (مدير المنصة)</td></tr>
+                        <tr><td><a href="#features-sync"><code>features:sync</code></a></td><td>يضيف الميزات المعرّفة حديثًا (بحالتها الافتراضية) دون تغيير الموجودة</td></tr>
+                        <tr><td><a href="#setting-list"><code>setting:list</code></a></td><td>يسرد الإعدادات وقيمها (مدير المنصة)</td></tr>
+                        <tr><td><a href="#setting-set"><code>setting:set</code></a></td><td>يضبط أي إعداد (مدير المنصة)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <section class="index-card" aria-labelledby="engineering-about">
+                <h3 class="index-card__title" id="engineering-about">engineering:about</h3>
+<pre><code><span class="prompt">$ </span>php artisan engineering:about</code></pre>
+                <p>بلا وسائط أو خيارات. يطبع إصدار الحزمة، والنمط المسجَّل (أو <code>not installed (run php artisan engineering:install)</code>)، وفحصًا لـ <bdi>PHP</bdi> و<bdi>Laravel</bdi> مقابل <code>blueprint.support</code>.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">مرفوض</span> رمز الخروج 1 مع <code>Environment is not compatible: upgrade the items marked ✗.</code> (البيئة غير متوافقة: رقِّ العناصر المعلَّمة بـ ✗.)</li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="engineering-install">
+                <h3 class="index-card__title" id="engineering-install">engineering:install</h3>
+<pre><code><span class="prompt">$ </span>php artisan engineering:install [--profile=PROFILE] [--force] [--allow-downgrade]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>--profile=</code></td><td><code>basic</code> أو <code>modular</code> أو <code>saas</code> أو <code>tenant-saas</code></td><td>يُسأل عنه تفاعليًا. في الوضع غير التفاعلي: النمط المسجَّل، وإلا <code>blueprint.default_profile</code>، وإلا <code>modular</code></td></tr>
+                            <tr><td><code>--force</code></td><td>يستبدل ملف الإعدادات المنشور (ويُحفظ القديم باسم <code>config/blueprint.php.bak</code>)، ويسمح أيضًا بالانتقال إلى نمط أدنى</td><td>معطّل</td></tr>
+                            <tr><td><code>--allow-downgrade</code></td><td>يسمح بالانتقال إلى نمط بقدرات أقل</td><td>معطّل</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>يسجّل النمط في <code>config/blueprint.php</code> (وينشره إن لم يكن موجودًا)، ويمسح الإعدادات المخزّنة مؤقتًا، وفي <code>saas</code> و<code>tenant-saas</code> يولّد تعريفات الميزات والإعدادات وترحيلاتها، وفي <code>tenant-saas</code> يجهّز <bdi>stancl/tenancy</bdi> أيضًا.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">مرفوض</span> <code>Install aborted: environment is not compatible.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>Unknown profile "&lt;value&gt;". Choose one of: basic, modular, saas, tenant-saas.</code></li>
+                    <li><span class="stamp">مرفوض</span> الانتقال إلى نمط أدنى في الوضع غير التفاعلي: <code>Refusing to drop &lt;capabilities&gt;. Re-run with --allow-downgrade.</code> وفي الوضع التفاعلي يسأل: <code>This removes &lt;capabilities&gt; from the project. Continue?</code> (الافتراضي: لا).</li>
+                    <li><span class="stamp">مرفوض</span> <code>Could not record the profile in config/blueprint.php.</code></li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="make-module">
+                <h3 class="index-card__title" id="make-module">make:module</h3>
+<pre><code><span class="prompt">$ </span>php artisan make:module &lt;name&gt; [--api] [--web] [--central]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">الوسيط / الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>name</code></td><td>اسم الوحدة، مثل <code>Orders</code></td><td>إلزامي</td></tr>
+                            <tr><td><code>--api</code></td><td>يضيف <code>routes/api.php</code> (يُحمَّل بمجموعة <code>api</code> والبادئة <code>/api</code>)</td><td>معطّل</td></tr>
+                            <tr><td><code>--web</code></td><td>يضيف <code>routes/web.php</code> (يُحمَّل بمجموعة <code>web</code>)</td><td>معطّل</td></tr>
+                            <tr><td><code>--central</code></td><td>في <bdi>tenant-saas</bdi> فقط: وحدة للمنصة تستجيب مساراتها على النطاقات المركزية</td><td>معطّل (وحدة مستأجر)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>يكتب <code>&lt;module_path&gt;/&lt;Name&gt;/Provider.php</code> وملفات المسارات المختارة، ويسجّل مزوّد الخدمة في <code>bootstrap/providers.php</code>.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">مرفوض</span> <code>No project profile installed. Run php artisan engineering:install first.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>The "basic" profile has no modules. Switch profile with php artisan engineering:install --profile=modular.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>module_path must be inside app/ (got "&lt;value&gt;").</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>--central only applies to the tenant-saas profile.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>Invalid module name "&lt;name&gt;". Use letters and numbers, starting with a letter, e.g. Orders.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>"&lt;module_path&gt;/&lt;Name&gt;" already exists. Nothing was changed.</code></li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="make-dto">
+                <h3 class="index-card__title" id="make-dto">make:dto</h3>
+<pre><code><span class="prompt">$ </span>php artisan make:dto &lt;module&gt; &lt;name&gt; [--fields=LIST]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">الوسيط / الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>module</code></td><td>اسم الوحدة، مثل <code>Orders</code></td><td>إلزامي</td></tr>
+                            <tr><td><code>name</code></td><td>اسم الصنف، مثل <code>OrderData</code></td><td>إلزامي</td></tr>
+                            <tr><td><code>--fields=</code></td><td>قائمة <code>name:type</code> مفصولة بفواصل، مثل <code>"name:string,quantity:int,note:?string"</code></td><td>لا شيء (خاصية مثال في تعليق)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>يكتب <code>&lt;module_path&gt;/&lt;Module&gt;/Data/&lt;Name&gt;.php</code>.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">مرفوض</span> <code>Module "&lt;module&gt;" not found in &lt;module_path&gt;. Create it with php artisan make:module &lt;module&gt;.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>Invalid class name "&lt;name&gt;". Use letters and numbers, starting with a letter, e.g. OrderData.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>"&lt;path&gt;" already exists. Nothing was changed.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>Field type &lt;import&gt; has the same short name as the class &lt;name&gt;.</code></li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="make-action">
+                <h3 class="index-card__title" id="make-action">make:action</h3>
+<pre><code><span class="prompt">$ </span>php artisan make:action &lt;module&gt; &lt;name&gt; [--data=CLASS] [--transaction]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">الوسيط / الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>module</code></td><td>اسم الوحدة، مثل <code>Orders</code></td><td>إلزامي</td></tr>
+                            <tr><td><code>name</code></td><td>اسم الصنف، مثل <code>CreateOrder</code></td><td>إلزامي</td></tr>
+                            <tr><td><code>--data=</code></td><td>صنف بيانات من هذه الوحدة، مثل <code>OrderData</code>، ويصبح معامل <code>handle()</code></td><td>لا شيء (بلا معامل)</td></tr>
+                            <tr><td><code>--transaction</code></td><td>يضع جسم <code>handle()</code> داخل <code>DB::transaction</code></td><td>معطّل</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>يكتب <code>&lt;module_path&gt;/&lt;Module&gt;/Actions/&lt;Name&gt;.php</code>. له حالات رفض الوحدة والاسم والملف الموجود نفسها في <a href="#make-dto"><code>make:dto</code></a>، إضافة إلى:</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">مرفوض</span> <code>Data classes must be in this module (got "&lt;data&gt;"). Pass a class name from &lt;module_path&gt;/&lt;Module&gt;/Data.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>Data class "&lt;data&gt;" not found in &lt;module_path&gt;/&lt;Module&gt;/Data. Create it with php artisan make:dto &lt;Module&gt; &lt;data&gt;.</code></li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="make-crud">
+                <h3 class="index-card__title" id="make-crud">make:crud</h3>
+<pre><code><span class="prompt">$ </span>php artisan make:crud &lt;module&gt; &lt;entity&gt; [--fields=LIST] [--feature=KEY] [--api] [--web]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">الوسيط / الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>module</code></td><td>اسم الوحدة، مثل <code>Orders</code></td><td>إلزامي</td></tr>
+                            <tr><td><code>entity</code></td><td>اسم الكيان بصيغة المفرد، مثل <code>Order</code></td><td>إلزامي</td></tr>
+                            <tr><td><code>--fields=</code></td><td>قائمة <code>name:type</code> مفصولة بفواصل، مثل <code>"name:string,quantity:int,note:?string"</code></td><td>لا شيء، وعند إضافة جانب إلى <bdi>CRUD</bdi> موجود يُعاد استخدام الحقول الموجودة</td></tr>
+                            <tr><td><code>--feature=</code></td><td>مفتاح الميزة الذي يجب أن يكون مفعّلًا لهذه المسارات (<bdi>saas</bdi>، <bdi>tenant-saas</bdi>)، ويضيف الوسيط <code>feature:&lt;key&gt;</code></td><td>لا شيء (بلا بوابة)</td></tr>
+                            <tr><td><code>--api</code></td><td><bdi>JSON API</bdi></td><td>مفعّل عند عدم تمرير <code>--api</code> ولا <code>--web</code></td></tr>
+                            <tr><td><code>--web</code></td><td>صفحات <bdi>Blade</bdi></td><td>معطّل</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>شغّله مرة أخرى بالجانب الآخر (<code>--web</code> بعد <code>--api</code>، أو العكس) لإضافته، ويُعاد استخدام النموذج والبيانات والإجراءات والسياسة المشتركة. أول تشغيل بـ <code>--web</code> ينشئ أيضًا التخطيط المحدد في <code>blueprint.layout</code>.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">مرفوض</span> <code>Invalid entity name "&lt;entity&gt;". Use a singular name, e.g. Order.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>Entity names must be singular, e.g. &lt;singular&gt;.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>--feature needs the saas or tenant-saas profile.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>Unknown feature "&lt;key&gt;". Add it to &lt;FeaturesClass&gt; first.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>Features are per tenant; central module routes have no tenant. Drop --feature or use a tenant module.</code></li>
+                    <li><span class="stamp">مرفوض</span> ليس في الوحدة <code>routes/api.php</code> أو <code>routes/web.php</code> للجانب المطلوب.</li>
+                    <li><span class="stamp">مرفوض</span> في <bdi>tenant-saas</bdi>، وحدة لا تستخدم مساراتها مجموعة <code>tenant</code> ولا <code>central</code>.</li>
+                    <li><span class="stamp">مرفوض</span> كيان مفرده وجمعه متطابقان، مع <code>--web</code>.</li>
+                    <li><span class="stamp">مرفوض</span> <code>--fields doesn't match the existing &lt;Entity&gt; CRUD (&lt;fields&gt;). Leave --fields out to reuse them.</code></li>
+                    <li><span class="stamp">مرفوض</span> ملف هدف موجود مسبقًا، أو اسم مسار مستخدم، أو كيان يتعارض مع صنف يستخدمه الكود المولّد، أو قالب ينتج كودًا غير صالح.</li>
+                    <li><span class="stamp">مرفوض</span> إضافة جانب بقيمة <code>--feature</code> مختلفة عن مسارات الجانب الموجود.</li>
+                </ul>
+                <p class="see-also">انظر أيضًا: <a href="#routes">أسماء المسارات</a> · <a href="crud.html"><bdi>CRUD</bdi>: <bdi>Blade</bdi> و<bdi>API</bdi></a></p>
+            </section>
+
+            <section class="index-card" aria-labelledby="tenant-create">
+                <h3 class="index-card__title" id="tenant-create">tenant:create</h3>
+<pre><code><span class="prompt">$ </span>php artisan tenant:create &lt;name&gt; [--domain=DOMAIN] [--database=NAME] [--existing-database]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">الوسيط / الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>name</code></td><td>معرّف المستأجر: أحرف إنجليزية صغيرة وأرقام وشرطات</td><td>إلزامي</td></tr>
+                            <tr><td><code>--domain=</code></td><td>النطاق الكامل، ويجب أن يكون نطاقًا فرعيًا من النطاق الأساسي</td><td><code>&lt;name&gt;.&lt;base domain&gt;</code> (الأساسي: <code>blueprint.tenant_domain</code>، وإلا أول نطاق مركزي ليس عنوان <bdi>IP</bdi>، وإلا <code>localhost</code>)</td></tr>
+                            <tr><td><code>--database=</code></td><td>اسم قاعدة البيانات (أحرف وأرقام وشرطات سفلية)</td><td><code>tenant_&lt;name&gt;</code> مع تحويل الشرطات إلى شرطات سفلية</td></tr>
+                            <tr><td><code>--existing-database</code></td><td>يستخدم قاعدة بيانات موجودة مسبقًا لهذا المستأجر الجديد</td><td>معطّل</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>ينشئ سجل المستأجر والنطاق وقاعدة البيانات، ويشغّل ترحيلات المستأجر، ويزرع البيانات بـ <code>blueprint.tenant_seeder</code> إذا كان الصنف موجودًا. إعادة تشغيله آمنة: تُتخطى الخطوات المكتملة.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">مرفوض</span> بدون النمط <bdi>tenant-saas</bdi> و<bdi>stancl/tenancy</bdi>، أو إذا لم يكن <code>App\Providers\TenancyServiceProvider</code> مسجَّلًا.</li>
+                    <li><span class="stamp">مرفوض</span> <code>Run tenant:create from the central app, not inside a tenant.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>Invalid tenant name "&lt;name&gt;". Use lowercase letters, numbers and dashes, e.g. acme.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>Invalid domain "&lt;domain&gt;": it must be a subdomain of &lt;base&gt;.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>Domain "&lt;domain&gt;" already belongs to tenant "&lt;id&gt;".</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>Database "&lt;db&gt;" is the central database.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>Database "&lt;db&gt;" already exists. Pass --existing-database to use it for this tenant.</code></li>
+                </ul>
+            </section>
+
+            <div class="note">
+                <p><strong>أوامر الميزات والإعدادات.</strong> الأوامر السبعة أدناه تحتاج إلى النمط <code>saas</code> أو <code>tenant-saas</code>. في <code>saas</code> تعمل على التطبيق ويُرفض <code>--tenant</code>، وفي <code>tenant-saas</code> يكون <code>--tenant</code> إلزاميًا (ما عدا <code>features:sync</code>). حالات الرفض المشتركة:</p>
+                <ul>
+                    <li><code>Features and settings need the saas or tenant-saas profile.</code></li>
+                    <li><code>--tenant only applies to the tenant-saas profile.</code></li>
+                    <li><code>--tenant is required in the tenant-saas profile.</code></li>
+                    <li><code>Tenant "&lt;id&gt;" not found.</code></li>
+                </ul>
+            </div>
+
+            <section class="index-card" aria-labelledby="feature-list">
+                <h3 class="index-card__title" id="feature-list">feature:list</h3>
+<pre><code><span class="prompt">$ </span>php artisan feature:list [--tenant=ID]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>--tenant=</code></td><td>معرّف المستأجر (<bdi>tenant-saas</bdi>)</td><td>لا شيء</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>أعمدة الجدول: <bdi lang="en">Feature</bdi> (الميزة)، و<bdi lang="en">Enabled</bdi> (مفعّلة)، و<bdi lang="en">Default</bdi> (الافتراضي). الميزات التي لا صف مخزّنًا لها تظهر معطّلة، مع تلميح لتشغيل <code>features:sync</code>.</p>
+            </section>
+
+            <section class="index-card" aria-labelledby="feature-enable">
+                <h3 class="index-card__title" id="feature-enable">feature:enable</h3>
+<pre><code><span class="prompt">$ </span>php artisan feature:enable &lt;key&gt; [--tenant=ID]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">الوسيط / الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>key</code></td><td>مفتاح الميزة</td><td>إلزامي</td></tr>
+                            <tr><td><code>--tenant=</code></td><td>معرّف المستأجر (<bdi>tenant-saas</bdi>)</td><td>لا شيء</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <ul class="outcomes">
+                    <li><span class="stamp">مرفوض</span> <code>Unknown feature "&lt;key&gt;". Add it to &lt;FeaturesClass&gt; first.</code></li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="feature-disable">
+                <h3 class="index-card__title" id="feature-disable">feature:disable</h3>
+<pre><code><span class="prompt">$ </span>php artisan feature:disable &lt;key&gt; [--tenant=ID]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">الوسيط / الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>key</code></td><td>مفتاح الميزة</td><td>إلزامي</td></tr>
+                            <tr><td><code>--tenant=</code></td><td>معرّف المستأجر (<bdi>tenant-saas</bdi>)</td><td>لا شيء</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <ul class="outcomes">
+                    <li><span class="stamp">مرفوض</span> <code>Unknown feature "&lt;key&gt;". Add it to &lt;FeaturesClass&gt; first.</code></li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="features-sync">
+                <h3 class="index-card__title" id="features-sync">features:sync</h3>
+<pre><code><span class="prompt">$ </span>php artisan features:sync [--tenant=ID ...]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>--tenant=*</code></td><td>معرّفات المستأجرين (<bdi>tenant-saas</bdi>)، ويمكن تكراره</td><td>كل المستأجرين عند حذفه</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>يضيف صفًا بالحالة الافتراضية لكل ميزة معرّفة لا صف لها، وتبقى الصفوف الموجودة كما هي. في <bdi>tenant-saas</bdi> يُفحص كل مستأجر مطلوب قبل مزامنة أي منهم، والمستأجر الذي يفشل يُبلَّغ عنه وينتهي الأمر برمز الخروج 1.</p>
+            </section>
+
+            <section class="index-card" aria-labelledby="setting-list">
+                <h3 class="index-card__title" id="setting-list">setting:list</h3>
+<pre><code><span class="prompt">$ </span>php artisan setting:list [--tenant=ID]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>--tenant=</code></td><td>معرّف المستأجر (<bdi>tenant-saas</bdi>)</td><td>لا شيء</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>أعمدة الجدول: <bdi lang="en">Setting</bdi> (الإعداد)، و<bdi lang="en">Value (JSON)</bdi> (القيمة)، و<bdi lang="en">Type</bdi> (النوع)، و<bdi lang="en">Editable by</bdi> (قابل للتعديل من: <code>platform</code> ما لم يذكر التعريف <code>tenant</code>).</p>
+            </section>
+
+            <section class="index-card" aria-labelledby="setting-set">
+                <h3 class="index-card__title" id="setting-set">setting:set</h3>
+<pre><code><span class="prompt">$ </span>php artisan setting:set &lt;key&gt; &lt;value&gt; [--tenant=ID]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">الوسيط / الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>key</code></td><td>مفتاح الإعداد</td><td>إلزامي</td></tr>
+                            <tr><td><code>value</code></td><td>قيمة <bdi>JSON</bdi> (<code>true</code>، <code>5</code>، <code>["a"]</code>، <code>"text"</code>) أو نص عادي، وضع <code>--</code> قبل الأرقام السالبة</td><td>إلزامي</td></tr>
+                            <tr><td><code>--tenant=</code></td><td>معرّف المستأجر (<bdi>tenant-saas</bdi>)</td><td>لا شيء</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>يضبط أي إعداد، أيًا كانت قيمة <code>editable_by</code>. الأنواع: <code>string</code>، <code>int</code>، <code>float</code>، <code>bool</code>، <code>array</code>.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">مرفوض</span> <code>Unknown setting "&lt;key&gt;". Add it to your Settings definitions first.</code></li>
+                    <li><span class="stamp">مرفوض</span> <code>Setting "&lt;key&gt;" must be of type &lt;type&gt;.</code></li>
+                </ul>
+            </section>
+
+            <h2 id="config">مفاتيح الإعدادات</h2>
+            <p>كل المفاتيح موجودة في <code>config/blueprint.php</code> وتُقرأ بالشكل <code>config('blueprint.&lt;key&gt;')</code>.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">المفتاح</th><th scope="col">الافتراضي</th><th scope="col">المعنى</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>profile</code></td><td><code>null</code></td><td>نمط المشروع، ويكتبه <code>engineering:install</code></td></tr>
+                        <tr><td><code>module_path</code></td><td><code>'app/Modules'</code></td><td>مكان الوحدات، ويجب أن يكون داخل <code>app/</code></td></tr>
+                        <tr><td><code>shared_path</code></td><td><code>'app/Shared'</code></td><td>مكان توليد تعريفات الميزات والإعدادات، ويجب أن يكون داخل <code>app/</code></td></tr>
+                        <tr><td><code>stub_path</code></td><td><code>null</code></td><td>مجلد لتجاوز القوالب، يُجرَّب قبل <code>stubs/blueprint</code> وقوالب الحزمة</td></tr>
+                        <tr><td><code>default_profile</code></td><td><code>'modular'</code></td><td>النمط الذي يقترحه <code>engineering:install</code> عندما لا يكون هناك نمط مسجَّل</td></tr>
+                        <tr><td><code>locales</code></td><td><code>['en']</code></td><td>اللغات التي يخدمها التطبيق، ويقرؤها <code>SetLocale</code> والمسار <code>blueprint.locale</code></td></tr>
+                        <tr><td><code>rtl_locales</code></td><td><code>['ar', 'fa', 'he', 'ur']</code></td><td>اللغات التي تُعرض من اليمين إلى اليسار</td></tr>
+                        <tr><td><code>layout</code></td><td><code>'layouts.blueprint'</code></td><td>تخطيط <bdi>Blade</bdi> الذي ترثه الصفحات المولّدة، وينشئه <code>make:crud --web</code> مرة واحدة</td></tr>
+                        <tr><td><code>features</code></td><td><code>null</code></td><td>صنف تعريفات الميزات، و<code>null</code> يعني <code>&lt;shared_path&gt;/Features/Features.php</code></td></tr>
+                        <tr><td><code>settings</code></td><td><code>null</code></td><td>صنف تعريفات الإعدادات، و<code>null</code> يعني <code>&lt;shared_path&gt;/Settings/Settings.php</code></td></tr>
+                        <tr><td><code>tenant_seeder</code></td><td><code>'Database\\Seeders\\TenantSeeder'</code></td><td>صنف زرع البيانات الذي يشغّله <code>tenant:create</code> للمستأجرين الجدد إذا كان موجودًا</td></tr>
+                        <tr><td><code>tenant_domain</code></td><td><code>env('BLUEPRINT_TENANT_DOMAIN')</code></td><td>في <bdi>tenant-saas</bdi>: نطاقات المستأجرين على الشكل <code>&lt;name&gt;.&lt;this&gt;</code>، و<code>null</code> يعني أول نطاق مركزي</td></tr>
+                        <tr><td><code>support.php</code></td><td><code>'8.3'</code></td><td>أدنى إصدار من <bdi>PHP</bdi> يفحصه <code>engineering:about</code> و<code>engineering:install</code></td></tr>
+                        <tr><td><code>support.laravel</code></td><td><code>'12'</code></td><td>أدنى إصدار رئيسي من <bdi>Laravel</bdi>، ويُفحص بالطريقة نفسها</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 id="routes">المسارات والوسائط</h2>
+            <p><code>&lt;uri&gt;</code> هو جمع اسم الكيان بصيغة <bdi>kebab-case</bdi> (<code>Order</code> يعطي <code>orders</code>، و<code>OrderLine</code> يعطي <code>order-lines</code>).</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">أسماء المسارات</th><th scope="col">المصدر</th><th scope="col">الرابط</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>api.&lt;uri&gt;.*</code></td><td><code>make:crud --api</code> (<code>Route::apiResource</code>: <bdi>index, store, show, update, destroy</bdi>)</td><td><code>/api/&lt;uri&gt;</code></td></tr>
+                        <tr><td><code>&lt;uri&gt;.*</code></td><td><code>make:crud --web</code> (<code>Route::resource</code>: <bdi>index, create, store, show, edit, update, destroy</bdi>)</td><td><code>/&lt;uri&gt;</code></td></tr>
+                        <tr><td><code>central.api.&lt;uri&gt;.*</code>، <code>central.&lt;uri&gt;.*</code></td><td>المسارات نفسها، في وحدة أُنشئت بـ <code>make:module --central</code></td><td>النطاقات المركزية فقط</td></tr>
+                        <tr><td><code>blueprint.locale</code></td><td>مسار الحزمة، مجموعة <code>web</code></td><td><code>GET /locale/{locale}</code>: يخزّن اللغة في الجلسة ويعيد التوجيه إلى الصفحة السابقة، و404 إذا لم تكن اللغة في <code>blueprint.locales</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>مسارات الموارد المولّدة تعيد 403 للزوار، و404 للمستخدمين المسجَّل دخولهم عندما يكون السجل غير موجود.</p>
+
+            <h3>مجموعات مسارات الوحدات</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">الوحدة</th><th scope="col"><code>routes/web.php</code></th><th scope="col"><code>routes/api.php</code></th></tr></thead>
+                    <tbody>
+                        <tr><td><bdi>modular</bdi>، <bdi>saas</bdi></td><td><code>web</code></td><td><code>api</code>، البادئة <code>/api</code></td></tr>
+                        <tr><td><bdi>tenant-saas</bdi> (الافتراضي)</td><td><code>web</code>، <code>tenant</code></td><td><code>api</code>، <code>tenant</code>، البادئة <code>/api</code></td></tr>
+                        <tr><td><bdi>tenant-saas</bdi> <code>--central</code></td><td><code>web</code>، <code>central</code>، النطاق <code>{central_domain}</code>، بادئة الاسم <code>central.</code></td><td><code>api</code>، <code>central</code>، البادئة <code>/api</code>، النطاق <code>{central_domain}</code>، بادئة الاسم <code>central.</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>الوسائط</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">الاسم</th><th scope="col">طريقة التسجيل</th><th scope="col">الأثر</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>SetLocale</code></td><td>يُلحق بالمجموعتين <code>web</code> و<code>api</code></td><td><bdi>API</bdi> (<code>api/*</code> أو <bdi>JSON</bdi>): <code>Accept-Language</code>. الويب: اختيار الجلسة. ثم الإعداد <code>app.language</code>، ثم <code>app.locale</code>. لا تُحتسب إلا القيم الموجودة في <code>blueprint.locales</code>.</td></tr>
+                        <tr><td><code>feature</code></td><td>اسم مستعار لوسيط المسار (<code>EnsureFeatureEnabled</code>)</td><td><code>feature:&lt;key&gt;[,&lt;key&gt;...]</code>: يعيد 403 <code>This feature is not enabled.</code> ما لم تكن كل الميزات المذكورة مفعّلة</td></tr>
+                        <tr><td><code>tenant</code></td><td>مجموعة، في <bdi>tenant-saas</bdi> فقط</td><td><code>InitializeTenancyByDomain</code>، <code>PreventAccessFromCentralDomains</code>، ونطاقات المستأجرين غير المعروفة تعيد 404</td></tr>
+                        <tr><td><code>central</code></td><td>مجموعة، في <bdi>tenant-saas</bdi> فقط</td><td><code>CentralDomainsOnly</code>: يعيد 404 ما لم يكن المضيف في <code>tenancy.central_domains</code></td></tr>
+                        <tr><td><code>ScopeSessionToDomain</code></td><td>يُلحق بمجموعة <code>web</code>، في <bdi>tenant-saas</bdi> فقط</td><td>الجلسة التي بدأت في مستأجر (أو في التطبيق المركزي) تُرفض في غيره: 403 <code>This session belongs to another site.</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>يُسجَّل أيضًا موجّه <bdi>Blade</bdi>: <code>@feature('key') ... @endfeature</code>.</p>
+
+            <h2 id="publishing">النشر</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">الوسم</th><th scope="col">ينسخ</th><th scope="col">إلى</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>blueprint-config</code></td><td><code>config/blueprint.php</code></td><td><code>config/blueprint.php</code></td></tr>
+                        <tr><td><code>blueprint-stubs</code></td><td>كل ملفات <code>stubs/*.stub</code></td><td><code>stubs/blueprint/</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+<pre><code><span class="prompt">$ </span>php artisan vendor:publish --tag=blueprint-config
+<span class="prompt">$ </span>php artisan vendor:publish --tag=blueprint-stubs</code></pre>
+            <p>ترتيب البحث عن القوالب: <code>blueprint.stub_path</code>، ثم <code>stubs/blueprint/</code>، ثم الحزمة. القالب الذي يحتوي على عنصر نائب غير معروف، أو لم يعد ينتج الصنف أو المسار المتوقع، يُرفض مع الرسالة <code>Update or delete it, then re-run.</code></p>
+
+            <nav class="next" aria-label="البطاقة التالية">
+                <a href="upgrading.html">→ الترقية</a>
+                <span></span>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · حقوق النشر 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">الإصدارات</a></p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>اللغات · Laravel Engineering Blueprint</title>
+    <meta name="description" content="ترجمات الواجهة: blueprint.locales، والتخطيط من اليمين إلى اليسار، وكيف تُختار لغة كل طلب، وكيف تضيف لغة.">
+    <link rel="stylesheet" href="../assets/blueprint.css">
+    <link rel="alternate" hreflang="en" href="../languages.html">
+</head>
+<body>
+    <a class="skip" href="#content">تخطَّ إلى المحتوى</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html"><span lang="en" dir="ltr">Laravel Engineering Blueprint</span> <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="الموقع">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="../languages.html" lang="en" hreflang="en">English</a>
+            </nav>
+            <ul class="tabs" aria-label="الدليل">
+                <li><a href="index.html">البداية</a></li>
+                <li><a href="profiles.html">الأنماط</a></li>
+                <li><a href="generators.html">المولّدات</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html">المستأجرون</a></li>
+                <li><a href="features.html">الميزات</a></li>
+                <li><a href="languages.html" aria-current="page">اللغات</a></li>
+                <li><a href="upgrading.html">الترقية</a></li>
+                <li><a href="reference.html">المرجع</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>اللغات</h1>
+            <p class="lede">تترجم الحزمة الواجهة: صفحات <bdi>Blade</bdi> المولّدة ورسائل الحزمة نفسها. لا تترجم بياناتك، فتخزين السجلات بعدة لغات مسؤولية تطبيقك.</p>
+
+            <ul class="contents" aria-label="في هذه البطاقة">
+                <li><a href="#config">ضبط اللغات</a></li>
+                <li><a href="#resolution">كيف تُختار لغة الطلب</a></li>
+                <li><a href="#switcher">مبدّل اللغة</a></li>
+                <li><a href="#rtl">التخطيط من اليمين إلى اليسار</a></li>
+                <li><a href="#strings">ترجمة النصوص</a></li>
+                <li><a href="#add">إضافة لغة</a></li>
+            </ul>
+
+            <h2 id="config">ضبط اللغات</h2>
+<pre><code>// config/blueprint.php
+'locales' =&gt; ['en', 'ar'],                  // languages the app serves
+'rtl_locales' =&gt; ['ar', 'fa', 'he', 'ur'],  // shown right-to-left</code></pre>
+            <p>القيمة الافتراضية لـ <code>locales</code> هي <code>['en']</code>. اللغة الافتراضية للتطبيق هي <code>app.locale</code> في <bdi>Laravel</bdi> (<code>APP_LOCALE</code>)، كما هي مضبوطة عند إقلاع التطبيق.</p>
+
+            <h2 id="resolution">كيف تُختار لغة الطلب</h2>
+            <p>يُضاف الوسيط <code>SetLocale</code> إلى المجموعتين <code>web</code> و<code>api</code>. لا تُقبل إلا اللغات الموجودة في <code>blueprint.locales</code>، وأول تطابق هو الذي يُعتمد.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">الترتيب</th><th scope="col">طلبات <bdi>API</bdi> (<bdi>JSON</bdi> أو <code>/api/*</code>)</th><th scope="col">طلبات الويب</th></tr></thead>
+                    <tbody>
+                        <tr><td>1</td><td>الترويسة <code>Accept-Language</code>، حسب قيمة الجودة</td><td>اختيار الزائر، المخزّن في الجلسة عبر <code>/locale/{locale}</code></td></tr>
+                        <tr><td>2</td><td colspan="2">الإعداد <code>app.language</code> (في <bdi>saas</bdi> و<bdi>tenant-saas</bdi>، وفي <bdi>tenant-saas</bdi> داخل مستأجر فقط)</td></tr>
+                        <tr><td>3</td><td colspan="2">اللغة الافتراضية للتطبيق (<code>app.locale</code>)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>تُضبط اللغة في كل طلب، فلا تحتفظ العملية العاملة طويلة الأمد بلغة الطلب السابق أبدًا.</p>
+
+            <h2 id="switcher">مبدّل اللغة</h2>
+            <p>تسجّل الحزمة <code>GET /locale/{locale}</code> باسم <code>blueprint.locale</code> في مجموعة <code>web</code>. يخزّن اللغة في الجلسة ويعيد التوجيه إلى الصفحة السابقة. اللغة غير الموجودة في <code>blueprint.locales</code> تعيد 404.</p>
+<pre><code>&lt;a href="{{ route('blueprint.locale', 'ar') }}"&gt;العربية&lt;/a&gt;</code></pre>
+            <p>التخطيط المولّد يعرض هذه الروابط تلقائيًا عندما تكون هناك أكثر من لغة مُعدّة.</p>
+
+            <h2 id="rtl">التخطيط من اليمين إلى اليسار</h2>
+            <p>التخطيط الذي ينشئه <code>make:crud --web</code> (<code>resources/views/layouts/blueprint.blade.php</code>) يضبط <code>&lt;html lang dir&gt;</code> حسب اللغة الحالية: <code>dir="rtl"</code> للغات الموجودة في <code>rtl_locales</code>، و<code>ltr</code> لغيرها.</p>
+            <div class="note">
+                <p><strong>صفحات الأخطاء.</strong> صفحات أخطاء <bdi>Laravel</bdi> (403، 404، …) تعرض عناوين مترجمة لكنها تستخدم تخطيط <bdi>Laravel</bdi> الخاص مع <code>&lt;html lang="en"&gt;</code>. لصفحات أخطاء من اليمين إلى اليسار، شغّل <code>php artisan vendor:publish --tag=laravel-errors</code> واضبط <code>lang</code> و<code>dir</code> في <code>resources/views/errors/layout.blade.php</code> بالطريقة التي يتبعها تخطيط الحزمة.</p>
+            </div>
+
+            <h2 id="strings">ترجمة النصوص</h2>
+            <ul>
+                <li>الصفحات المولّدة ورسائل الحزمة تستخدم <code>__()</code> بمفاتيح إنجليزية.</li>
+                <li>تأتي الحزمة مع <code>lang/ar.json</code> فيه الترجمة العربية لنصوصها: أزرار مثل <bdi lang="en">Save</bdi> و<bdi lang="en">Delete</bdi>، ورسائل حالة مثل <bdi lang="en">":item created."</bdi> و<bdi lang="en">"This feature is not enabled."</bdi>، ورسالة <bdi>Laravel</bdi> <bdi lang="en">"This action is unauthorized."</bdi> وعناوين صفحات الأخطاء.</li>
+                <li><code>make:crud --web</code> يضيف اسم الكيان وأسماء الحقول (مثل <bdi lang="en">"Order"</bdi> و<bdi lang="en">"Orders"</bdi> و<bdi lang="en">"Quantity"</bdi>) إلى <code>lang/&lt;locale&gt;.json</code> لكل لغة مُعدّة غير <code>en</code>، والنص الإنجليزي قيمةً لها. الترجمات الموجودة تبقى كما هي. ترجم القيم الجديدة.</li>
+                <li>لرسائل التحقق في <bdi>Laravel</bdi>، شغّل <code>php artisan lang:publish</code> وأضف <code>lang/ar/validation.php</code>.</li>
+            </ul>
+
+            <h2 id="add">إضافة لغة</h2>
+            <ol>
+                <li>أضف رمز اللغة إلى <code>blueprint.locales</code>، مثل <code>['en', 'ar', 'fr']</code>. إذا كانت تُكتب من اليمين إلى اليسار وليست مدرجة مسبقًا، فأضفها إلى <code>rtl_locales</code>.</li>
+                <li>أنشئ <code>lang/fr.json</code> وترجم نصوصك. نصوص الحزمة التي لا ترجمة لها تظهر بالإنجليزية.</li>
+                <li>شغّل <code>make:crud --web</code> كالمعتاد، فتُضاف مفاتيح الكيانات الجديدة إلى <code>lang/fr.json</code>. الكيانات المولّدة قبل إضافة اللغة تحتاج إلى إضافة أسمائها يدويًا.</li>
+                <li>يمكنك اختياريًا ضبط الإعداد <code>app.language</code> لكل مستأجر بالأمر <code>php artisan setting:set app.language fr</code> (أضف <code>--tenant=acme</code> في <bdi>tenant-saas</bdi>).</li>
+            </ol>
+            <p>للتطبيق الجديد، يضبط <code>bin/new-app</code> اللغات نيابة عنك. أول لغة تصبح الافتراضية (<code>APP_LOCALE</code>):</p>
+<pre><code><span class="prompt">$ </span>bin/new-app ~/Sites/shop --profile=saas --locales=en,ar</code></pre>
+
+            <nav class="next" aria-label="البطاقة التالية">
+                <a href="features.html">→ الميزات</a>
+                <a href="upgrading.html">الترقية ←</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · حقوق النشر 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">الإصدارات</a></p>
+    </footer>
+</body>
+</html>

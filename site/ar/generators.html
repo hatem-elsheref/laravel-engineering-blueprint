@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>المولّدات · Laravel Engineering Blueprint</title>
+    <meta name="description" content="الأوامر make:module وmake:dto وmake:action: ما تكتبه، وقواعد التسمية التي تتبعها، ومتى ترفض التنفيذ، وكيف تخصّص القوالب.">
+    <link rel="stylesheet" href="../assets/blueprint.css">
+    <link rel="alternate" hreflang="en" href="../generators.html">
+</head>
+<body>
+    <a class="skip" href="#content">تخطَّ إلى المحتوى</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html"><span lang="en" dir="ltr">Laravel Engineering Blueprint</span> <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="الموقع">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="../generators.html" lang="en" hreflang="en">English</a>
+            </nav>
+            <ul class="tabs" aria-label="الدليل">
+                <li><a href="index.html">البداية</a></li>
+                <li><a href="profiles.html">الأنماط</a></li>
+                <li><a href="generators.html" aria-current="page">المولّدات</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html">المستأجرون</a></li>
+                <li><a href="features.html">الميزات</a></li>
+                <li><a href="languages.html">اللغات</a></li>
+                <li><a href="upgrading.html">الترقية</a></li>
+                <li><a href="reference.html">المرجع</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>المولّدات</h1>
+            <p class="lede">ثلاثة أوامر تنشئ اللبنات الأساسية للوحدة: <code>make:module</code> للوحدة نفسها، و<code>make:dto</code> لصنف بيانات (<bdi>Data</bdi>)، و<code>make:action</code> لعملية أعمال واحدة. لإنشاء <bdi>CRUD</bdi> كامل، راجع <a href="crud.html"><bdi>CRUD</bdi></a>.</p>
+
+            <ul class="contents" aria-label="في هذه البطاقة">
+                <li><a href="#rules">قواعد يتبعها كل مولّد</a></li>
+                <li><a href="#make-module"><bdi>make:module</bdi></a></li>
+                <li><a href="#make-dto"><bdi>make:dto</bdi></a></li>
+                <li><a href="#make-action"><bdi>make:action</bdi></a></li>
+                <li><a href="#naming">التسمية</a></li>
+                <li><a href="#stubs">تخصيص القوالب</a></li>
+            </ul>
+
+            <h2 id="rules">قواعد يتبعها كل مولّد</h2>
+            <ul>
+                <li>تحتاج إلى نمط فيه وحدات (<code>modular</code> أو <code>saas</code> أو <code>tenant-saas</code>). بدون نمط أو مع <code>basic</code> ترفض التنفيذ.</li>
+                <li>كل شيء يُبنى ويُفحص في الذاكرة أولًا. إذا فشل أي فحص، لا يُكتب شيء.</li>
+                <li>لا تستبدل أي ملف أبدًا. وجود ملف أو وحدة بالاسم نفسه (مع تجاهل حالة الأحرف) يؤدي إلى الرفض.</li>
+                <li>تُحوَّل الأسماء إلى صيغة <bdi>StudlyCase</bdi> (<code>orders</code> تصبح <code>Orders</code>)، ويطبع الأمر الاسم الذي استخدمه.</li>
+                <li>استخدم الأوامر. لا تنسخ القوالب ولا تملأها يدويًا.</li>
+            </ul>
+
+            <h2 id="make-module"><bdi>make:module</bdi></h2>
+<pre><code><span class="prompt">$ </span>php artisan make:module Orders --api --web</code></pre>
+            <section class="index-card" aria-labelledby="card-make-module">
+                <h3 class="index-card__title" id="card-make-module">make:module Orders --api --web</h3>
+                <ul class="outcomes">
+                    <li><span class="stamp stamp--ok">أُنشئ</span> <code>app/Modules/Orders/Provider.php</code>، ويُسجَّل في <code>bootstrap/providers.php</code>.</li>
+                    <li><span class="stamp stamp--ok">أُنشئ</span> <code>routes/api.php</code> (مع <code>--api</code>، ويُحمَّل بمجموعة <code>api</code> والبادئة <code>/api</code>) و<code>routes/web.php</code> (مع <code>--web</code>، ويُحمَّل بمجموعة <code>web</code>).</li>
+                    <li><span class="stamp">مرفوض</span> إذا كانت الوحدة موجودة، أو كان الاسم غير صالح، أو استُخدم <code>--central</code> خارج <bdi>tenant-saas</bdi>.</li>
+                </ul>
+                <p class="see-also">انظر أيضًا: <a href="reference.html#make-module">خيارات <code>make:module</code></a></p>
+            </section>
+            <p>بدون أي من الخيارين تحصل على <code>Provider.php</code> فقط، ويمكنك إضافة ملفات المسارات لاحقًا يدويًا وتحميلها في <code>Provider.php</code> بالطريقة نفسها. مجلد الوحدات هو <code>blueprint.module_path</code> (القيمة الافتراضية <code>app/Modules</code>). تُمسح الإعدادات والمسارات المخزّنة مؤقتًا.</p>
+            <p>في <code>tenant-saas</code> تستخدم مسارات الوحدة مجموعة الوسائط <code>tenant</code>. مرّر <code>--central</code> لوحدة خاصة بالمنصة، تستجيب مساراتها على النطاقات المركزية فقط وتبدأ أسماء مساراتها بـ <code>central.</code>. راجع <a href="tenancy.html#central-modules">تعدد المستأجرين</a>.</p>
+            <p>ضع الوسائط التي تشمل الوحدة كلها، مثل <code>auth:sanctum</code> لواجهة <bdi>API</bdi> تعمل بالرموز، على مجموعات المسارات في <code>Provider.php</code>.</p>
+
+            <h2 id="make-dto"><bdi>make:dto</bdi></h2>
+<pre><code><span class="prompt">$ </span>php artisan make:dto Orders OrderData --fields="name:string,quantity:int,note:?string"</code></pre>
+            <p>يكتب <code>app/Modules/Orders/Data/OrderData.php</code>: صنفًا <code>final readonly</code> يعرّف مُنشئه خاصية عامة واحدة لكل حقل. بدون <code>--fields</code> يكون المُنشئ فارغًا، مع مثال في تعليق.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">جزء من <code>--fields</code></th><th scope="col">المعنى</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>name:string</code></td><td>أزواج <code>name:type</code> مفصولة بفواصل. تصبح الأسماء خصائص بصيغة <bdi>camelCase</bdi>.</td></tr>
+                        <tr><td><code>string</code>، <code>int</code>، <code>float</code>، <code>bool</code>، <code>array</code></td><td>أنواع بسيطة ومصفوفات</td></tr>
+                        <tr><td><code>Carbon\CarbonImmutable</code></td><td>أي اسم صنف كامل، ويُستورد تلقائيًا</td></tr>
+                        <tr><td><code>?string</code></td><td>علامة <code>?</code> في البداية تجعل الخاصية قابلة لأن تكون <code>null</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>حالات الرفض: نوع مفقود، أو نوع غير معروف، أو اسم غير صالح أو مكرر، أو فاصلة زائدة، أو وحدة غير موجودة. إذا لم ينتهِ اسم الصنف بـ <code>Data</code>، يقترح الأمر اسمًا ينتهي بها.</p>
+
+            <h2 id="make-action"><bdi>make:action</bdi></h2>
+<pre><code><span class="prompt">$ </span>php artisan make:action Orders CancelOrder --data=OrderData --transaction</code></pre>
+            <section class="index-card" aria-labelledby="card-make-action">
+                <h3 class="index-card__title" id="card-make-action">make:action Orders CancelOrder --data=OrderData --transaction</h3>
+                <ul class="outcomes">
+                    <li><span class="stamp stamp--ok">أُنشئ</span> <code>app/Modules/Orders/Actions/CancelOrder.php</code> مع <code>handle(OrderData $data): void</code>، وجسمها داخل <code>DB::transaction</code>.</li>
+                    <li><span class="stamp">مرفوض</span> إذا لم يكن <code>OrderData</code> موجودًا في <code>app/Modules/Orders/Data/</code>. أصناف البيانات يجب أن تأتي من الوحدة نفسها.</li>
+                    <li><span class="stamp stamp--note">ملاحظة</span> الاسم الذي ينتهي بـ <code>Action</code> يحصل على تلميح: اسم المجلد يقول ذلك أصلًا (<code>CancelOrder</code> وليس <code>CancelOrderAction</code>).</li>
+                </ul>
+                <p class="see-also">انظر أيضًا: <a href="reference.html#make-action">خيارات <code>make:action</code></a> · <a href="reference.html#make-dto">خيارات <code>make:dto</code></a></p>
+            </section>
+
+            <h2 id="naming">التسمية</h2>
+            <p>استخدم كلمات إنجليزية قصيرة وشائعة. يجب أن يكون الكود سهل القراءة للمطورين الذين ليست الإنجليزية لغتهم الأولى.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">النوع</th><th scope="col">جيد</th><th scope="col">تجنَّب</th></tr></thead>
+                    <tbody>
+                        <tr><td>إجراء (<bdi>Action</bdi>)</td><td><code>CreateOrder</code>، <code>CancelOrder</code></td><td><code>ExecuteOrderCreationWorkflow</code></td></tr>
+                        <tr><td>بيانات (<bdi>Data</bdi>)</td><td><code>OrderData</code></td><td><code>OrderPayloadTransferObject</code></td></tr>
+                        <tr><td>استعلام (<bdi>Query</bdi>)</td><td><code>ListOrders</code></td><td><code>OrderPersistenceOrchestrationManager</code></td></tr>
+                        <tr><td>دالة (<bdi>Method</bdi>)</td><td><code>handle()</code>، <code>cancel()</code>، <code>find()</code></td><td><code>performOrderMutation()</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <ul>
+                <li>فضّل كلمة أو كلمتين. لا اختصارات غامضة.</li>
+                <li>المفرد لسجل واحد (<code>Order</code>)، والجمع للمجموعات (<code>ListOrders</code>).</li>
+                <li>لا تكرر اسم المجلد في اسم الصنف بدون سبب.</li>
+            </ul>
+
+            <h2 id="stubs">تخصيص القوالب</h2>
+            <p>الكود المولّد يأتي من قوالب (<bdi>stubs</bdi>). لتغييره، انشرها:</p>
+<pre><code><span class="prompt">$ </span>php artisan vendor:publish --tag=blueprint-stubs</code></pre>
+            <p>تُنسخ إلى <code>stubs/blueprint/</code> وتُستخدم تلقائيًا. لحفظها في مكان آخر، اضبط <code>blueprint.stub_path</code>. يُبحث عن القالب في <code>stub_path</code>، ثم في <code>stubs/blueprint/</code>، ثم في الحزمة.</p>
+            <div class="note">
+                <p><strong>القوالب المعطوبة تُرفض.</strong> القالب الذي يترك <code>{{ placeholder }}</code> دون تعبئة، أو لم يعد يعرّف الصنف المتوقع، أو يحذف <code>-&gt;names('api.{{ uri }}')</code> من <code>route.stub</code>، أو قد يُسقط بوابة ميزة مطلوبة، يوقف الأمر قبل كتابة أي شيء.</p>
+            </div>
+
+            <nav class="next" aria-label="البطاقة التالية">
+                <a href="profiles.html">→ الأنماط</a>
+                <a href="crud.html">CRUD ←</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · حقوق النشر 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">الإصدارات</a></p>
+    </footer>
+</body>
+</html>

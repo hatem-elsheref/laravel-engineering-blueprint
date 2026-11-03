@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Profiles · Laravel Engineering Blueprint</title>
+    <meta name="description" content="The four project profiles of best/laravel-engineering-blueprint (basic, modular, saas, tenant-saas): what each one installs, how to choose, and how to move between them.">
+    <link rel="stylesheet" href="assets/blueprint.css">
+    <link rel="alternate" hreflang="ar" href="ar/profiles.html">
+</head>
+<body>
+    <a class="skip" href="#content">Skip to content</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html">Laravel Engineering Blueprint <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="Site">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="ar/profiles.html" lang="ar" hreflang="ar">العربية</a>
+            </nav>
+            <ul class="tabs" aria-label="Guide">
+                <li><a href="index.html">Start</a></li>
+                <li><a href="profiles.html" aria-current="page">Profiles</a></li>
+                <li><a href="generators.html">Generators</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html">Tenancy</a></li>
+                <li><a href="features.html">Features</a></li>
+                <li><a href="languages.html">Languages</a></li>
+                <li><a href="upgrading.html">Upgrading</a></li>
+                <li><a href="reference.html">Reference</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>Profiles</h1>
+            <p class="lede">A profile decides what the package sets up in your app. There are four, each one adding to the one before: <code>basic</code>, <code>modular</code>, <code>saas</code> and <code>tenant-saas</code>.</p>
+
+            <ul class="contents" aria-label="On this card">
+                <li><a href="#compare">Compare</a></li>
+                <li><a href="#install">Install a profile</a></li>
+                <li><a href="#what-it-writes">What install writes</a></li>
+                <li><a href="#choose">How to choose</a></li>
+                <li><a href="#move-up">Moving up</a></li>
+                <li><a href="#move-down">Moving down</a></li>
+            </ul>
+
+            <h2 id="compare">Compare</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Profile</th><th scope="col">Modules</th><th scope="col">Features and settings</th><th scope="col">Tenancy</th></tr></thead>
+                    <tbody>
+                        <tr><th scope="row"><code>basic</code></th><td>No</td><td>No</td><td>No</td></tr>
+                        <tr><th scope="row"><code>modular</code></th><td>Yes, in <code>app/Modules/</code></td><td>No</td><td>No</td></tr>
+                        <tr><th scope="row"><code>saas</code></th><td>Yes</td><td>Yes, one set for the whole app, in the app database</td><td>No</td></tr>
+                        <tr><th scope="row"><code>tenant-saas</code></th><td>Yes</td><td>Yes, one set per tenant, in each tenant database</td><td>stancl/tenancy ^3.10, one database per tenant</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <ul>
+                <li><strong>basic</strong>: a standard Laravel app that follows the package conventions. The module generators (<code>make:module</code>, <code>make:dto</code>, <code>make:action</code>, <code>make:crud</code>) refuse to run.</li>
+                <li><strong>modular</strong>: business code lives in modules under <code>app/Modules/</code>. This is the default profile.</li>
+                <li><strong>saas</strong>: <code>modular</code> plus <a href="features.html">features and settings</a> stored in the app database.</li>
+                <li><strong>tenant-saas</strong>: <code>saas</code> plus <a href="tenancy.html">multi-tenancy</a>. Features and settings live in each tenant's database.</li>
+            </ul>
+
+            <h2 id="install">Install a profile</h2>
+<pre><code><span class="prompt">$ </span>composer require best/laravel-engineering-blueprint
+<span class="prompt">$ </span>php artisan engineering:install --profile=saas</code></pre>
+            <p>Without <code>--profile</code> the command asks, offering the profile already recorded or <code>blueprint.default_profile</code> (<code>modular</code>). In a non-interactive shell it uses that default.</p>
+
+            <section class="index-card" aria-labelledby="card-install">
+                <h3 class="index-card__title" id="card-install">engineering:install --profile=saas</h3>
+                <p>Checks PHP and Laravel versions first, then records the profile and sets up what the profile needs. Safe to re-run: finished steps print <code>already set up</code>.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp stamp--ok">Generated</span> <code>config/blueprint.php</code> with <code>'profile' =&gt; 'saas'</code> (created, or the profile line updated).</li>
+                    <li><span class="stamp stamp--ok">Generated</span> <code>app/Shared/Features/Features.php</code>, <code>app/Shared/Settings/Settings.php</code> and the <code>features</code> and <code>settings</code> migrations (saas and tenant-saas only).</li>
+                    <li><span class="stamp">Refused</span> an unknown profile, an incompatible environment, or a move to fewer capabilities without <code>--allow-downgrade</code>.</li>
+                </ul>
+                <p class="see-also">See also: <a href="reference.html#engineering-install">engineering:install options</a> · <a href="reference.html#engineering-about">engineering:about</a></p>
+            </section>
+
+            <h2 id="what-it-writes">What install writes</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Profile</th><th scope="col">Files and changes</th></tr></thead>
+                    <tbody>
+                        <tr><td>Every profile</td><td><code>config/blueprint.php</code> with the profile recorded. A cached config is cleared.</td></tr>
+                        <tr><td><code>saas</code>, <code>tenant-saas</code></td><td>Feature and setting definition classes in <code>app/Shared/</code>; migrations for the <code>features</code> and <code>settings</code> tables (in <code>database/migrations/</code> for saas, <code>database/migrations/tenant/</code> for tenant-saas).</td></tr>
+                        <tr><td><code>tenant-saas</code></td><td>Runs <code>tenancy:install</code> (once), an empty tenant route group in <code>routes/tenant.php</code>, <code>app/Models/Tenant.php</code>, <code>tenant_model</code> and <code>central_domains</code> in <code>config/tenancy.php</code>, a copy of the users migration in <code>database/migrations/tenant/</code>, and registers <code>App\Providers\TenancyServiceProvider</code>. See <a href="tenancy.html">Tenancy</a>.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>The command ends with the next step for the profile, for example <code>php artisan migrate &amp;&amp; php artisan features:sync</code> for saas. Check the recorded profile and environment at any time:</p>
+<pre><code><span class="prompt">$ </span>php artisan engineering:about</code></pre>
+
+            <h2 id="choose">How to choose</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">If your app</th><th scope="col">Use</th></tr></thead>
+                    <tbody>
+                        <tr><td>Is small, or you only want the conventions</td><td><code>basic</code></td></tr>
+                        <tr><td>Has several business areas (orders, products, inventory)</td><td><code>modular</code></td></tr>
+                        <tr><td>Needs capabilities switched on and off, or typed settings, for one customer base</td><td><code>saas</code></td></tr>
+                        <tr><td>Serves many customers, each with its own subdomain and database</td><td><code>tenant-saas</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>When unsure, start with <code>modular</code>. Moving up later keeps your modules and generated code.</p>
+
+            <h2 id="move-up">Moving up</h2>
+            <p>Run the install command again with the bigger profile. Existing modules and generated code are kept.</p>
+<pre><code><span class="prompt">$ </span>php artisan engineering:install --profile=saas
+<span class="prompt">$ </span>php artisan migrate
+<span class="prompt">$ </span>php artisan features:sync</code></pre>
+            <p>For <code>tenant-saas</code>, install stancl/tenancy first:</p>
+<pre><code><span class="prompt">$ </span>composer require stancl/tenancy:^3.10
+<span class="prompt">$ </span>php artisan engineering:install --profile=tenant-saas
+<span class="prompt">$ </span>php artisan migrate
+<span class="prompt">$ </span>php artisan tenant:create acme</code></pre>
+            <div class="note">
+                <p><strong>Modules made before tenant-saas.</strong> Their routes use neither the <code>tenant</code> nor the <code>central</code> middleware group. The install command lists them, and <code>make:crud</code> refuses them until you add <code>'tenant'</code> (data per tenant) or <code>'central'</code> (platform) to the <code>Route::middleware(...)</code> calls in their <code>Provider.php</code>.</p>
+            </div>
+
+            <h2 id="move-down">Moving down</h2>
+            <p>A profile with fewer capabilities (for example <code>saas</code> to <code>modular</code>) drops features, settings or tenancy. In an interactive shell the command asks you to confirm; otherwise it refuses unless you pass <code>--allow-downgrade</code>:</p>
+<pre><code><span class="prompt">$ </span>php artisan engineering:install --profile=modular --allow-downgrade</code></pre>
+            <p>It warns about modules the change breaks: modules using the <code>tenant</code> or <code>central</code> route groups, and modules whose routes use <code>feature:</code> middleware. It does not delete files.</p>
+            <p><code>--force</code> rewrites <code>config/blueprint.php</code> from the package copy and saves the old file as <code>config/blueprint.php.bak</code>. It also skips the downgrade check.</p>
+
+            <nav class="next" aria-label="Next card">
+                <a href="index.html">← Start</a>
+                <a href="generators.html">Generators →</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · Copyright 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">Releases</a></p>
+    </footer>
+</body>
+</html>

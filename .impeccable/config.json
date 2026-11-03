@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "site/**/*.html"
+        ],
+        "createdAt": "2026-11-03T19:33:07.748Z",
+        "reason": "only flagged pair is brass #d9bd85 on dark oak (6.4-8.6:1 measured); detector reads the SVG grain background-image as white"
+      }
+    ]
+  }
+}

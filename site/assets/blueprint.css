@@ -1,0 +1,320 @@
+/*
+ * Laravel Engineering Blueprint — docs.
+ * A card catalog drawer: oak drawer front, stepped guide tabs, manila cards with one red header rule.
+ * System fonts only. Logical properties everywhere so the Arabic (rtl) pages mirror correctly.
+ */
+
+:root {
+    --oak-deep: #2e2118;
+    --oak: #3d2c1f;
+    --oak-grain: #47352a;
+    --oak-edge: #1f160f;
+    --brass: #b79457;
+    --brass-light: #d9bd85;
+    --brass-ink: #3a2a10;
+
+    --card: #f4ead2;
+    --card-tab: #ead9b3;
+    --card-edge: #c9b48a;
+    --rule-blue: #b7c7d8;
+    --rule-red: #b03a2e;
+    --ink: #221a12;
+    --ink-soft: #57483a;
+    --stamp: #a3271c;
+    --stamp-green: #2f6b3f;
+    --link: #1f4f7a;
+    --code-bg: #ece0c3;
+
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --arabic: "Geeza Pro", "Noto Naskh Arabic", "Segoe UI", Tahoma, "Arabic Typesetting", sans-serif;
+
+    --measure: 72ch;
+    --sheet: 60rem;
+    --radius: 3px;
+    --hair: 1px;
+    color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; scroll-padding-block-start: 1.5rem; }
+
+body {
+    margin: 0;
+    min-block-size: 100vh;
+    background-color: var(--oak-deep);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.09' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.06 0 0 0 0 0.03 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"), linear-gradient(180deg, var(--oak) 0%, var(--oak-deep) 100%);
+    color: var(--ink);
+    font: 400 1.0625rem/1.65 var(--sans);
+}
+
+:lang(ar) body, body:lang(ar) { font-family: var(--arabic); line-height: 1.85; }
+
+::selection { background: #e8c27a; color: var(--ink); }
+
+a { color: var(--link); text-decoration-thickness: var(--hair); text-underline-offset: 0.2em; }
+a:hover { color: var(--rule-red); }
+:focus-visible { outline: 2px solid var(--rule-red); outline-offset: 2px; border-radius: 2px; }
+
+.skip {
+    position: absolute; inset-inline-start: 1rem; inset-block-start: -3rem;
+    background: var(--card); color: var(--ink); padding: 0.5rem 0.75rem; border-radius: var(--radius); z-index: 10;
+}
+.skip:focus { inset-block-start: 1rem; }
+
+/* ── Drawer front: the site header ─────────────────────────────────────── */
+
+.drawer {
+    background-color: var(--oak);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.09' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.06 0 0 0 0 0.03 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"), linear-gradient(180deg, var(--oak-grain), var(--oak));
+    border-block-end: var(--hair) solid var(--oak-edge);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+}
+
+.drawer__inner {
+    max-inline-size: calc(var(--sheet) + 2.5rem); margin-inline: auto;
+    padding: 1.25rem 1.25rem 0;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.5rem;
+}
+
+/* the brass label plate, with its two screws */
+.plate {
+    position: relative;
+    display: inline-flex; align-items: baseline; gap: 0.6rem;
+    padding: 0.45rem 1.5rem;
+    background: linear-gradient(180deg, var(--brass-light), var(--brass));
+    border: var(--hair) solid #8a6c34;
+    border-radius: 2px;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 2px 4px rgba(0, 0, 0, 0.45);
+    color: var(--brass-ink);
+    text-decoration: none;
+    font: 600 1.05rem/1.3 var(--serif);
+    letter-spacing: 0.02em;
+}
+.plate::before, .plate::after {
+    content: ""; position: absolute; inset-block-start: 50%;
+    inline-size: 5px; block-size: 5px; margin-block-start: -2.5px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #f2dcae, #7a5c26);
+}
+.plate::before { inset-inline-start: 0.5rem; }
+.plate::after { inset-inline-end: 0.5rem; }
+.plate:hover { color: var(--brass-ink); }
+.plate__version { font: 500 0.8rem/1 var(--mono); opacity: 0.8; }
+
+.drawer__meta {
+    margin-inline-start: auto;
+    display: flex; gap: 1.25rem; align-items: center;
+    font-size: 0.9rem;
+}
+.drawer__meta a { color: var(--brass-light); text-decoration: none; }
+.drawer__meta a:hover { color: #fff3d6; text-decoration: underline; }
+
+/* ── Guide tabs: the section navigation ────────────────────────────────── */
+
+.tabs {
+    flex-basis: 100%;
+    display: flex; gap: 0.35rem;
+    margin: 0.5rem 0 -1px; padding: 0; list-style: none;
+    position: relative; z-index: 1;
+    overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--brass) transparent;
+}
+.tabs li { flex: none; }
+.tabs a {
+    display: block;
+    padding: 0.5rem 0.95rem 0.45rem;
+    background: var(--card-tab);
+    border: var(--hair) solid var(--card-edge); border-block-end: 0;
+    border-radius: var(--radius) var(--radius) 0 0;
+    color: var(--ink-soft);
+    font: 600 0.88rem/1.2 var(--serif);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 160ms, color 160ms;
+}
+:lang(ar) .tabs a { font-family: var(--arabic); font-weight: 700; }
+.tabs a:hover { background: #f0e2c0; color: var(--ink); }
+/* the guide card you are reading stands taller and joins the card below */
+.tabs a[aria-current="page"] {
+    margin-block-start: -0.3rem;
+    padding-block: 0.65rem 0.6rem;
+    background: var(--card); color: var(--ink);
+    border-color: var(--card-edge);
+}
+
+/* ── The card ──────────────────────────────────────────────────────────── */
+
+main { padding: 0 1.25rem 4rem; }
+.drawer { position: relative; }
+
+.card {
+    position: relative;
+    max-inline-size: var(--sheet);
+    margin: 0 auto;
+    padding: 2.25rem clamp(1.25rem, 4vw, 2.75rem) 2.75rem;
+    background: var(--card);
+    border: var(--hair) solid var(--card-edge);
+    border-radius: 0 0 var(--radius) var(--radius);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+    animation: pull 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* the one red header rule of a catalog card */
+.card::before {
+    content: ""; position: absolute; inset-inline: 0; inset-block-start: 1.1rem;
+    border-block-start: 2px solid var(--rule-red);
+}
+
+@keyframes pull { from { transform: translateY(14px); filter: blur(1.5px); } to { transform: none; filter: none; } }
+@media (prefers-reduced-motion: reduce) { .card { animation: none; } .tabs a { transition: none; } }
+.tabs { align-items: flex-end; }
+
+.card > :first-child { margin-block-start: 0.75rem; }
+/* prose keeps its reading measure; code, tables and index cards use the whole card */
+.card :is(p, ul, ol, dl, h1, h2, h3) { max-inline-size: var(--measure); }
+.card h2 { max-inline-size: none; }
+
+h1, h2, h3 { font-family: var(--serif); color: var(--ink); line-height: 1.2; text-wrap: balance; }
+:lang(ar) :is(h1, h2, h3) { font-family: var(--arabic); }
+h1 { font-size: clamp(1.9rem, 1.4rem + 2vw, 2.6rem); font-weight: 700; margin: 0.75rem 0 0.75rem; letter-spacing: -0.01em; }
+h2 { font-size: 1.45rem; margin: 2.75rem 0 0.75rem; padding-block-end: 0.35rem; border-block-end: var(--hair) solid var(--rule-blue); }
+h3 { font-size: 1.12rem; margin: 2rem 0 0.5rem; }
+
+p, ul, ol, table, pre, dl { margin: 0 0 1.1rem; }
+.lede { font-size: 1.15rem; color: var(--ink-soft); max-inline-size: 60ch; }
+ul, ol { padding-inline-start: 1.35rem; }
+li + li { margin-block-start: 0.25rem; }
+strong { font-weight: 650; }
+
+/* contents list at the top of long cards */
+.card .contents { max-inline-size: none; }
+.contents li { margin: 0; }
+.contents {
+    display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem;
+    margin: 0 0 1.75rem; padding: 0.6rem 0 0.7rem;
+    border-block: var(--hair) solid var(--rule-blue);
+    list-style: none; font-size: 0.92rem;
+}
+
+/* ── Code: always left-to-right, also inside Arabic text ──────────────── */
+
+code, kbd, pre { font-family: var(--mono); font-size: 0.9em; }
+code { padding: 0.08em 0.3em; background: var(--code-bg); border-radius: 2px; unicode-bidi: isolate; direction: ltr; }
+pre {
+    direction: ltr; text-align: left;
+    overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--card-edge) transparent;
+    padding: 0.9rem 1.1rem;
+    background: #fbf5e6;
+    border: var(--hair) solid var(--card-edge);
+    border-inline-start: var(--hair) solid var(--rule-red);
+    border-radius: var(--radius);
+    line-height: 1.55;
+    tab-size: 4;
+}
+pre code { padding: 0; background: none; font-size: 0.88rem; }
+.prompt { color: var(--ink-soft); user-select: none; }
+
+/* ── Index cards: one command each ─────────────────────────────────────── */
+
+.index-card {
+    position: relative;
+    margin: 1.75rem 0;
+    padding: 1.15rem 1.25rem 2rem;
+    background: #fbf5e6;
+    border: var(--hair) solid var(--card-edge);
+    border-radius: var(--radius);
+    box-shadow: 0 3px 8px rgba(60, 40, 20, 0.12);
+}
+/* the rod hole */
+.index-card::after {
+    content: ""; position: absolute; inset-block-end: 0.55rem; inset-inline-start: 50%;
+    inline-size: 0.7rem; block-size: 0.7rem; margin-inline-start: -0.35rem; border-radius: 50%;
+    background: var(--oak); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.index-card__title {
+    margin: 0 0 0.6rem; padding-block-end: 0.4rem;
+    border-block-end: 2px solid var(--rule-red);
+    font: 600 1.02rem/1.35 var(--mono); direction: ltr; text-align: start; unicode-bidi: isolate;
+    overflow-wrap: anywhere;
+}
+:lang(ar) .index-card__title { text-align: right; font-family: var(--mono); }
+:lang(ar) .index-card__title [dir="rtl"] { font-family: var(--arabic); }
+.index-card > :last-child { margin-block-end: 0; }
+.see-also { margin-block-start: 1rem; font-size: 0.9rem; color: var(--ink-soft); font-style: italic; }
+:lang(ar) .see-also { font-style: normal; }
+
+/* ── Stamps: outcomes as printed marks, never colour alone ─────────────── */
+
+.stamp {
+    display: inline-block;
+    margin-inline-end: 0.4rem;
+    padding: 0.05rem 0.45rem;
+    border: 2px double var(--stamp);
+    border-radius: 2px;
+    color: var(--stamp);
+    font: 700 0.72rem/1.4 var(--mono);
+    letter-spacing: 0.12em; text-transform: uppercase;
+    transform: rotate(-2deg);
+    vertical-align: 0.15em;
+}
+:lang(ar) .stamp { font-family: var(--arabic); letter-spacing: 0; text-transform: none; font-size: 0.8rem; }
+.stamp--ok { border-color: var(--stamp-green); color: var(--stamp-green); transform: rotate(1.5deg); }
+.stamp--note { border-color: var(--ink-soft); color: var(--ink-soft); }
+
+.outcomes { list-style: none; padding: 0; }
+.outcomes li { padding-block: 0.15rem; }
+
+/* ── Tables: typed card ruling ─────────────────────────────────────────── */
+
+.table-wrap { overflow-x: auto; margin-block-end: 1.25rem; }
+table { inline-size: 100%; border-collapse: collapse; font-size: 0.94rem; font-variant-numeric: tabular-nums; }
+th, td { padding: 0.5rem 0.75rem 0.5rem 0; text-align: start; vertical-align: top; border-block-end: var(--hair) solid var(--rule-blue); }
+:lang(ar) :is(th, td) { padding: 0.5rem 0 0.5rem 0.75rem; }
+th { font: 600 0.82rem/1.3 var(--serif); color: var(--ink-soft); border-block-end: 2px solid var(--rule-red); }
+:lang(ar) th { font-family: var(--arabic); font-size: 0.9rem; }
+td code { white-space: nowrap; }
+
+/* ── Notes ─────────────────────────────────────────────────────────────── */
+
+.note {
+    margin: 1.5rem 0; padding: 0.8rem 1rem;
+    border: var(--hair) dashed var(--card-edge);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.35);
+}
+.note > :last-child { margin-block-end: 0; }
+
+/* ── Footer and next card ──────────────────────────────────────────────── */
+
+.next {
+    display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+    margin-block-start: 3rem; padding-block-start: 1rem;
+    border-block-start: var(--hair) solid var(--rule-blue);
+    font: 600 0.95rem/1.4 var(--serif);
+}
+:lang(ar) .next { font-family: var(--arabic); }
+
+.site-footer {
+    max-inline-size: 72rem; margin: 0 auto; padding: 0 1.25rem 2.5rem;
+    color: var(--brass-light); font-size: 0.85rem; text-align: center;
+}
+.site-footer a { color: var(--brass-light); }
+
+@media (max-width: 40rem) {
+    body { font-size: 1rem; }
+    .drawer__meta { margin-inline-start: 0; }
+    .card { padding-block-start: 1.75rem; }
+    h2 { margin-block-start: 2.25rem; }
+}
+
+@media print {
+    body { background: none; }
+    .drawer, .site-footer, .next { display: none; }
+    .card { box-shadow: none; border: 0; animation: none; }
+}
+
+/* short inline code tokens (tenant-saas, api.orders.*) never break at their hyphens */
+:is(p, li, td) > code { white-space: nowrap; }
+/* Refusal and output messages are sentences: let them wrap. */
+li > .stamp ~ code, .msg { white-space: normal; overflow-wrap: break-word; }

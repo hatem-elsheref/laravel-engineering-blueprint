@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Reference · Laravel Engineering Blueprint</title>
+    <meta name="description" content="Every Artisan command, config key, route name, middleware group and publish tag of best/laravel-engineering-blueprint 1.0.0.">
+    <link rel="stylesheet" href="assets/blueprint.css">
+    <link rel="alternate" hreflang="ar" href="ar/reference.html">
+</head>
+<body>
+    <a class="skip" href="#content">Skip to content</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html">Laravel Engineering Blueprint <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="Site">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="ar/reference.html" lang="ar" hreflang="ar">العربية</a>
+            </nav>
+            <ul class="tabs" aria-label="Guide">
+                <li><a href="index.html">Start</a></li>
+                <li><a href="profiles.html">Profiles</a></li>
+                <li><a href="generators.html">Generators</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html">Tenancy</a></li>
+                <li><a href="features.html">Features</a></li>
+                <li><a href="languages.html">Languages</a></li>
+                <li><a href="upgrading.html">Upgrading</a></li>
+                <li><a href="reference.html" aria-current="page">Reference</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>Reference</h1>
+            <p class="lede">Commands, config keys, routes, middleware and publish tags, as defined in the 1.0.0 source.</p>
+
+            <ul class="contents" aria-label="On this card">
+                <li><a href="#commands">Commands</a></li>
+                <li><a href="#config">Config keys</a></li>
+                <li><a href="#routes">Routes and middleware</a></li>
+                <li><a href="#publishing">Publishing</a></li>
+            </ul>
+
+            <h2 id="commands">Commands</h2>
+            <p>The package registers 13 Artisan commands. Every refusal prints one error line and exits with status 1; generators write nothing when they refuse.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Command</th><th scope="col">Description</th></tr></thead>
+                    <tbody>
+                        <tr><td><a href="#engineering-about"><code>engineering:about</code></a></td><td>Show Laravel Engineering Blueprint version and environment compatibility</td></tr>
+                        <tr><td><a href="#engineering-install"><code>engineering:install</code></a></td><td>Set up this app with a Laravel Engineering Blueprint project profile</td></tr>
+                        <tr><td><a href="#make-module"><code>make:module</code></a></td><td>Create a business module in app/Modules and register its provider</td></tr>
+                        <tr><td><a href="#make-dto"><code>make:dto</code></a></td><td>Create a Data class (typed, immutable) in a module</td></tr>
+                        <tr><td><a href="#make-action"><code>make:action</code></a></td><td>Create an Action (one business operation) in a module</td></tr>
+                        <tr><td><a href="#make-crud"><code>make:crud</code></a></td><td>Create a CRUD for an entity in a module: JSON API (--api), Blade pages (--web) or both</td></tr>
+                        <tr><td><a href="#tenant-create"><code>tenant:create</code></a></td><td>Create a tenant: records, domain, database, migrations and seed data (safe to re-run)</td></tr>
+                        <tr><td><a href="#feature-list"><code>feature:list</code></a></td><td>List features and their state (platform admin)</td></tr>
+                        <tr><td><a href="#feature-enable"><code>feature:enable</code></a></td><td>Enable a feature (platform admin)</td></tr>
+                        <tr><td><a href="#feature-disable"><code>feature:disable</code></a></td><td>Disable a feature (platform admin)</td></tr>
+                        <tr><td><a href="#features-sync"><code>features:sync</code></a></td><td>Add newly defined features (default state) without changing existing ones</td></tr>
+                        <tr><td><a href="#setting-list"><code>setting:list</code></a></td><td>List settings and their values (platform admin)</td></tr>
+                        <tr><td><a href="#setting-set"><code>setting:set</code></a></td><td>Set any setting (platform admin)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <section class="index-card" aria-labelledby="engineering-about">
+                <h3 class="index-card__title" id="engineering-about">engineering:about</h3>
+<pre><code><span class="prompt">$ </span>php artisan engineering:about</code></pre>
+                <p>No arguments or options. Prints the package version, the recorded profile (or <code>not installed (run php artisan engineering:install)</code>) and a PHP and Laravel check against <code>blueprint.support</code>.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">Refused</span> Exit 1 with <code>Environment is not compatible: upgrade the items marked ✗.</code></li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="engineering-install">
+                <h3 class="index-card__title" id="engineering-install">engineering:install</h3>
+<pre><code><span class="prompt">$ </span>php artisan engineering:install [--profile=PROFILE] [--force] [--allow-downgrade]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>--profile=</code></td><td><code>basic</code>, <code>modular</code>, <code>saas</code> or <code>tenant-saas</code></td><td>Asked interactively. Non-interactive: the recorded profile, else <code>blueprint.default_profile</code>, else <code>modular</code></td></tr>
+                            <tr><td><code>--force</code></td><td>Overwrite the published config file (old one kept as <code>config/blueprint.php.bak</code>); also allows a downgrade</td><td>off</td></tr>
+                            <tr><td><code>--allow-downgrade</code></td><td>Allow switching to a profile with fewer capabilities</td><td>off</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>Records the profile in <code>config/blueprint.php</code> (publishes it when missing), clears a cached config, and in <code>saas</code>/<code>tenant-saas</code> generates the feature and setting definitions and migrations; in <code>tenant-saas</code> it also sets up stancl/tenancy.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">Refused</span> <code>Install aborted: environment is not compatible.</code></li>
+                    <li><span class="stamp">Refused</span> <code>Unknown profile "&lt;value&gt;". Choose one of: basic, modular, saas, tenant-saas.</code></li>
+                    <li><span class="stamp">Refused</span> Non-interactive downgrade: <code>Refusing to drop &lt;capabilities&gt;. Re-run with --allow-downgrade.</code> Interactive: asks <code>This removes &lt;capabilities&gt; from the project. Continue?</code> (default no).</li>
+                    <li><span class="stamp">Refused</span> <code>Could not record the profile in config/blueprint.php.</code></li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="make-module">
+                <h3 class="index-card__title" id="make-module">make:module</h3>
+<pre><code><span class="prompt">$ </span>php artisan make:module &lt;name&gt; [--api] [--web] [--central]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Argument / option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>name</code></td><td>Module name, e.g. <code>Orders</code></td><td>required</td></tr>
+                            <tr><td><code>--api</code></td><td>Add <code>routes/api.php</code> (loaded with the <code>api</code> group and the <code>/api</code> prefix)</td><td>off</td></tr>
+                            <tr><td><code>--web</code></td><td>Add <code>routes/web.php</code> (loaded with the <code>web</code> group)</td><td>off</td></tr>
+                            <tr><td><code>--central</code></td><td>tenant-saas only: a platform module whose routes answer on central domains</td><td>off (tenant module)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>Writes <code>&lt;module_path&gt;/&lt;Name&gt;/Provider.php</code> and the chosen route files, and registers the provider in <code>bootstrap/providers.php</code>.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">Refused</span> <code>No project profile installed. Run php artisan engineering:install first.</code></li>
+                    <li><span class="stamp">Refused</span> <code>The "basic" profile has no modules. Switch profile with php artisan engineering:install --profile=modular.</code></li>
+                    <li><span class="stamp">Refused</span> <code>module_path must be inside app/ (got "&lt;value&gt;").</code></li>
+                    <li><span class="stamp">Refused</span> <code>--central only applies to the tenant-saas profile.</code></li>
+                    <li><span class="stamp">Refused</span> <code>Invalid module name "&lt;name&gt;". Use letters and numbers, starting with a letter, e.g. Orders.</code></li>
+                    <li><span class="stamp">Refused</span> <code>"&lt;module_path&gt;/&lt;Name&gt;" already exists. Nothing was changed.</code></li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="make-dto">
+                <h3 class="index-card__title" id="make-dto">make:dto</h3>
+<pre><code><span class="prompt">$ </span>php artisan make:dto &lt;module&gt; &lt;name&gt; [--fields=LIST]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Argument / option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>module</code></td><td>Module name, e.g. <code>Orders</code></td><td>required</td></tr>
+                            <tr><td><code>name</code></td><td>Class name, e.g. <code>OrderData</code></td><td>required</td></tr>
+                            <tr><td><code>--fields=</code></td><td>Comma-separated <code>name:type</code> list, e.g. <code>"name:string,quantity:int,note:?string"</code></td><td>none (a commented example property)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>Writes <code>&lt;module_path&gt;/&lt;Module&gt;/Data/&lt;Name&gt;.php</code>.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">Refused</span> <code>Module "&lt;module&gt;" not found in &lt;module_path&gt;. Create it with php artisan make:module &lt;module&gt;.</code></li>
+                    <li><span class="stamp">Refused</span> <code>Invalid class name "&lt;name&gt;". Use letters and numbers, starting with a letter, e.g. OrderData.</code></li>
+                    <li><span class="stamp">Refused</span> <code>"&lt;path&gt;" already exists. Nothing was changed.</code></li>
+                    <li><span class="stamp">Refused</span> <code>Field type &lt;import&gt; has the same short name as the class &lt;name&gt;.</code></li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="make-action">
+                <h3 class="index-card__title" id="make-action">make:action</h3>
+<pre><code><span class="prompt">$ </span>php artisan make:action &lt;module&gt; &lt;name&gt; [--data=CLASS] [--transaction]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Argument / option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>module</code></td><td>Module name, e.g. <code>Orders</code></td><td>required</td></tr>
+                            <tr><td><code>name</code></td><td>Class name, e.g. <code>CreateOrder</code></td><td>required</td></tr>
+                            <tr><td><code>--data=</code></td><td>Data class in this module, e.g. <code>OrderData</code>; becomes the <code>handle()</code> parameter</td><td>none (no parameter)</td></tr>
+                            <tr><td><code>--transaction</code></td><td>Wrap <code>handle()</code> in <code>DB::transaction</code></td><td>off</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>Writes <code>&lt;module_path&gt;/&lt;Module&gt;/Actions/&lt;Name&gt;.php</code>. Same module, name and existing-file refusals as <a href="#make-dto">make:dto</a>, plus:</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">Refused</span> <code>Data classes must be in this module (got "&lt;data&gt;"). Pass a class name from &lt;module_path&gt;/&lt;Module&gt;/Data.</code></li>
+                    <li><span class="stamp">Refused</span> <code>Data class "&lt;data&gt;" not found in &lt;module_path&gt;/&lt;Module&gt;/Data. Create it with php artisan make:dto &lt;Module&gt; &lt;data&gt;.</code></li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="make-crud">
+                <h3 class="index-card__title" id="make-crud">make:crud</h3>
+<pre><code><span class="prompt">$ </span>php artisan make:crud &lt;module&gt; &lt;entity&gt; [--fields=LIST] [--feature=KEY] [--api] [--web]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Argument / option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>module</code></td><td>Module name, e.g. <code>Orders</code></td><td>required</td></tr>
+                            <tr><td><code>entity</code></td><td>Singular entity name, e.g. <code>Order</code></td><td>required</td></tr>
+                            <tr><td><code>--fields=</code></td><td>Comma-separated <code>name:type</code> list, e.g. <code>"name:string,quantity:int,note:?string"</code></td><td>none; when adding a side to an existing CRUD, the existing fields are reused</td></tr>
+                            <tr><td><code>--feature=</code></td><td>Feature key that must be enabled for these routes (saas, tenant-saas); adds <code>feature:&lt;key&gt;</code> middleware</td><td>none (no gate)</td></tr>
+                            <tr><td><code>--api</code></td><td>JSON API</td><td>on when neither <code>--api</code> nor <code>--web</code> is given</td></tr>
+                            <tr><td><code>--web</code></td><td>Blade pages</td><td>off</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>Run again with the other side (<code>--web</code> after <code>--api</code>, or the reverse) to add it; the shared model, data, actions and policy are reused. The first <code>--web</code> run also creates the layout named by <code>blueprint.layout</code>.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">Refused</span> <code>Invalid entity name "&lt;entity&gt;". Use a singular name, e.g. Order.</code></li>
+                    <li><span class="stamp">Refused</span> <code>Entity names must be singular, e.g. &lt;singular&gt;.</code></li>
+                    <li><span class="stamp">Refused</span> <code>--feature needs the saas or tenant-saas profile.</code></li>
+                    <li><span class="stamp">Refused</span> <code>Unknown feature "&lt;key&gt;". Add it to &lt;FeaturesClass&gt; first.</code></li>
+                    <li><span class="stamp">Refused</span> <code>Features are per tenant; central module routes have no tenant. Drop --feature or use a tenant module.</code></li>
+                    <li><span class="stamp">Refused</span> The module has no <code>routes/api.php</code> or <code>routes/web.php</code> for the requested side.</li>
+                    <li><span class="stamp">Refused</span> In tenant-saas, a module whose routes use neither the <code>tenant</code> nor the <code>central</code> group.</li>
+                    <li><span class="stamp">Refused</span> An entity whose singular and plural are the same, with <code>--web</code>.</li>
+                    <li><span class="stamp">Refused</span> <code>--fields doesn't match the existing &lt;Entity&gt; CRUD (&lt;fields&gt;). Leave --fields out to reuse them.</code></li>
+                    <li><span class="stamp">Refused</span> A target file already exists, a route name is already taken, the entity clashes with a class the generated code uses, or a stub produces invalid code.</li>
+                    <li><span class="stamp">Refused</span> Adding a side with a different <code>--feature</code> than the existing side's routes.</li>
+                </ul>
+                <p class="see-also">See also: <a href="#routes">Route names</a> · <a href="crud.html">CRUD: Blade &amp; API</a></p>
+            </section>
+
+            <section class="index-card" aria-labelledby="tenant-create">
+                <h3 class="index-card__title" id="tenant-create">tenant:create</h3>
+<pre><code><span class="prompt">$ </span>php artisan tenant:create &lt;name&gt; [--domain=DOMAIN] [--database=NAME] [--existing-database]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Argument / option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>name</code></td><td>Tenant id, lowercase letters, numbers and dashes</td><td>required</td></tr>
+                            <tr><td><code>--domain=</code></td><td>Full domain; must be a subdomain of the base domain</td><td><code>&lt;name&gt;.&lt;base domain&gt;</code> (base: <code>blueprint.tenant_domain</code>, else the first non-IP central domain, else <code>localhost</code>)</td></tr>
+                            <tr><td><code>--database=</code></td><td>Database name (letters, numbers, underscores)</td><td><code>tenant_&lt;name&gt;</code> with dashes turned into underscores</td></tr>
+                            <tr><td><code>--existing-database</code></td><td>Use a database that already exists for this new tenant</td><td>off</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>Creates the tenant record, domain, database, runs tenant migrations and seeds with <code>blueprint.tenant_seeder</code> when that class exists. Safe to re-run: finished steps are skipped.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">Refused</span> Without the tenant-saas profile and stancl/tenancy, or when <code>App\Providers\TenancyServiceProvider</code> is not registered.</li>
+                    <li><span class="stamp">Refused</span> <code>Run tenant:create from the central app, not inside a tenant.</code></li>
+                    <li><span class="stamp">Refused</span> <code>Invalid tenant name "&lt;name&gt;". Use lowercase letters, numbers and dashes, e.g. acme.</code></li>
+                    <li><span class="stamp">Refused</span> <code>Invalid domain "&lt;domain&gt;": it must be a subdomain of &lt;base&gt;.</code></li>
+                    <li><span class="stamp">Refused</span> <code>Domain "&lt;domain&gt;" already belongs to tenant "&lt;id&gt;".</code></li>
+                    <li><span class="stamp">Refused</span> <code>Database "&lt;db&gt;" is the central database.</code></li>
+                    <li><span class="stamp">Refused</span> <code>Database "&lt;db&gt;" already exists. Pass --existing-database to use it for this tenant.</code></li>
+                </ul>
+            </section>
+
+            <div class="note">
+                <p><strong>Feature and setting commands.</strong> The seven commands below need the <code>saas</code> or <code>tenant-saas</code> profile. In <code>saas</code> they act on the app and <code>--tenant</code> is refused; in <code>tenant-saas</code>, <code>--tenant</code> is required (except for <code>features:sync</code>). Shared refusals:</p>
+                <ul>
+                    <li><code>Features and settings need the saas or tenant-saas profile.</code></li>
+                    <li><code>--tenant only applies to the tenant-saas profile.</code></li>
+                    <li><code>--tenant is required in the tenant-saas profile.</code></li>
+                    <li><code>Tenant "&lt;id&gt;" not found.</code></li>
+                </ul>
+            </div>
+
+            <section class="index-card" aria-labelledby="feature-list">
+                <h3 class="index-card__title" id="feature-list">feature:list</h3>
+<pre><code><span class="prompt">$ </span>php artisan feature:list [--tenant=ID]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>--tenant=</code></td><td>Tenant id (tenant-saas)</td><td>none</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>Table columns: Feature, Enabled, Default. Features without a stored row show as disabled, with a hint to run <code>features:sync</code>.</p>
+            </section>
+
+            <section class="index-card" aria-labelledby="feature-enable">
+                <h3 class="index-card__title" id="feature-enable">feature:enable</h3>
+<pre><code><span class="prompt">$ </span>php artisan feature:enable &lt;key&gt; [--tenant=ID]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Argument / option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>key</code></td><td>Feature key</td><td>required</td></tr>
+                            <tr><td><code>--tenant=</code></td><td>Tenant id (tenant-saas)</td><td>none</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <ul class="outcomes">
+                    <li><span class="stamp">Refused</span> <code>Unknown feature "&lt;key&gt;". Add it to &lt;FeaturesClass&gt; first.</code></li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="feature-disable">
+                <h3 class="index-card__title" id="feature-disable">feature:disable</h3>
+<pre><code><span class="prompt">$ </span>php artisan feature:disable &lt;key&gt; [--tenant=ID]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Argument / option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>key</code></td><td>Feature key</td><td>required</td></tr>
+                            <tr><td><code>--tenant=</code></td><td>Tenant id (tenant-saas)</td><td>none</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <ul class="outcomes">
+                    <li><span class="stamp">Refused</span> <code>Unknown feature "&lt;key&gt;". Add it to &lt;FeaturesClass&gt; first.</code></li>
+                </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="features-sync">
+                <h3 class="index-card__title" id="features-sync">features:sync</h3>
+<pre><code><span class="prompt">$ </span>php artisan features:sync [--tenant=ID ...]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>--tenant=*</code></td><td>Tenant ids (tenant-saas); repeatable</td><td>all tenants when omitted</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>Adds a row in the default state for each defined feature that has none; existing rows are kept. In tenant-saas every requested tenant is checked before any is synced; a tenant that fails is reported and the command exits 1.</p>
+            </section>
+
+            <section class="index-card" aria-labelledby="setting-list">
+                <h3 class="index-card__title" id="setting-list">setting:list</h3>
+<pre><code><span class="prompt">$ </span>php artisan setting:list [--tenant=ID]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>--tenant=</code></td><td>Tenant id (tenant-saas)</td><td>none</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>Table columns: Setting, Value (JSON), Type, Editable by (<code>platform</code> unless the definition says <code>tenant</code>).</p>
+            </section>
+
+            <section class="index-card" aria-labelledby="setting-set">
+                <h3 class="index-card__title" id="setting-set">setting:set</h3>
+<pre><code><span class="prompt">$ </span>php artisan setting:set &lt;key&gt; &lt;value&gt; [--tenant=ID]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Argument / option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>key</code></td><td>Setting key</td><td>required</td></tr>
+                            <tr><td><code>value</code></td><td>JSON value (<code>true</code>, <code>5</code>, <code>["a"]</code>, <code>"text"</code>) or plain text; put <code>--</code> before negative numbers</td><td>required</td></tr>
+                            <tr><td><code>--tenant=</code></td><td>Tenant id (tenant-saas)</td><td>none</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>Sets any setting, whatever its <code>editable_by</code>. Types: <code>string</code>, <code>int</code>, <code>float</code>, <code>bool</code>, <code>array</code>.</p>
+                <ul class="outcomes">
+                    <li><span class="stamp">Refused</span> <code>Unknown setting "&lt;key&gt;". Add it to your Settings definitions first.</code></li>
+                    <li><span class="stamp">Refused</span> <code>Setting "&lt;key&gt;" must be of type &lt;type&gt;.</code></li>
+                </ul>
+            </section>
+
+            <h2 id="config">Config keys</h2>
+            <p>All keys live in <code>config/blueprint.php</code> and are read as <code>config('blueprint.&lt;key&gt;')</code>.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Key</th><th scope="col">Default</th><th scope="col">Meaning</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>profile</code></td><td><code>null</code></td><td>The project profile; written by <code>engineering:install</code></td></tr>
+                        <tr><td><code>module_path</code></td><td><code>'app/Modules'</code></td><td>Where modules live; must be inside <code>app/</code></td></tr>
+                        <tr><td><code>shared_path</code></td><td><code>'app/Shared'</code></td><td>Where the feature and setting definitions are generated; must be inside <code>app/</code></td></tr>
+                        <tr><td><code>stub_path</code></td><td><code>null</code></td><td>Stub override directory, tried before <code>stubs/blueprint</code> and the package stubs</td></tr>
+                        <tr><td><code>default_profile</code></td><td><code>'modular'</code></td><td>Profile offered by <code>engineering:install</code> when none is recorded</td></tr>
+                        <tr><td><code>locales</code></td><td><code>['en']</code></td><td>Languages the app serves; read by <code>SetLocale</code> and the <code>blueprint.locale</code> route</td></tr>
+                        <tr><td><code>rtl_locales</code></td><td><code>['ar', 'fa', 'he', 'ur']</code></td><td>Languages shown right-to-left</td></tr>
+                        <tr><td><code>layout</code></td><td><code>'layouts.blueprint'</code></td><td>Blade layout the generated pages extend; created once by <code>make:crud --web</code></td></tr>
+                        <tr><td><code>features</code></td><td><code>null</code></td><td>Feature definitions class; <code>null</code> means <code>&lt;shared_path&gt;/Features/Features.php</code></td></tr>
+                        <tr><td><code>settings</code></td><td><code>null</code></td><td>Setting definitions class; <code>null</code> means <code>&lt;shared_path&gt;/Settings/Settings.php</code></td></tr>
+                        <tr><td><code>tenant_seeder</code></td><td><code>'Database\\Seeders\\TenantSeeder'</code></td><td>Seeder <code>tenant:create</code> runs for new tenants when the class exists</td></tr>
+                        <tr><td><code>tenant_domain</code></td><td><code>env('BLUEPRINT_TENANT_DOMAIN')</code></td><td>tenant-saas: tenants are <code>&lt;name&gt;.&lt;this&gt;</code>; <code>null</code> means the first central domain</td></tr>
+                        <tr><td><code>support.php</code></td><td><code>'8.3'</code></td><td>Minimum PHP version checked by <code>engineering:about</code> and <code>engineering:install</code></td></tr>
+                        <tr><td><code>support.laravel</code></td><td><code>'12'</code></td><td>Minimum Laravel major version, checked the same way</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 id="routes">Routes and middleware</h2>
+            <p><code>&lt;uri&gt;</code> is the entity plural in kebab-case (<code>Order</code> gives <code>orders</code>, <code>OrderLine</code> gives <code>order-lines</code>).</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Route names</th><th scope="col">Source</th><th scope="col">URL</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>api.&lt;uri&gt;.*</code></td><td><code>make:crud --api</code> (<code>Route::apiResource</code>: index, store, show, update, destroy)</td><td><code>/api/&lt;uri&gt;</code></td></tr>
+                        <tr><td><code>&lt;uri&gt;.*</code></td><td><code>make:crud --web</code> (<code>Route::resource</code>: index, create, store, show, edit, update, destroy)</td><td><code>/&lt;uri&gt;</code></td></tr>
+                        <tr><td><code>central.api.&lt;uri&gt;.*</code>, <code>central.&lt;uri&gt;.*</code></td><td>The same, in a module made with <code>make:module --central</code></td><td>Central domains only</td></tr>
+                        <tr><td><code>blueprint.locale</code></td><td>Package route, <code>web</code> group</td><td><code>GET /locale/{locale}</code>: stores the language in the session and redirects back; 404 unless it is in <code>blueprint.locales</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>Generated resource routes answer 403 to guests and 404 to signed-in users when a record is missing.</p>
+
+            <h3>Module route groups</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Module</th><th scope="col"><code>routes/web.php</code></th><th scope="col"><code>routes/api.php</code></th></tr></thead>
+                    <tbody>
+                        <tr><td>modular, saas</td><td><code>web</code></td><td><code>api</code>, prefix <code>/api</code></td></tr>
+                        <tr><td>tenant-saas (default)</td><td><code>web</code>, <code>tenant</code></td><td><code>api</code>, <code>tenant</code>, prefix <code>/api</code></td></tr>
+                        <tr><td>tenant-saas <code>--central</code></td><td><code>web</code>, <code>central</code>, domain <code>{central_domain}</code>, name prefix <code>central.</code></td><td><code>api</code>, <code>central</code>, prefix <code>/api</code>, domain <code>{central_domain}</code>, name prefix <code>central.</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Middleware</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Name</th><th scope="col">Registered</th><th scope="col">Effect</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>SetLocale</code></td><td>Appended to the <code>web</code> and <code>api</code> groups</td><td>API (<code>api/*</code> or JSON): <code>Accept-Language</code>. Web: the session choice. Then the <code>app.language</code> setting, then <code>app.locale</code>. Only values in <code>blueprint.locales</code> count.</td></tr>
+                        <tr><td><code>feature</code></td><td>Route middleware alias (<code>EnsureFeatureEnabled</code>)</td><td><code>feature:&lt;key&gt;[,&lt;key&gt;...]</code>: 403 <code>This feature is not enabled.</code> unless every listed feature is enabled</td></tr>
+                        <tr><td><code>tenant</code></td><td>Group, tenant-saas only</td><td><code>InitializeTenancyByDomain</code>, <code>PreventAccessFromCentralDomains</code>; unknown tenant domains give 404</td></tr>
+                        <tr><td><code>central</code></td><td>Group, tenant-saas only</td><td><code>CentralDomainsOnly</code>: 404 unless the host is in <code>tenancy.central_domains</code></td></tr>
+                        <tr><td><code>ScopeSessionToDomain</code></td><td>Appended to the <code>web</code> group, tenant-saas only</td><td>A session started on one tenant (or the central app) is refused elsewhere: 403 <code>This session belongs to another site.</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>Also registered: the Blade directive <code>@feature('key') ... @endfeature</code>.</p>
+
+            <h2 id="publishing">Publishing</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Tag</th><th scope="col">Copies</th><th scope="col">To</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>blueprint-config</code></td><td><code>config/blueprint.php</code></td><td><code>config/blueprint.php</code></td></tr>
+                        <tr><td><code>blueprint-stubs</code></td><td>Every <code>stubs/*.stub</code></td><td><code>stubs/blueprint/</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+<pre><code><span class="prompt">$ </span>php artisan vendor:publish --tag=blueprint-config
+<span class="prompt">$ </span>php artisan vendor:publish --tag=blueprint-stubs</code></pre>
+            <p>Stub lookup order: <code>blueprint.stub_path</code>, then <code>stubs/blueprint/</code>, then the package. A stub with an unknown placeholder, or one that no longer produces the expected class or route, is refused with <code>Update or delete it, then re-run.</code></p>
+
+            <nav class="next" aria-label="Next card">
+                <a href="upgrading.html">← Upgrading</a>
+                <span></span>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · Copyright 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">Releases</a></p>
+    </footer>
+</body>
+</html>

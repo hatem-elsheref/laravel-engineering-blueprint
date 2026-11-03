@@ -97,7 +97,7 @@ The central application must be able to distinguish platform routes from tenant 
 
 Custom domains can be supported later without changing the tenant database design.
 
-Base domain: tenants are `<name>.<base>`. Set the base with `BLUEPRINT_TENANT_DOMAIN` (config `blueprint.tenant_domain`); when empty, the first central domain is used. Central domains are listed in `config/tenancy.php` (`central_domains`).
+Base domain: tenants are `<name>.<base>`. Set the base with `BLUEPRINT_TENANT_DOMAIN` (config `blueprint.tenant_domain`); when empty, the first central domain that is not an IP address is used (`localhost` if there is none). A `--domain` given to `tenant:create` must be a subdomain of the base or of a central domain. The default database name is `tenant_<name>` with dashes turned into underscores. Central domains are listed in `config/tenancy.php` (`central_domains`).
 
 Route groups:
 

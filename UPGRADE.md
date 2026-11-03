@@ -17,7 +17,7 @@ Most 0.x apps upgrade without changes. Check these points:
 |---|---|---|
 | API route names | `make:crud` names API routes `api.<uri>.*` (web pages keep `<uri>.*`). Older API routes are named `<uri>.*`. | Nothing for existing routes. Before adding web pages (`make:crud … --web`) for an entity whose API route is unnamed, add `->names('api.<uri>')` to that route (the command tells you if a name is taken). |
 | Published `route.stub` | Must keep `->names('api.{{ uri }}')`. | Re-publish or add it. |
-| `config/blueprint.php` | New keys `layout`, `locales`, `rtl_locales`, `features`/`settings` default `null` (derived from `shared_path`), `tenant_seeder`, `tenant_domain`. | Copy missing keys from the package config, or re-run `php artisan engineering:install` (keeps your profile; `--force` backs the file up first). |
+| `config/blueprint.php` | New keys `layout`, `locales`, `rtl_locales`, `features`/`settings` default `null` (derived from `shared_path`), `tenant_seeder`, `tenant_domain`. | Missing keys fall back to the package defaults at runtime. To get them in your file, copy them from the package config, or re-run `php artisan engineering:install --force` (keeps your profile; the old file is backed up to `config/blueprint.php.bak`). |
 | Array fields | New rules: at most 100 elements, each a string up to 255 characters. | Generated requests from 0.x keep their rules; tighten them by hand if you want the same protection. |
 | tenant-saas sessions | Web sessions are tied to the tenant (or central app) where they started; reused elsewhere they get 403. | Users signed in on one tenant must sign in again on another — intended. |
 | tenant-saas cache | Tenant cache needs a store with tags. | Use `CACHE_STORE=redis` (or memcached) in tenant-saas apps. |

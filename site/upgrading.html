@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Upgrading · Laravel Engineering Blueprint</title>
+    <meta name="description" content="Supported PHP and Laravel versions, upgrade steps, and what changed between 0.x and 1.0 of best/laravel-engineering-blueprint.">
+    <link rel="stylesheet" href="assets/blueprint.css">
+    <link rel="alternate" hreflang="ar" href="ar/upgrading.html">
+</head>
+<body>
+    <a class="skip" href="#content">Skip to content</a>
+
+    <header class="drawer">
+        <div class="drawer__inner">
+            <a class="plate" href="index.html">Laravel Engineering Blueprint <span class="plate__version">1.0.0</span></a>
+            <nav class="drawer__meta" aria-label="Site">
+                <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">GitHub</a>
+                <a href="ar/upgrading.html" lang="ar" hreflang="ar">العربية</a>
+            </nav>
+            <ul class="tabs" aria-label="Guide">
+                <li><a href="index.html">Start</a></li>
+                <li><a href="profiles.html">Profiles</a></li>
+                <li><a href="generators.html">Generators</a></li>
+                <li><a href="crud.html">CRUD</a></li>
+                <li><a href="tenancy.html">Tenancy</a></li>
+                <li><a href="features.html">Features</a></li>
+                <li><a href="languages.html">Languages</a></li>
+                <li><a href="upgrading.html" aria-current="page">Upgrading</a></li>
+                <li><a href="reference.html">Reference</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="content">
+        <article class="card">
+            <h1>Upgrading</h1>
+            <p class="lede">How to move to a new version of <code>best/laravel-engineering-blueprint</code>, and what changed between 0.x and 1.0. Code you already generated is never changed by an upgrade; only new <code>make:*</code> output follows the new rules.</p>
+
+            <ul class="contents" aria-label="On this card">
+                <li><a href="#requirements">Requirements</a></li>
+                <li><a href="#steps">Steps for any version</a></li>
+                <li><a href="#to-1-0">0.x to 1.0</a></li>
+                <li><a href="#versions">Versions</a></li>
+            </ul>
+
+            <h2 id="requirements">Requirements</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Dependency</th><th scope="col">Supported</th></tr></thead>
+                    <tbody>
+                        <tr><td>PHP</td><td>8.3 or later (CI runs 8.3 and 8.4)</td></tr>
+                        <tr><td>Laravel</td><td>12 and 13</td></tr>
+                        <tr><td>stancl/tenancy</td><td>^3.10, only for the <code>tenant-saas</code> profile</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p><code>php artisan engineering:about</code> prints the installed version and checks your environment against these minimums.</p>
+
+            <h2 id="steps">Steps for any version</h2>
+            <ol>
+                <li>Update the package:
+<pre><code><span class="prompt">$ </span>composer update best/laravel-engineering-blueprint</code></pre></li>
+                <li>Read the section for your target version below.</li>
+                <li>If you published stubs to <code>stubs/blueprint/</code>, compare them with the new package stubs. Back up your edits, then overwrite them with:
+<pre><code><span class="prompt">$ </span>php artisan vendor:publish --tag=blueprint-stubs --force</code></pre></li>
+                <li>Clear caches and run your tests:
+<pre><code><span class="prompt">$ </span>php artisan optimize:clear
+<span class="prompt">$ </span>php artisan test</code></pre></li>
+            </ol>
+            <section class="index-card" aria-labelledby="card-stale-stubs">
+                <h3 class="index-card__title" id="card-stale-stubs">Published stubs after an upgrade</h3>
+                <ul class="outcomes">
+                    <li><span class="stamp">Refused</span> A stale stub (unfilled placeholder, missing class, missing <code>-&gt;names('api.{{ uri }}')</code>, dropped feature gate) stops the generator with a message naming the stub. Nothing is written.</li>
+                    <li><span class="stamp stamp--note">Note</span> Fix or delete the stub, then re-run the command.</li>
+                </ul>
+                <p class="see-also">See also: <a href="generators.html#stubs">Customizing stubs</a></p>
+            </section>
+
+            <h2 id="to-1-0">0.x to 1.0</h2>
+            <p>Most 0.x apps upgrade without changes. Check these points:</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Area</th><th scope="col">What changed</th><th scope="col">What to do</th></tr></thead>
+                    <tbody>
+                        <tr><td>API route names</td><td><code>make:crud</code> names API routes <code>api.&lt;uri&gt;.*</code>; web pages use <code>&lt;uri&gt;.*</code>. Older API routes are named <code>&lt;uri&gt;.*</code>.</td><td>Nothing for existing routes. Before adding web pages (<code>make:crud … --web</code>) for an entity whose API route is unnamed, add <code>-&gt;names('api.&lt;uri&gt;')</code> to that route. The command tells you if a name is taken.</td></tr>
+                        <tr><td>Published <code>route.stub</code></td><td>Must keep <code>-&gt;names('api.{{ uri }}')</code>.</td><td>Re-publish it or add the call.</td></tr>
+                        <tr><td><code>config/blueprint.php</code></td><td>New keys <code>layout</code>, <code>locales</code>, <code>rtl_locales</code>, <code>tenant_seeder</code>, <code>tenant_domain</code>. <code>features</code> and <code>settings</code> default to <code>null</code> (derived from <code>shared_path</code>).</td><td>Copy the missing keys from the package config, or run <code>php artisan engineering:install --force</code> (keeps your profile; the old file, with any other edits, is saved as <code>config/blueprint.php.bak</code>). Missing keys fall back to the package defaults at runtime either way.</td></tr>
+                        <tr><td>Array fields</td><td>New rules: at most 100 elements, each a string up to 255 characters.</td><td>Requests generated by 0.x keep their rules. Tighten them by hand if you want the same protection.</td></tr>
+                        <tr><td>tenant-saas sessions</td><td>Web sessions are tied to the tenant (or central app) where they started; elsewhere they get 403.</td><td>Nothing. Users signed in on one tenant sign in again on another.</td></tr>
+                        <tr><td>tenant-saas cache</td><td>Tenant cache needs a store with tags.</td><td>Set <code>CACHE_STORE=redis</code> (or <code>memcached</code>).</td></tr>
+                        <tr><td><code>app.language</code> setting</td><td>The generated definition now defaults to <code>config('app.locale')</code>.</td><td>Optional: change <code>'default' =&gt; 'en'</code> in <code>app/Shared/Settings/Settings.php</code>.</td></tr>
+                        <tr><td>Languages</td><td>Generated pages use <code>__()</code>.</td><td>For more languages, set <code>'locales' =&gt; ['en', 'ar']</code> in <code>config/blueprint.php</code> and translate <code>lang/&lt;locale&gt;.json</code>. See <a href="languages.html">Languages</a>.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 id="versions">Versions</h2>
+            <p>Versions follow <a href="https://semver.org/">Semantic Versioning</a>. Full notes are in the <code>CHANGELOG.md</code> in the <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint">repository</a> and on the <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">releases page</a>.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Version</th><th scope="col">Main changes</th></tr></thead>
+                    <tbody>
+                        <tr><td>1.0.0</td><td>First stable release: profiles, generators, multi-tenancy, features and settings, interface translations, <code>engineering:about</code>, <code>bin/new-app</code>.</td></tr>
+                        <tr><td>0.9.0</td><td><code>bin/new-app</code>; translated Laravel authorization and error-page messages.</td></tr>
+                        <tr><td>0.8.0</td><td>Blade CRUD (<code>make:crud --web</code>), interface translations, security pass (session scoping, tenant database guards, array element validation). API CRUD routes named <code>api.&lt;uri&gt;.*</code>.</td></tr>
+                        <tr><td>0.7.0</td><td>Features and settings.</td></tr>
+                        <tr><td>0.6.0</td><td>Multi-tenancy with stancl/tenancy.</td></tr>
+                        <tr><td>0.5.0</td><td><code>make:crud</code> (JSON API), <code>make:dto</code>, <code>make:action</code>, <code>make:module</code>, <code>engineering:install</code>, profiles, <code>engineering:about</code>.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <nav class="next" aria-label="Next card">
+                <a href="languages.html">← Languages</a>
+                <a href="reference.html">Reference →</a>
+            </nav>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>MIT · Copyright 2026 Hatem Mohamed · <a href="https://github.com/hatem-elsheref/laravel-engineering-blueprint/releases">Releases</a></p>
+    </footer>
+</body>
+</html>

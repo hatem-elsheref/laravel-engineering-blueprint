@@ -5,7 +5,7 @@ A Laravel package, `best/laravel-engineering-blueprint`, that sets up a modular 
 The repo also ships an **AI-agent kit** (`kit/`, `bin/leb-install`) so Codex, Cursor, Antigravity, Claude Code, Gemini and other agents follow the same rules and use the same commands.
 
 - PHP 8.3+, Laravel 12 and 13
-- Version 0.8.0
+- Version 1.0.0
 - Design authority: [docs/PHASE-0.md](./docs/PHASE-0.md) (approved)
 
 ## Install
@@ -33,7 +33,7 @@ Builds a fresh Laravel app with this package installed, Pest set up, your profil
 | `saas` | `modular` + features and settings in the app database |
 | `tenant-saas` | `saas` + stancl/tenancy (`composer require stancl/tenancy:^3.10`), one database per tenant, features and settings in each tenant database |
 
-`engineering:install` is safe to re-run. Moving to a profile with fewer capabilities needs `--allow-downgrade`; it warns about modules the change breaks. `--force` overwrites `config/blueprint.php` (the old file is backed up to `config/blueprint.php.bak`).
+`engineering:install` is safe to re-run. Moving to a profile with fewer capabilities asks for confirmation (non-interactive runs need `--allow-downgrade`, and `--force` also allows it); it warns about modules the change breaks. `--force` overwrites `config/blueprint.php` (the old file is backed up to `config/blueprint.php.bak`).
 
 ## Commands
 
@@ -48,7 +48,7 @@ Builds a fresh Laravel app with this package installed, Pest set up, your profil
 | `tenant:create {name} [--domain=] [--database=] [--existing-database]` | Create a tenant (tenant-saas), safe to re-run |
 | `feature:list`, `feature:enable {key}`, `feature:disable {key}` `[--tenant=]` | Platform admin feature control |
 | `features:sync [--tenant=*]` | Add newly defined features with their defaults; without `--tenant` = all tenants |
-| `setting:list`, `setting:set {key} {value}` `[--tenant=]` | Platform admin settings (value is JSON) |
+| `setting:list`, `setting:set {key} {value}` `[--tenant=]` | Platform admin settings (value read as JSON when it parses, otherwise plain text) |
 
 `--tenant` is required in `tenant-saas` and refused in `saas`.
 
@@ -123,7 +123,7 @@ The generated Blade pages and the package's own messages are translatable (`__()
 'rtl_locales' => ['ar', 'fa', 'he', 'ur'],
 ```
 
-- Request language: API `Accept-Language` → web visitor choice (`/locale/{code}`, route `blueprint.locale`) → `app.language` setting → app default.
+- Request language: the request's own choice first (API: `Accept-Language`; web: the visitor's pick via `/locale/{code}`, route `blueprint.locale`), then the `app.language` setting (saas and tenant-saas), then the app default.
 - The layout sets `<html lang dir>` (right-to-left for Arabic) and shows a language switcher when more than one language is configured.
 - `make:crud --web` adds entity and field names to `lang/<locale>.json` to translate.
 - Laravel's validation messages: `php artisan lang:publish`, then add `lang/ar/validation.php`.

@@ -46,10 +46,7 @@ Example:
 final class Features
 {
     public const ORDERS = 'orders';
-    public const INVENTORY = 'inventory';
-    public const BARCODE = 'barcode';
     public const REPORTS = 'reports';
-    public const AI = 'ai';
 
     /**
      * Every feature key and its default state.
@@ -60,10 +57,7 @@ final class Features
     {
         return [
             self::ORDERS => true,
-            self::INVENTORY => true,
-            self::BARCODE => false,
             self::REPORTS => false,
-            self::AI => false,
         ];
     }
 }
@@ -78,9 +72,9 @@ Use one central feature service.
 Example:
 
 ```php
-Feature::enabled(Features::INVENTORY);
-Feature::disabled(Features::INVENTORY);
-Feature::ensure(Features::INVENTORY); // throws when disabled
+Feature::enabled(Features::REPORTS);
+Feature::disabled(Features::REPORTS);
+Feature::ensure(Features::REPORTS);   // throws when disabled
 Feature::all();                        // key => bool
 ```
 

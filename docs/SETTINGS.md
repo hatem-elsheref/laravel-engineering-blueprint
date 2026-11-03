@@ -35,7 +35,7 @@ final class Settings
     {
         return [
             self::APP_NAME => ['type' => 'string', 'default' => 'My App', 'editable_by' => 'tenant', 'ability' => 'manage-settings'],
-            self::APP_LANGUAGE => ['type' => 'string', 'default' => 'en', 'editable_by' => 'tenant', 'ability' => 'manage-settings'],
+            self::APP_LANGUAGE => ['type' => 'string', 'default' => config('app.locale', 'en'), 'editable_by' => 'tenant', 'ability' => 'manage-settings'],
             self::ORDERS_AUTO_CONFIRM => ['type' => 'bool', 'default' => false, 'editable_by' => 'platform'],
         ];
     }
@@ -72,7 +72,7 @@ Define the ability the generated settings use, for example in `AppServiceProvide
 Gate::define('manage-settings', fn (User $user) => $user->is_owner);
 ```
 
-Platform settings are never set from app code. Platform admins use the console (value is JSON):
+Platform settings are never set from app code. Platform admins use the console (the value is read as JSON when it parses, otherwise as plain text):
 
 ```bash
 php artisan setting:list --tenant=acme
