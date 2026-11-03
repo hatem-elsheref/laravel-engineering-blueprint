@@ -97,6 +97,12 @@ class BlueprintServiceProvider extends ServiceProvider
                     }
                 },
             );
+
+            // spatie's permission cache and in-memory permissions per tenant, with or without stancl's cache bootstrapper.
+            if ($this->app->make(Permissions\PermissionsDetector::class)->spatie()) {
+                Event::listen(TenancyInitialized::class, [Permissions\TenantPermissionCache::class, 'initialized']);
+                Event::listen(TenancyEnded::class, [Permissions\TenantPermissionCache::class, 'ended']);
+            }
         }
 
         if (! $this->app->runningInConsole()) {

@@ -3,6 +3,9 @@
 namespace Best\Blueprint\Tenancy;
 
 use Best\Blueprint\Flags\Definitions;
+use Best\Blueprint\Permissions\PermissionsDetector;
+use Best\Blueprint\Permissions\PermissionSet;
+use Best\Blueprint\Permissions\PermissionSync;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -116,6 +119,26 @@ class TenantSetup
                     }
 
                     return $missing === [] ? 'already' : 'done';
+                });
+            },
+            // Tenant databases only ever receive Permissions; CentralPermissions belongs to the central database.
+            'Sync permissions' => function () use (&$tenant) {
+                $class = Definitions::permissions();
+
+                if (! app(PermissionsDetector::class)->spatie() || ! class_exists($class)) {
+                    return ['skipped', 'run engineering:install --permissions to set up permissions'];
+                }
+
+                $set = PermissionSet::fromClass($class);
+
+                return $tenant->run(function () use ($set) {
+                    if (! Schema::hasTable('permissions')) {
+                        return ['skipped', 'no permissions table in the tenant database'];
+                    }
+
+                    $result = app(PermissionSync::class)->run($set, false);
+
+                    return $result->permissionsAdded + $result->rolesAdded === 0 ? 'already' : 'done';
                 });
             },
             'Create default settings' => function () {
