@@ -19,8 +19,15 @@ abstract class TenancyTestCase extends TestCase
         return [TenancyServiceProvider::class, BlueprintServiceProvider::class];
     }
 
+    protected string $centralDatabase;
+
     protected function defineEnvironment($app): void
     {
+        // Central database in a temp file (not :memory:), so tenant connections can never share it.
+        $this->centralDatabase = sys_get_temp_dir().'/leb-central-'.uniqid().'.sqlite';
+        touch($this->centralDatabase);
+        $app['config']->set('database.connections.testing.database', $this->centralDatabase);
+
         $app['config']->set('blueprint.profile', 'tenant-saas');
         $app['config']->set('tenancy.tenant_model', \App\Models\Tenant::class);
         $app['config']->set('tenancy.central_domains', ['localhost']);
@@ -30,6 +37,16 @@ abstract class TenancyTestCase extends TestCase
             \Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper::class,
             \Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper::class,
         ]);
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // What the app's published App\Providers\TenancyServiceProvider wires up: switch to the tenant's
+        // database when tenancy starts and back when it ends.
+        \Illuminate\Support\Facades\Event::listen(\Stancl\Tenancy\Events\TenancyInitialized::class, \Stancl\Tenancy\Listeners\BootstrapTenancy::class);
+        \Illuminate\Support\Facades\Event::listen(\Stancl\Tenancy\Events\TenancyEnded::class, \Stancl\Tenancy\Listeners\RevertToCentralContext::class);
     }
 
     protected function defineDatabaseMigrations(): void
@@ -49,6 +66,12 @@ abstract class TenancyTestCase extends TestCase
             }
         }
 
+        $central = $this->centralDatabase ?? null;
+
         parent::tearDown();
+
+        if ($central !== null && is_file($central)) {
+            unlink($central);
+        }
     }
 }

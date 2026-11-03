@@ -47,6 +47,7 @@ class BlueprintServiceProvider extends ServiceProvider
             Console\MakeDtoCommand::class,
             Console\MakeActionCommand::class,
             Console\MakeCrudCommand::class,
+            Console\TenantCreateCommand::class,
         ]);
     }
 
