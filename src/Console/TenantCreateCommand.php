@@ -24,7 +24,7 @@ class TenantCreateCommand extends Command
         $model = config('tenancy.tenant_model');
 
         if (! $detector->active() || ! is_string($model) || ! class_exists($model)) {
-            return $this->refuse('tenant:create needs the tenant-saas profile with stancl/tenancy set up. Run php artisan engineering:install --profile=tenant-saas.');
+            return $this->refuse('tenant:create needs the tenant-saas profile with stancl/tenancy set up. Run composer require stancl/tenancy:^3.10, then php artisan engineering:install --profile=tenant-saas.');
         }
 
         if (! Event::hasListeners(TenancyInitialized::class)) {

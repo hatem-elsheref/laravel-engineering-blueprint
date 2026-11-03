@@ -11,7 +11,7 @@ beforeEach(function (): void {
     $this->user = User::factory()->create();
 {{ featureSetup }}});
 
-function {{ variable }}FormInput(array $overrides = []): array
+function {{ formInput }}(array $overrides = []): array
 {
     // Factory values as a browser form would send them.
     return array_map(
@@ -25,10 +25,10 @@ it('denies guests', function (): void {
 
     $this->get({{ url }}('/{{ uri }}'))->assertForbidden();
     $this->get({{ url }}('/{{ uri }}/create'))->assertForbidden();
-    $this->post({{ url }}('/{{ uri }}'), {{ variable }}FormInput())->assertForbidden();
+    $this->post({{ url }}('/{{ uri }}'), {{ formInput }}())->assertForbidden();
     $this->get({{ url }}("/{{ uri }}/{${{ variable }}->id}"))->assertForbidden();
     $this->get({{ url }}("/{{ uri }}/{${{ variable }}->id}/edit"))->assertForbidden();
-    $this->put({{ url }}("/{{ uri }}/{${{ variable }}->id}"), {{ variable }}FormInput())->assertForbidden();
+    $this->put({{ url }}("/{{ uri }}/{${{ variable }}->id}"), {{ formInput }}())->assertForbidden();
     $this->delete({{ url }}("/{{ uri }}/{${{ variable }}->id}"))->assertForbidden();
 });
 
@@ -48,7 +48,7 @@ it('shows the create form', function (): void {
 });
 
 it('creates a {{ variable }}', function (): void {
-    $this->actingAs($this->user)->post({{ url }}('/{{ uri }}'), {{ variable }}FormInput())
+    $this->actingAs($this->user)->post({{ url }}('/{{ uri }}'), {{ formInput }}())
         ->assertSessionHasNoErrors()
         ->assertRedirectContains('/{{ uri }}/');
 
@@ -65,9 +65,13 @@ it('shows and edits a {{ variable }}', function (): void {
 it('updates a {{ variable }}', function (): void {
     ${{ variable }} = {{ entity }}::factory()->create();
 
-    $this->actingAs($this->user)->put({{ url }}("/{{ uri }}/{${{ variable }}->id}"), {{ variable }}FormInput())
+    $this->travel(1)->minutes();
+
+    $this->actingAs($this->user)->put({{ url }}("/{{ uri }}/{${{ variable }}->id}"), {{ formInput }}())
         ->assertSessionHasNoErrors()
         ->assertRedirectContains("/{{ uri }}/{${{ variable }}->id}");
+
+    expect(${{ variable }}->fresh()->updated_at->gt(${{ variable }}->updated_at))->toBeTrue();
 });
 
 it('deletes a {{ variable }}', function (): void {

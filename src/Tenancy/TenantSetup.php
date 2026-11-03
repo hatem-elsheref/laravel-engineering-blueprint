@@ -2,6 +2,7 @@
 
 namespace Best\Blueprint\Tenancy;
 
+use Best\Blueprint\Flags\Definitions;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -96,9 +97,9 @@ class TenantSetup
                 return 'done';
             },
             'Create default features' => function () use (&$tenant) {
-                $class = config('blueprint.features');
+                $class = Definitions::features();
 
-                if (! is_string($class) || ! class_exists($class)) {
+                if (! class_exists($class)) {
                     return ['skipped', 'run engineering:install to set up features'];
                 }
 
@@ -118,13 +119,11 @@ class TenantSetup
                 });
             },
             'Create default settings' => function () {
-                $class = config('blueprint.settings');
-
-                if (! is_string($class) || ! class_exists($class)) {
+                if (! class_exists(Definitions::settings())) {
                     return ['skipped', 'run engineering:install to set up settings'];
                 }
 
-                return ['already', 'defaults come from Settings definitions'];
+                return ['skipped', 'defaults come from the Settings definitions; no rows needed'];
             },
         ];
 

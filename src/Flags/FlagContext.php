@@ -19,7 +19,7 @@ class FlagContext
         $profile = Profile::current();
 
         if ($profile === null || ! $profile->usesFeatures()) {
-            throw new RuntimeException('Features need the saas or tenant-saas profile.');
+            throw new RuntimeException('Features and settings need the saas or tenant-saas profile.');
         }
 
         if (! $profile->usesTenancy()) {

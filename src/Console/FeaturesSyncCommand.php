@@ -5,6 +5,7 @@ namespace Best\Blueprint\Console;
 use Best\Blueprint\Console\Concerns\RunsInFlagContext;
 use Best\Blueprint\Features\FeatureAdmin;
 use Best\Blueprint\Support\Profile;
+use Best\Blueprint\Tenancy\TenancyDetector;
 use Illuminate\Console\Command;
 
 class FeaturesSyncCommand extends Command
@@ -20,7 +21,7 @@ class FeaturesSyncCommand extends Command
         $profile = Profile::current();
 
         if ($profile === null || ! $profile->usesFeatures()) {
-            return $this->refuse('Features need the saas or tenant-saas profile.');
+            return $this->refuse('Features and settings need the saas or tenant-saas profile.');
         }
 
         if (! $profile->usesTenancy()) {
@@ -33,7 +34,17 @@ class FeaturesSyncCommand extends Command
             return self::SUCCESS;
         }
 
+        if (! app(TenancyDetector::class)->stancl()) {
+            return $this->refuse('Tenancy needs stancl/tenancy. Run: composer require stancl/tenancy:^3.10, then php artisan engineering:install --profile=tenant-saas.');
+        }
+
         $ids = $this->option('tenant') ?: tenancy()->query()->pluck('id')->all();
+
+        if ($ids === []) {
+            $this->line('no tenants to sync');
+
+            return self::SUCCESS;
+        }
         $tenants = [];
 
         // Check every requested tenant first, so a typo doesn't leave half the tenants synced.
@@ -53,7 +64,7 @@ class FeaturesSyncCommand extends Command
                 $this->line("added {$added} feature(s) to tenant \"{$id}\"");
             } catch (\Throwable $e) {
                 $failed = true;
-                $this->error("tenant \"{$id}\": {$e->getMessage()}");
+                $this->error("Tenant \"{$id}\": {$e->getMessage()}");
             }
         }
 

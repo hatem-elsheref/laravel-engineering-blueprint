@@ -155,7 +155,7 @@ it('refuses --web without web routes', function () {
     $this->artisan('make:module', ['name' => 'Billing', '--api' => true])->assertExitCode(0);
 
     $this->artisan('make:crud', ['module' => 'Billing', 'entity' => 'Invoice', '--web' => true])
-        ->expectsOutputToContain('Module "Billing" has no routes/web.php. Add it and load it in its Provider (see docs), or create the module with make:module Billing --web.')
+        ->expectsOutputToContain('Module "Billing" has no routes/web.php. Create app/Modules/Billing/routes/web.php and load it in app/Modules/Billing/Provider.php the way make:module --web does, then re-run.')
         ->assertExitCode(1);
 
     expect(is_dir(app_path('Modules/Billing/Models')))->toBeFalse();
@@ -171,4 +171,18 @@ it('refuses a taken web route name', function () {
         ->assertExitCode(1);
 
     expect(is_dir(app_path('Modules/Orders/Models')))->toBeFalse();
+});
+
+it('words the note for web-only cruds', function () {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--web' => true])
+        ->expectsOutputToContain('Note: routes are protected by OrderPolicy (guests get 403).')
+        ->doesntExpectOutputToContain('token APIs')
+        ->assertExitCode(0);
+});
+
+it('names the form helper after module and entity', function () {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'OrderItem', '--web' => true])->assertExitCode(0);
+
+    expect(file_get_contents(base_path('tests/Feature/Modules/Orders/OrderItemWebTest.php')))->toContain('function ordersOrderItemFormInput(')
+        ->and(file_get_contents(app_path('Modules/Orders/Controllers/OrderItemPageController.php')))->toContain("'Order Item created.'");
 });

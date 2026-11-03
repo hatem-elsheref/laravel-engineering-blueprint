@@ -28,9 +28,9 @@ function installTenantSaas(): PendingCommand
 
 it('sets up tenancy', function () {
     installTenantSaas()
-        ->expectsOutputToContain('✓ ran tenancy:install')
-        ->expectsOutputToContain('✓ created app/Models/Tenant.php')
-        ->expectsOutputToContain('✓ copied users migration to database/migrations/tenant')
+        ->expectsOutputToContain('ran tenancy:install')
+        ->expectsOutputToContain('created app/Models/Tenant.php')
+        ->expectsOutputToContain('copied users migration to database/migrations/tenant')
         ->expectsOutputToContain('✓ Tenancy')
         ->expectsOutputToContain("Your app's routes/web.php and routes/api.php answer on every domain")
         ->expectsOutputToContain('Next: php artisan migrate && php artisan tenant:create acme')
@@ -108,6 +108,6 @@ it('warns when the cache store cannot isolate tenants', function (string $store)
 
 it('pins the database queue to the central connection', function () {
     installTenantSaas()
-        ->expectsOutputToContain('✓ database queue uses the central connection (testing)')
+        ->expectsOutputToContain('database queue uses the central connection (testing)')
         ->assertExitCode(0);
 });

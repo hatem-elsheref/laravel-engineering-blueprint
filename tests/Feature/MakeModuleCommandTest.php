@@ -53,7 +53,7 @@ it('creates a minimal module', function () {
     $this->artisan('make:module', ['name' => 'Orders'])
         ->expectsOutputToContain('created app/Modules/Orders/Provider.php')
         ->expectsOutputToContain('registered App\Modules\Orders\Provider in bootstrap/providers.php')
-        ->expectsOutputToContain('Next: add Actions, Models and Controllers as you need them. See docs/ARCHITECTURE.md.')
+        ->expectsOutputToContain('Next: add Actions, Models and Controllers as you need them (php artisan make:action, make:dto).')
         ->assertExitCode(0);
 
     expect(moduleFile('Orders/Provider.php'))->toBe(<<<'PHP'
@@ -173,7 +173,7 @@ it('refuses existing module', function (string $again) {
     $providers = file_get_contents($this->providersPath);
 
     $this->artisan('make:module', ['name' => $again])
-        ->expectsOutputToContain('Module "Orders" already exists at app/Modules/Orders.')
+        ->expectsOutputToContain('"app/Modules/Orders" already exists. Nothing was changed.')
         ->assertExitCode(1);
 
     expect(file_get_contents($this->providersPath))->toBe($providers);
@@ -272,7 +272,7 @@ it('refuses when a file has the module name', function () {
     touch(app_path('Modules/Foo'));
 
     $this->artisan('make:module', ['name' => 'Foo'])
-        ->expectsOutputToContain('Module "Foo" already exists at app/Modules/Foo.')
+        ->expectsOutputToContain('"app/Modules/Foo" already exists. Nothing was changed.')
         ->assertExitCode(1);
 
     expect(file_get_contents($this->providersPath))->toBe($this->providers);
@@ -312,3 +312,13 @@ it('rolls back a half-written module', function () {
 
     $this->artisan('make:module', ['name' => 'Orders'])->assertExitCode(0);
 });
+
+it('suggests make:crud for modules with routes', function (array $flags, string $next) {
+    $this->artisan('make:module', ['name' => 'Orders'] + $flags)
+        ->expectsOutputToContain($next)
+        ->assertExitCode(0);
+})->with([
+    'api' => [['--api' => true], 'Next: php artisan make:crud Orders <Entity> --fields="name:string"'],
+    'web' => [['--web' => true], 'Next: php artisan make:crud Orders <Entity> --web --fields="name:string"'],
+    'both' => [['--api' => true, '--web' => true], 'Next: php artisan make:crud Orders <Entity> --api --web --fields="name:string"'],
+]);

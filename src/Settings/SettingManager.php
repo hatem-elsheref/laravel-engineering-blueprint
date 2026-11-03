@@ -2,6 +2,7 @@
 
 namespace Best\Blueprint\Settings;
 
+use Best\Blueprint\Flags\Definitions;
 use Best\Blueprint\Flags\FlagContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -83,9 +84,9 @@ class SettingManager
      */
     public function definitions(): array
     {
-        $class = config('blueprint.settings');
+        $class = Definitions::settings();
 
-        if (! is_string($class) || ! class_exists($class)) {
+        if (! class_exists($class)) {
             throw new RuntimeException('Setting definitions not found; run php artisan engineering:install.');
         }
 

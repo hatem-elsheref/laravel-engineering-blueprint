@@ -123,6 +123,8 @@ it('skips tests without pest', function () {
 
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--fields' => CRUD_FIELDS])
         ->expectsOutputToContain('Skipped tests/Feature/Modules/Orders/OrderApiTest.php: Pest is not installed')
+        ->expectsOutputToContain('Next: php artisan migrate')
+        ->doesntExpectOutputToContain('--filter')
         ->assertExitCode(0);
 
     expect(file_exists(base_path('tests/Feature/Modules/Orders/OrderApiTest.php')))->toBeFalse();
@@ -190,7 +192,7 @@ it('refuses a module without api routes', function () {
     $this->artisan('make:module', ['name' => 'Billing'])->assertExitCode(0);
 
     $this->artisan('make:crud', ['module' => 'Billing', 'entity' => 'Invoice'])
-        ->expectsOutputToContain('Module "Billing" has no routes/api.php. Add it and load it in its Provider (see docs), or create the module with make:module Billing --api.')
+        ->expectsOutputToContain('Module "Billing" has no routes/api.php. Create app/Modules/Billing/routes/api.php and load it in app/Modules/Billing/Provider.php the way make:module --api does, then re-run.')
         ->assertExitCode(1);
 
     expect(is_dir(app_path('Modules/Billing/Models')))->toBeFalse();
@@ -201,7 +203,7 @@ it('refuses collisions', function (callable $arrange, string $path) {
     $routes = file_get_contents(app_path('Modules/Orders/routes/api.php'));
 
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])
-        ->expectsOutputToContain("\"{$path}\" already exists. make:crud never overwrites files.")
+        ->expectsOutputToContain("\"{$path}\" already exists. Nothing was changed.")
         ->assertExitCode(1);
 
     expect(file_get_contents(app_path('Modules/Orders/routes/api.php')))->toBe($routes)
@@ -214,10 +216,15 @@ it('refuses collisions', function (callable $arrange, string $path) {
     'migration' => [function () {
         touch(database_path('migrations/2020_01_01_000000_create_orders_table.php'));
     }, 'database/migrations/2020_01_01_000000_create_orders_table.php'],
-    'route' => [function () {
-        file_put_contents(app_path('Modules/Orders/routes/api.php'), "// OrderController\n", FILE_APPEND);
-    }, 'app/Modules/Orders/routes/api.php'],
 ]);
+
+it('refuses a route that is already there', function () {
+    file_put_contents(app_path('Modules/Orders/routes/api.php'), "// OrderController\n", FILE_APPEND);
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])
+        ->expectsOutputToContain('"app/Modules/Orders/routes/api.php" already has a route for OrderController. Remove it, then re-run.')
+        ->assertExitCode(1);
+});
 
 it('refuses old published stub', function () {
     File::ensureDirectoryExists(base_path('stubs/blueprint'));

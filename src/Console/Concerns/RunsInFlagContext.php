@@ -3,6 +3,7 @@
 namespace Best\Blueprint\Console\Concerns;
 
 use Best\Blueprint\Support\Profile;
+use Best\Blueprint\Tenancy\TenancyDetector;
 use Closure;
 use InvalidArgumentException;
 use RuntimeException;
@@ -20,7 +21,7 @@ trait RunsInFlagContext
         $profile = Profile::current();
 
         if ($profile === null || ! $profile->usesFeatures()) {
-            return $this->refuse('Features need the saas or tenant-saas profile.');
+            return $this->refuse('Features and settings need the saas or tenant-saas profile.');
         }
 
         $tenant = $this->option('tenant');
@@ -31,6 +32,10 @@ trait RunsInFlagContext
             }
 
             return $this->attempt(fn () => $work('the app'));
+        }
+
+        if (! app(TenancyDetector::class)->stancl()) {
+            return $this->refuse('Tenancy needs stancl/tenancy. Run: composer require stancl/tenancy:^3.10, then php artisan engineering:install --profile=tenant-saas.');
         }
 
         if (! $tenant) {

@@ -22,7 +22,11 @@ class FlagSetup
     public function run(Profile $profile): array
     {
         $shared = trim((string) config('blueprint.shared_path', 'app/Shared'), '/');
-        $namespace = 'App\\'.str_replace('/', '\\', substr($shared, strlen('app/')));
+        $namespace = Definitions::sharedNamespace();
+
+        if ($namespace === null) {
+            return [sprintf('shared_path must be inside app/ (got "%s"). Features and settings were not set up.', config('blueprint.shared_path'))];
+        }
         $migrations = $profile->usesTenancy() ? 'database/migrations/tenant' : 'database/migrations';
 
         return [
@@ -42,7 +46,7 @@ class FlagSetup
         $this->files->ensureDirectoryExists(dirname(base_path($relative)));
         $this->files->put(base_path($relative), $this->stubs->render($stub, ['namespace' => $namespace]));
 
-        return "✓ created {$relative}";
+        return "created {$relative}";
     }
 
     private function migration(string $folder, string $table, string $suffix): string
@@ -55,6 +59,6 @@ class FlagSetup
         $this->files->ensureDirectoryExists(dirname(base_path($relative)));
         $this->files->put(base_path($relative), $this->stubs->render("{$table}-migration.stub", []));
 
-        return "✓ created {$relative}";
+        return "created {$relative}";
     }
 }

@@ -40,7 +40,7 @@ it('needs a profile with features', function () {
     config()->set('blueprint.profile', 'modular');
 
     $this->artisan('feature:list')
-        ->expectsOutputToContain('Features need the saas or tenant-saas profile.')
+        ->expectsOutputToContain('Features and settings need the saas or tenant-saas profile.')
         ->assertExitCode(1);
 });
 

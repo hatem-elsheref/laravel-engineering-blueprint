@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace {{ namespace }};
 
 /**
- * Every setting key, its type and default (docs/SETTINGS.md). Read with Setting::get(),
+ * Every setting key, its type and default. Read with Setting::get(),
  * write with Setting::set() (tenant settings, behind their Gate ability) or setting:set (platform).
  */
 final class Settings

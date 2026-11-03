@@ -77,5 +77,5 @@ it('forgets state between jobs', function () {
 it('needs a profile with features', function () {
     config()->set('blueprint.profile', 'modular');
 
-    expect(fn () => Feature::enabled('orders'))->toThrow(RuntimeException::class, 'Features need the saas or tenant-saas profile.');
+    expect(fn () => Feature::enabled('orders'))->toThrow(RuntimeException::class, 'Features and settings need the saas or tenant-saas profile.');
 });

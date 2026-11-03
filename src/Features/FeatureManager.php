@@ -2,6 +2,7 @@
 
 namespace Best\Blueprint\Features;
 
+use Best\Blueprint\Flags\Definitions;
 use Best\Blueprint\Flags\FlagContext;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -62,9 +63,9 @@ class FeatureManager
      */
     public function definitions(): array
     {
-        $class = config('blueprint.features');
+        $class = Definitions::features();
 
-        if (! is_string($class) || ! class_exists($class)) {
+        if (! class_exists($class)) {
             throw new RuntimeException('Feature definitions not found; run php artisan engineering:install.');
         }
 

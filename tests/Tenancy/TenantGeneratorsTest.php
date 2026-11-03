@@ -138,7 +138,7 @@ it('keeps a route-less central module central', function () {
     expect(file_get_contents(app_path('Modules/Billing/Provider.php')))->toContain("'central'");
 
     $this->artisan('make:crud', ['module' => 'Billing', 'entity' => 'Invoice'])
-        ->expectsOutputToContain('or create the module with make:module Billing --api --central.')
+        ->expectsOutputToContain('the way make:module --api --central does, then re-run.')
         ->assertExitCode(1);
 });
 
@@ -152,3 +152,22 @@ it('refuses --feature on central modules', function () {
 
     expect(is_dir(app_path('Modules/Admin/Models')))->toBeFalse();
 });
+
+it('refuses every generator in tenant-saas without stancl', function (string $command, array $arguments) {
+    $this->artisan('make:module', ['name' => 'Orders', '--api' => true])->assertExitCode(0);
+    app()->instance(TenancyDetector::class, new class extends TenancyDetector
+    {
+        public function stancl(): bool
+        {
+            return false;
+        }
+    });
+
+    $this->artisan($command, $arguments)
+        ->expectsOutputToContain('Tenancy needs stancl/tenancy. Run: composer require stancl/tenancy:^3.10')
+        ->assertExitCode(1);
+})->with([
+    ['make:crud', ['module' => 'Orders', 'entity' => 'Order']],
+    ['make:dto', ['module' => 'Orders', 'name' => 'OrderData']],
+    ['make:action', ['module' => 'Orders', 'name' => 'CreateOrder']],
+]);

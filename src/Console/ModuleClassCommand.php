@@ -64,7 +64,7 @@ abstract class ModuleClassCommand extends Command
         $folder = $modules->path().'/'.$module.'/'.$this->folder();
 
         if (($existing = Modules::entry(base_path($folder), $class.'.php')) !== null) {
-            return $this->refuse(sprintf('"%s" already exists at %s/%s.', pathinfo($existing, PATHINFO_FILENAME), $folder, $existing));
+            return $this->refuse("\"{$folder}/{$existing}\" already exists. Nothing was changed.");
         }
 
         $moduleNamespace = $modules->namespace().'\\'.$module;

@@ -175,7 +175,7 @@ it('creates default features and settings', function () {
 
     $this->artisan('tenant:create', ['name' => 'acme'])
         ->expectsOutputToContain('✓ Create default features')
-        ->expectsOutputToContain('– Create default settings (already done: defaults come from Settings definitions)')
+        ->expectsOutputToContain('– Create default settings (skipped: defaults come from the Settings definitions; no rows needed)')
         ->assertExitCode(0);
 
     expect(tenancy()->find('acme')->run(fn () => DB::table('features')->pluck('enabled', 'key')->map(fn ($v) => (bool) $v)->all()))

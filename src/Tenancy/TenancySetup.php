@@ -64,12 +64,12 @@ class TenancySetup
         $routesExisted = $this->files->exists($routes);
 
         app(Kernel::class)->call('tenancy:install');
-        $lines = ['✓ ran tenancy:install'];
+        $lines = ['ran tenancy:install'];
 
         if (! $routesExisted) {
             // Replace the package's demo "/" route, which would shadow the app's home page on central domains.
             $this->files->put($routes, $this->stubs->render('tenant-routes.stub', []));
-            $lines[] = '✓ routes/tenant.php has an empty tenant route group';
+            $lines[] = 'routes/tenant.php has an empty tenant route group';
         }
 
         return $lines;
@@ -86,7 +86,7 @@ class TenancySetup
         $this->files->ensureDirectoryExists(dirname($path));
         $this->files->put($path, $this->stubs->render('tenant-model.stub', []));
 
-        return '✓ created app/Models/Tenant.php';
+        return 'created app/Models/Tenant.php';
     }
 
     /**
@@ -104,7 +104,7 @@ class TenancySetup
             $lines[] = 'already set up: tenant_model';
         } elseif (str_contains($contents, "    'tenant_model' => Tenant::class,")) {
             $contents = str_replace("    'tenant_model' => Tenant::class,", $wanted, $contents);
-            $lines[] = '✓ config/tenancy.php: tenant_model';
+            $lines[] = 'config/tenancy.php: tenant_model';
         } else {
             $lines[] = "Set 'tenant_model' => \\App\\Models\\Tenant::class in config/tenancy.php.";
         }
@@ -116,7 +116,7 @@ class TenancySetup
             $lines[] = 'already set up: central_domains';
         } elseif (str_contains($contents, self::DEFAULT_CENTRAL)) {
             $contents = str_replace(self::DEFAULT_CENTRAL, $central, $contents);
-            $lines[] = '✓ config/tenancy.php: central_domains = '.implode(', ', $domains);
+            $lines[] = 'config/tenancy.php: central_domains = '.implode(', ', $domains);
         } else {
             $lines[] = "Check 'central_domains' in config/tenancy.php: it should list your central domains, e.g. ['".implode("', '", $domains)."'].";
         }
@@ -132,7 +132,7 @@ class TenancySetup
      */
     private function connections(): array
     {
-        $lines = ['✓ database queue uses the central connection ('.config('tenancy.database.central_connection').')'];
+        $lines = ['database queue uses the central connection ('.config('tenancy.database.central_connection').')'];
 
         // stancl isolates tenant cache with tags. A store without tags (database, file) fails loudly
         // inside tenants instead of sharing data between them; say so now.
@@ -164,7 +164,7 @@ class TenancySetup
         $this->files->ensureDirectoryExists(database_path('migrations/tenant'));
         $this->files->copy($central[0], database_path('migrations/tenant/'.basename($central[0])));
 
-        return ['✓ copied users migration to database/migrations/tenant'];
+        return ['copied users migration to database/migrations/tenant'];
     }
 
     private function registerProvider(): string
@@ -176,7 +176,7 @@ class TenancySetup
         }
 
         return ServiceProvider::addProviderToBootstrapFile(self::PROVIDER)
-            ? '✓ registered '.self::PROVIDER.' in bootstrap/providers.php'
+            ? 'registered '.self::PROVIDER.' in bootstrap/providers.php'
             : 'bootstrap/providers.php not found. Register '.self::PROVIDER.' manually.';
     }
 }

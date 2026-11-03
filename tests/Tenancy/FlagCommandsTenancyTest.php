@@ -1,7 +1,9 @@
 <?php
 
+use App\Models\Tenant;
 use Best\Blueprint\Facades\Feature;
 use Best\Blueprint\Facades\Setting;
+use Best\Blueprint\Tenancy\TenancyDetector;
 use Best\Blueprint\Tenancy\TenantSetup;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -74,6 +76,26 @@ it('reports a tenant without a features table instead of crashing', function () 
 
     $this->artisan('features:sync')
         ->expectsOutputToContain('added 0 feature(s) to tenant "a"')
-        ->expectsOutputToContain('tenant "b":')
+        ->expectsOutputToContain('Tenant "b":')
         ->assertExitCode(1);
+});
+
+it('refuses flag commands in tenant-saas without stancl', function (string $command) {
+    app()->instance(TenancyDetector::class, new class extends TenancyDetector
+    {
+        public function stancl(): bool
+        {
+            return false;
+        }
+    });
+
+    $this->artisan($command, ['--tenant' => 'a'])
+        ->expectsOutputToContain('Tenancy needs stancl/tenancy. Run: composer require stancl/tenancy:^3.10')
+        ->assertExitCode(1);
+})->with(['feature:list', 'setting:list', 'features:sync']);
+
+it('says when there are no tenants to sync', function () {
+    Tenant::query()->each(fn ($tenant) => $tenant::withoutEvents(fn () => $tenant->delete()));
+
+    $this->artisan('features:sync')->expectsOutputToContain('no tenants to sync')->assertExitCode(0);
 });

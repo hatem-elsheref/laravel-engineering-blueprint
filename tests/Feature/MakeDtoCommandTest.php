@@ -106,7 +106,7 @@ it('refuses existing class', function (string $again) {
     $before = dtoFile();
 
     $this->artisan('make:dto', ['module' => 'Orders', 'name' => $again])
-        ->expectsOutputToContain('"OrderData" already exists at app/Modules/Orders/Data/OrderData.php.')
+        ->expectsOutputToContain('"app/Modules/Orders/Data/OrderData.php" already exists. Nothing was changed.')
         ->assertExitCode(1);
 
     expect(dtoFile())->toBe($before);

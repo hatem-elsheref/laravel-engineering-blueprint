@@ -25,7 +25,7 @@ final class {{ entity }}PageController
     {
         ${{ variable }} = $action->handle({{ entity }}Data::fromRequest($request));
 
-        return redirect()->route('{{ routeName }}.show', ${{ variable }})->with('status', '{{ entity }} created.');
+        return redirect()->route('{{ routeName }}.show', ${{ variable }})->with('status', '{{ headline }} created.');
     }
 
     public function show({{ entity }} ${{ variable }}): View
@@ -46,7 +46,7 @@ final class {{ entity }}PageController
     {
         ${{ variable }} = $action->handle(${{ variable }}, {{ entity }}Data::fromRequest($request));
 
-        return redirect()->route('{{ routeName }}.show', ${{ variable }})->with('status', '{{ entity }} updated.');
+        return redirect()->route('{{ routeName }}.show', ${{ variable }})->with('status', '{{ headline }} updated.');
     }
 
     public function destroy({{ entity }} ${{ variable }}, Delete{{ entity }} $action): RedirectResponse
@@ -55,6 +55,6 @@ final class {{ entity }}PageController
 
         $action->handle(${{ variable }});
 
-        return redirect()->route('{{ routeName }}.index')->with('status', '{{ entity }} deleted.');
+        return redirect()->route('{{ routeName }}.index')->with('status', '{{ headline }} deleted.');
     }
 }

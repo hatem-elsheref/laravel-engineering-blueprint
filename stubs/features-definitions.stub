@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace {{ namespace }};
 
 /**
- * Every feature key lives here (docs/FEATURES.md §4.3). Check them with
- * Feature::enabled(Features::ORDERS); change them only with the feature:* commands.
+ * Every feature key lives here. Check them with Feature::enabled(Features::ORDERS);
+ * change them only with the feature:* console commands (platform admins).
  */
 final class Features
 {
@@ -15,7 +15,7 @@ final class Features
     public const REPORTS = 'reports';
 
     /**
-     * Every feature key and its default state for new tenants.
+     * Every feature key and its default state (per tenant in tenant-saas, for the app in saas).
      *
      * @return array<string, bool>
      */

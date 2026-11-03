@@ -37,7 +37,7 @@ it('creates a {{ variable }}', function (): void {
 
     expect({{ entity }}::count())->toBe(1);
 });
-{{ validation }}{{ featureTest }}
+{{ validation }}
 it('shows a {{ variable }}', function (): void {
     ${{ variable }} = {{ entity }}::factory()->create();
 
@@ -49,7 +49,11 @@ it('shows a {{ variable }}', function (): void {
 it('updates a {{ variable }}', function (): void {
     ${{ variable }} = {{ entity }}::factory()->create();
 
+    $this->travel(1)->minutes();
+
     $this->actingAs($this->user)->putJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"), {{ entity }}::factory()->raw())->assertOk();
+
+    expect(${{ variable }}->fresh()->updated_at->gt(${{ variable }}->updated_at))->toBeTrue();
 });
 
 it('deletes a {{ variable }}', function (): void {
@@ -59,3 +63,4 @@ it('deletes a {{ variable }}', function (): void {
 
     expect({{ entity }}::count())->toBe(0);
 });
+{{ featureTest }}

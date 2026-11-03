@@ -1,19 +1,22 @@
 <?php
 
+use Best\Blueprint\Facades\Feature;
+use Best\Blueprint\Features\FeatureAdmin;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\Process\Process;
 
 afterEach(function () {
     File::deleteDirectory(app_path('Shared'));
+    File::deleteDirectory(app_path('Core'));
     File::cleanDirectory(database_path('migrations'));
     File::delete(config_path('blueprint.php'));
 });
 
 it('sets up features and settings for saas', function () {
     $this->artisan('engineering:install', ['--profile' => 'saas', '--no-interaction' => true])
-        ->expectsOutputToContain('✓ created app/Shared/Features/Features.php')
-        ->expectsOutputToContain('✓ created app/Shared/Settings/Settings.php')
-        ->expectsOutputToContain('✓ created database/migrations/')
+        ->expectsOutputToContain('created app/Shared/Features/Features.php')
+        ->expectsOutputToContain('created app/Shared/Settings/Settings.php')
+        ->expectsOutputToContain('created database/migrations/')
         ->expectsOutputToContain('✓ Features')
         ->expectsOutputToContain('✓ Settings')
         ->doesntExpectOutputToContain('coming in Phase 7')
@@ -50,5 +53,33 @@ it('does nothing for profiles without features', function () {
     $this->artisan('engineering:install', ['--profile' => 'modular', '--no-interaction' => true])->assertExitCode(0);
 
     expect(is_dir(app_path('Shared')))->toBeFalse()
+        ->and(glob(database_path('migrations/*_create_features_table.php')))->toBe([]);
+});
+
+it('follows a custom shared_path', function () {
+    config()->set('blueprint.shared_path', 'app/Core');
+    config()->set('blueprint.features', null);
+    config()->set('blueprint.settings', null);
+
+    $this->artisan('engineering:install', ['--profile' => 'saas', '--no-interaction' => true])
+        ->expectsOutputToContain('created app/Core/Features/Features.php')
+        ->assertExitCode(0);
+
+    require_once app_path('Core/Features/Features.php');
+    createFlagTables();
+    app(FeatureAdmin::class)->sync();
+
+    expect(Feature::enabled('orders'))->toBeTrue();
+
+});
+
+it('refuses a shared_path outside app', function () {
+    config()->set('blueprint.shared_path', 'src/Shared');
+
+    $this->artisan('engineering:install', ['--profile' => 'saas', '--no-interaction' => true])
+        ->expectsOutputToContain('shared_path must be inside app/ (got "src/Shared").')
+        ->assertExitCode(0);
+
+    expect(is_dir(base_path('src/Shared')))->toBeFalse()
         ->and(glob(database_path('migrations/*_create_features_table.php')))->toBe([]);
 });

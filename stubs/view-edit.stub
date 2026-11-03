@@ -1,4 +1,4 @@
-@extends(config('blueprint.layout'))
+@extends(config('blueprint.layout', 'layouts.blueprint'))
 
 @section('title', 'Edit {{ headline }} #'.${{ variable }}->id)
 

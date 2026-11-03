@@ -56,7 +56,7 @@ class MakeModuleCommand extends Command
         $directory = base_path($modulePath.'/'.$name);
 
         if (($existing = Modules::entry(base_path($modulePath), $name)) !== null) {
-            return $this->refuse("Module \"{$name}\" already exists at {$modulePath}/{$existing}.");
+            return $this->refuse("\"{$modulePath}/{$existing}\" already exists. Nothing was changed.");
         }
 
         try {
@@ -95,7 +95,13 @@ class MakeModuleCommand extends Command
 
         $this->clearCaches();
 
-        $this->line('Next: add Actions, Models and Controllers as you need them. See docs/ARCHITECTURE.md.');
+        $routes = array_keys(array_filter(['api' => $this->option('api'), 'web' => $this->option('web')]));
+        $this->line(match ($routes) {
+            [] => 'Next: add Actions, Models and Controllers as you need them (php artisan make:action, make:dto).',
+            ['api'] => "Next: php artisan make:crud {$name} <Entity> --fields=\"name:string\"",
+            ['web'] => "Next: php artisan make:crud {$name} <Entity> --web --fields=\"name:string\"",
+            default => "Next: php artisan make:crud {$name} <Entity> --api --web --fields=\"name:string\"",
+        });
 
         return self::SUCCESS;
     }

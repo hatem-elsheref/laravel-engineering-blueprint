@@ -71,7 +71,7 @@ it('refuses existing class', function () {
     $this->artisan('make:action', ['module' => 'Orders', 'name' => 'CreateOrder'])->assertExitCode(0);
 
     $this->artisan('make:action', ['module' => 'Orders', 'name' => 'createOrder'])
-        ->expectsOutputToContain('"CreateOrder" already exists at app/Modules/Orders/Actions/CreateOrder.php.')
+        ->expectsOutputToContain('"app/Modules/Orders/Actions/CreateOrder.php" already exists. Nothing was changed.')
         ->assertExitCode(1);
 });
 

@@ -2,6 +2,8 @@
 
 namespace Best\Blueprint\Support;
 
+use Best\Blueprint\Tenancy\TenancyDetector;
+
 /**
  * Project-level checks shared by the module generators.
  */
@@ -17,6 +19,10 @@ final class Modules
 
         if (! $profile->usesModules()) {
             return "The \"{$profile->value}\" profile has no modules. Switch profile with php artisan engineering:install --profile=modular.";
+        }
+
+        if ($profile->usesTenancy() && ! app(TenancyDetector::class)->stancl()) {
+            return 'Tenancy needs stancl/tenancy. Run: composer require stancl/tenancy:^3.10, then php artisan engineering:install --profile=tenant-saas.';
         }
 
         return null;

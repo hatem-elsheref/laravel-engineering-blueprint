@@ -2,6 +2,7 @@
 
 namespace Best\Blueprint\Console;
 
+use Best\Blueprint\Flags\Definitions;
 use Best\Blueprint\Support\CrudField;
 use Best\Blueprint\Support\CrudFields;
 use Best\Blueprint\Support\CrudNames;
@@ -91,7 +92,7 @@ class MakeCrudCommand extends Command
 
         foreach (array_keys(array_filter(['api' => $api, 'web' => $web])) as $side) {
             if (! $files->isFile(base_path("{$names->modulePath}/routes/{$side}.php"))) {
-                return $this->refuse("Module \"{$module}\" has no routes/{$side}.php. Add it and load it in its Provider (see docs), or create the module with make:module {$module} --{$side}".($central ? ' --central' : '').'.');
+                return $this->refuse("Module \"{$module}\" has no routes/{$side}.php. Create {$names->modulePath}/routes/{$side}.php and load it in {$names->modulePath}/Provider.php the way make:module --{$side}".($central ? ' --central' : '').' does, then re-run.');
             }
         }
 
@@ -104,7 +105,7 @@ class MakeCrudCommand extends Command
         ];
 
         if (($collision = $this->collision($files, $names, $keys, $api, $web)) !== null) {
-            return $this->refuse("\"{$collision}\" already exists. make:crud never overwrites files.");
+            return $this->refuse($collision);
         }
 
         $routeNamePrefix = $central ? 'central.' : '';
@@ -219,11 +220,17 @@ class MakeCrudCommand extends Command
             $this->line("added route to {$names->modulePath}/routes/{$side}.php");
         }
 
-        $this->line("Note: routes are protected by {$names->entity}Policy (guests get 403). For token APIs add auth middleware (e.g. auth:sanctum) to the api routes in {$names->modulePath}/Provider.php, so every resource in this module gets it.");
+        $this->line("Note: routes are protected by {$names->entity}Policy (guests get 403).".($api ? " For token APIs add auth middleware (e.g. auth:sanctum) to the api routes in {$names->modulePath}/Provider.php, so every resource in this module gets it." : ''));
 
-        $tests = implode('|', array_keys(array_filter(["{$entity}ApiTest" => $api, "{$entity}WebTest" => $web])));
-        $migrate = $addingSide ? '' : 'php artisan '.($names->tenant ? 'tenants:migrate' : 'migrate').' && ';
-        $this->line("Next: {$migrate}php artisan test --filter=".($api && $web ? "\"{$tests}\"" : $tests));
+        $written = array_filter(["{$entity}ApiTest" => $api && ! in_array($names->files()['test'], $skippedTests, true), "{$entity}WebTest" => $web && ! in_array($names->files()['webTest'], $skippedTests, true)]);
+        $steps = array_filter([
+            $addingSide ? null : 'php artisan '.($names->tenant ? 'tenants:migrate' : 'migrate'),
+            $written === [] ? null : 'php artisan test --filter='.(count($written) > 1 ? '"'.implode('|', array_keys($written)).'"' : array_key_first($written)),
+        ]);
+
+        if ($steps !== []) {
+            $this->line('Next: '.implode(' && ', $steps));
+        }
 
         return self::SUCCESS;
     }
@@ -235,7 +242,7 @@ class MakeCrudCommand extends Command
     {
         foreach ($keys as $key) {
             if (($existing = $this->existingFile($names, $key)) !== null) {
-                return $existing;
+                return "\"{$existing}\" already exists. Nothing was changed.";
             }
         }
 
@@ -243,7 +250,7 @@ class MakeCrudCommand extends Command
 
         foreach ($controllers as $side => $controller) {
             if (preg_match('/\b'.$controller.'\b/', $files->get(base_path("{$names->modulePath}/routes/{$side}.php"))) === 1) {
-                return "{$names->modulePath}/routes/{$side}.php";
+                return "\"{$names->modulePath}/routes/{$side}.php\" already has a route for {$controller}. Remove it, then re-run.";
             }
         }
 
@@ -502,6 +509,7 @@ class MakeCrudCommand extends Command
                 ...($feature === null ? [] : ['Best\\Blueprint\\Features\\FeatureAdmin']),
             ]),
             'url' => $names->tenant ? '$this->tenantUrl' : 'url',
+            'formInput' => Str::camel($names->module).$e.'FormInput',
             'validation' => $this->webValidationTest($names, $fields),
             'featureSetup' => $feature === null ? '' : "    app(FeatureAdmin::class)->enable('{$feature}');\n",
             'featureTest' => $feature === null ? '' : $this->webFeatureTest($names, $feature),
@@ -628,9 +636,9 @@ class MakeCrudCommand extends Command
             return '--feature needs the saas or tenant-saas profile.';
         }
 
-        $class = config('blueprint.features');
+        $class = Definitions::features();
 
-        if (! is_string($class) || ! class_exists($class)) {
+        if (! class_exists($class)) {
             return 'Feature definitions not found; run php artisan engineering:install.';
         }
 
