@@ -77,7 +77,7 @@ it('wires the route', function () {
 
     expect(file_get_contents(app_path('Modules/Orders/routes/api.php')))
         ->toContain("use App\\Modules\\Orders\\Controllers\\OrderController;\n")
-        ->toEndWith("Route::apiResource('orders', OrderController::class);\n");
+        ->toEndWith("Route::apiResource('orders', OrderController::class)\n    ->missing(fn (\$request) => abort(\$request->user() === null ? 403 : 404));\n");
 });
 
 it('adds a second entity', function () {
@@ -87,8 +87,8 @@ it('adds a second entity', function () {
     expect(file_get_contents(app_path('Modules/Orders/routes/api.php')))
         ->toContain('use App\Modules\Orders\Controllers\OrderController;')
         ->toContain('use App\Modules\Orders\Controllers\InvoiceController;')
-        ->toContain("Route::apiResource('orders', OrderController::class);")
-        ->toEndWith("Route::apiResource('invoices', InvoiceController::class);\n");
+        ->toContain("Route::apiResource('orders', OrderController::class)")
+        ->toContain("Route::apiResource('invoices', InvoiceController::class)");
 });
 
 it('generates with no fields', function () {
@@ -248,7 +248,7 @@ it('does not confuse similar controller names', function () {
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])->assertExitCode(0);
 
     expect(file_get_contents(app_path('Modules/Orders/routes/api.php')))
-        ->toContain("Route::apiResource('orders', OrderController::class);");
+        ->toContain("Route::apiResource('orders', OrderController::class)");
 });
 
 it('refuses entity names that clash with imported classes', function (string $entity) {
@@ -304,4 +304,12 @@ it('generates guest checks for every endpoint', function () {
         ->toContain("\$this->getJson(\"/api/orders/{\$order->id}\")->assertForbidden();")
         ->toContain("\$this->putJson(\"/api/orders/{\$order->id}\", Order::factory()->raw())->assertForbidden();")
         ->toContain("\$this->deleteJson(\"/api/orders/{\$order->id}\")->assertForbidden();");
+});
+
+it('generates a guest check for missing records', function () {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])->assertExitCode(0);
+
+    expect(file_get_contents(base_path('tests/Feature/Modules/Orders/OrderApiTest.php')))
+        ->toContain("\$this->getJson('/api/orders/999999')->assertForbidden();")
+        ->toContain("\$this->actingAs(\$this->user)->getJson('/api/orders/999999')->assertNotFound();");
 });

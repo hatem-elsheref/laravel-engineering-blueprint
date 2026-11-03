@@ -19,6 +19,11 @@ it('denies guests', function (): void {
     $this->deleteJson("/api/{{ uri }}/{${{ variable }}->id}")->assertForbidden();
 });
 
+it('hides which {{ uri }} exist from guests', function (): void {
+    $this->getJson('/api/{{ uri }}/999999')->assertForbidden();
+    $this->actingAs($this->user)->getJson('/api/{{ uri }}/999999')->assertNotFound();
+});
+
 it('lists {{ uri }}', function (): void {
     {{ entity }}::factory()->create();
 

@@ -1,1 +1,2 @@
-Route::apiResource('{{ uri }}', {{ controller }}::class);
+Route::apiResource('{{ uri }}', {{ controller }}::class)
+    ->missing(fn ($request) => abort($request->user() === null ? 403 : 404));

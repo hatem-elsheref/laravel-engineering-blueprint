@@ -144,4 +144,4 @@ Package tests:
 - Entity names that clash with an imported class in any generated file are refused.
 - The controller `use` line is inserted in sorted position; CRLF route files keep CRLF.
 - Generated guest test covers all five endpoints; each policy method carries `// Tighten for your app.`
-- Known limit: implicit route-model binding runs before the policy, so guests get 404 for ids that don't exist and 403 for ids that do. Adding auth middleware (as the success note says) closes this.
+- Implicit route-model binding runs before the policy, so guests could tell existing ids (403) from missing ones (404). The generated route adds `->missing(fn ($request) => abort($request->user() === null ? 403 : 404))`, so guests get 403 either way and signed-in users still get 404.

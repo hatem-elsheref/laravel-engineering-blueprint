@@ -128,3 +128,14 @@ it('keeps the moment of offset dates', function () {
         ->assertCreated()
         ->assertJsonPath('data.shipped_at', '2026-01-02T01:04:05+00:00');
 });
+
+it('hides which records exist from guests', function () {
+    $this->getJson('/api/purchase-orders/999999')->assertForbidden();
+    $this->putJson('/api/purchase-orders/999999', purchaseOrderPayload())->assertForbidden();
+    $this->deleteJson('/api/purchase-orders/999999')->assertForbidden();
+});
+
+it('still returns 404 for missing records to signed-in users', function () {
+    $this->actingAs($this->user)->getJson('/api/purchase-orders/999999')->assertNotFound();
+    $this->actingAs($this->user)->deleteJson('/api/purchase-orders/999999')->assertNotFound();
+});
