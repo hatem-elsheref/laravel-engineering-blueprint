@@ -1,5 +1,6 @@
 <?php
 
+use Best\Blueprint\Permissions\DefinitionsFile;
 use Best\Blueprint\Permissions\PermissionsDetector;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\Process\Process;
@@ -213,3 +214,13 @@ it('refuses an unsupported spatie setup', function (Closure $setup, string $mess
     expect(is_dir(app_path('Modules/Orders/Models')))->toBeFalse()
         ->and(file_get_contents($this->definitions))->toBe($definitions);
 })->with('unsupported spatie');
+
+it('names every ability the existing group is missing', function () {
+    file_put_contents($this->definitions, DefinitionsFile::addGroup(
+        file_get_contents($this->definitions), 'orders', ['view'],
+    ));
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--permissions' => true])
+        ->expectsOutputToContain("The 'orders' group in app/Shared/Permissions/Permissions.php has no 'create', 'update', 'delete'; another CRUD may use it. Add 'create', 'update', 'delete' to 'orders' in app/Shared/Permissions/Permissions.php")
+        ->assertExitCode(0);
+});

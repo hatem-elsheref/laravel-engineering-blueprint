@@ -56,3 +56,41 @@ it('returns null when another HasRoles is already imported', function (string $i
 
     expect(UserModelEditor::addHasRoles($source))->toBeNull();
 })->with(['use Other\HasRoles;', 'use Other\Traits\Roles as HasRoles;']);
+
+/** The stock Laravel 12 model with an extra import and the in-class trait line replaced. */
+function userModelWith(string $import, string $traits = 'use HasFactory, Notifiable;'): string
+{
+    $source = (string) file_get_contents(__DIR__.'/../Fixtures/user-models/laravel-12.php.txt');
+    $source = str_replace("use Illuminate\\Notifications\\Notifiable;\n", "use Illuminate\\Notifications\\Notifiable;\n".($import === '' ? '' : "{$import}\n"), $source);
+
+    return str_replace('use HasFactory, Notifiable;', $traits, $source);
+}
+
+it('returns null when the HasRoles trait in the class is not spatie\'s', function (string $import) {
+    expect(UserModelEditor::addHasRoles(userModelWith($import, 'use HasFactory, Notifiable, HasRoles;')))->toBeNull();
+})->with([
+    'another import' => 'use App\Traits\HasRoles;',
+    'no import (same namespace)' => '',
+]);
+
+it('counts spatie\'s HasRoles in the class as set up', function (string $import, string $traits) {
+    $source = userModelWith($import, $traits);
+
+    expect(UserModelEditor::addHasRoles($source))->toBe($source);
+})->with([
+    'imported' => ['use Spatie\Permission\Traits\HasRoles;', 'use HasFactory, Notifiable, HasRoles;'],
+    'group import' => ['use Spatie\Permission\Traits\{HasRoles};', 'use HasFactory, Notifiable, HasRoles;'],
+    'fully qualified' => ['', 'use HasFactory, Notifiable, \Spatie\Permission\Traits\HasRoles;'],
+]);
+
+it('recognises a group import of HasRoles and does not import it again', function (string $import) {
+    $result = (string) UserModelEditor::addHasRoles(userModelWith($import));
+
+    expect($result)->toContain('use HasFactory, Notifiable, HasRoles;')
+        ->not->toContain('use Spatie\Permission\Traits\HasRoles;')
+        ->and(lintSource($result))->toBe(0);
+})->with([
+    'use Spatie\Permission\Traits\{HasRoles};',
+    'use Spatie\Permission\Traits\{HasPermissions, HasRoles};',
+    'use Spatie\Permission\{Traits\HasRoles};',
+]);

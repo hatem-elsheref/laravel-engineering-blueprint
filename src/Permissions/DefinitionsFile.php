@@ -48,6 +48,54 @@ final class DefinitionsFile
      */
     public static function hasGroup(string $source, string $group): bool
     {
+        return self::groupKey($source, $group) !== null;
+    }
+
+    /**
+     * The abilities listed for '<group>', or null when the group is missing or its value is not a list of
+     * string literals.
+     *
+     * @return list<string>|null
+     *
+     * @throws InvalidPermissionDefinition when groups() doesn't return an array literal
+     */
+    public static function groupAbilities(string $source, string $group): ?array
+    {
+        $found = self::groupKey($source, $group);
+
+        if ($found === null) {
+            return null;
+        }
+
+        [$tokens, $key] = $found;
+        $i = self::next($tokens, self::next($tokens, $key));
+
+        if (! isset($tokens[$i]) || $tokens[$i]->text !== '[') {
+            return null;
+        }
+
+        $abilities = [];
+
+        for ($i = self::next($tokens, $i); isset($tokens[$i]) && $tokens[$i]->text !== ']'; $i = self::next($tokens, $i)) {
+            if ($tokens[$i]->is(T_CONSTANT_ENCAPSED_STRING)) {
+                $abilities[] = substr($tokens[$i]->text, 1, -1);
+            } elseif ($tokens[$i]->text !== ',') {
+                return null;
+            }
+        }
+
+        return $abilities;
+    }
+
+    /**
+     * The tokens and the index of the '<group>' key in the array groups() returns, or null when it's not there.
+     *
+     * @return array{list<PhpToken>, int}|null
+     *
+     * @throws InvalidPermissionDefinition when groups() doesn't return an array literal
+     */
+    private static function groupKey(string $source, string $group): ?array
+    {
         [$tokens, $open, $close] = self::groupsArray($source);
         $depth = 0;
 
@@ -62,11 +110,11 @@ final class DefinitionsFile
             if ($depth === 0 && $tokens[$i]->is(T_CONSTANT_ENCAPSED_STRING)
                 && $tokens[self::next($tokens, $i)]->is(T_DOUBLE_ARROW)
                 && substr($text, 1, -1) === $group) {
-                return true;
+                return [$tokens, $i];
             }
         }
 
-        return false;
+        return null;
     }
 
     /**

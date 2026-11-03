@@ -300,6 +300,12 @@ class MakeCrudCommand extends Command
             $this->line("added '{$permissions->group()}' to {$definitions['relative']}");
         }
 
+        // The group was already there (e.g. from a CRUD in another module) and lacks abilities this one checks.
+        if ($permissions !== null && $definitions !== null && $definitions['missing'] !== []) {
+            $missing = "'".implode("', '", $definitions['missing'])."'";
+            $this->warn("The '{$permissions->group()}' group in {$definitions['relative']} has no {$missing}; another CRUD may use it. Add {$missing} to '{$permissions->group()}' in {$definitions['relative']}, then {$permissions->syncCommand()}.");
+        }
+
         if (is_file($this->laravel->getCachedRoutesPath())) {
             $this->callSilently('route:clear');
             $this->line('cleared route cache');
@@ -905,9 +911,10 @@ class MakeCrudCommand extends Command
     }
 
     /**
-     * The definitions file with the entity's group added (edited is null when the group is already there).
+     * The definitions file with the entity's group added (edited is null when the group is already there; missing
+     * lists the abilities an existing group lacks).
      *
-     * @return array{0: array{path: string, relative: string, original: string, edited: ?string}|null, 1: ?string}
+     * @return array{0: array{path: string, relative: string, original: string, edited: ?string, missing: list<string>}|null, 1: ?string}
      */
     private function definitionsEdit(Filesystem $files, CrudPermissions $permissions): array
     {
@@ -924,14 +931,15 @@ class MakeCrudCommand extends Command
         $original = $files->get($path);
 
         try {
-            $edited = DefinitionsFile::hasGroup($original, $permissions->group())
-                ? null
-                : DefinitionsFile::addGroup($original, $permissions->group(), $permissions->abilities());
+            $exists = DefinitionsFile::hasGroup($original, $permissions->group());
+            $edited = $exists ? null : DefinitionsFile::addGroup($original, $permissions->group(), $permissions->abilities());
+            // Unknown when the existing value isn't a plain list of strings: no warning then.
+            $missing = $exists ? array_values(array_diff($permissions->abilities(), DefinitionsFile::groupAbilities($original, $permissions->group()) ?? $permissions->abilities())) : [];
         } catch (InvalidPermissionDefinition) {
             return [null, "Could not find the array returned by groups() in {$relative}. {$manual}"];
         }
 
-        return [['path' => $path, 'relative' => $relative, 'original' => $original, 'edited' => $edited], null];
+        return [['path' => $path, 'relative' => $relative, 'original' => $original, 'edited' => $edited, 'missing' => $missing], null];
     }
 
     /**

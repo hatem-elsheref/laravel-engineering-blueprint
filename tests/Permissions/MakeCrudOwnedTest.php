@@ -1,5 +1,6 @@
 <?php
 
+use Best\Blueprint\Permissions\DefinitionsFile;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\Process\Process;
 
@@ -282,4 +283,23 @@ it('keeps working with old published controller and test stubs without --owned',
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--api' => true, '--web' => true, '--permissions' => true])->assertExitCode(0);
 
     expect(file_get_contents(app_path('Modules/Orders/Controllers/OrderController.php')))->toContain('public function index(ListOrders $query)');
+});
+
+it('warns when the group already exists without the abilities this CRUD needs', function () {
+    // e.g. another module's CRUD made the 'orders' group earlier, without --owned.
+    file_put_contents($this->definitions, DefinitionsFile::addGroup(
+        file_get_contents($this->definitions), 'orders', ['view', 'create', 'update', 'delete'],
+    ));
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--fields' => 'name:string', '--permissions' => true, '--owned' => true])
+        ->expectsOutputToContain("The 'orders' group in app/Shared/Permissions/Permissions.php has no 'any'; another CRUD may use it. Add 'any' to 'orders' in app/Shared/Permissions/Permissions.php")
+        ->assertExitCode(0);
+});
+
+it('does not warn when the group has every ability', function () {
+    makeOwnedOrder(['--web' => true]);
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--fields' => 'name:string', '--permissions' => true, '--owned' => true, '--api' => true])
+        ->doesntExpectOutputToContain('group in app/Shared/Permissions/Permissions.php has no')
+        ->assertExitCode(0);
 });

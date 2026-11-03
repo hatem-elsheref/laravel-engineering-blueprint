@@ -85,3 +85,13 @@ it('throws when groups() has no array to add to', function (string $source) {
     'not an array literal' => [fn () => str_replace("return [\n            // 'products' => ['view', 'create', 'update', 'delete'],\n        ];", 'return self::GROUPS;', generatedDefinitions())],
     'array() syntax' => [fn () => str_replace("return [\n            // 'products' => ['view', 'create', 'update', 'delete'],\n        ];", 'return array();', generatedDefinitions())],
 ])->throws(InvalidPermissionDefinition::class);
+
+it('reads the abilities of a group', function () {
+    $source = DefinitionsFile::addGroup(DefinitionsFile::addGroup(generatedDefinitions(), 'orders', ['view', 'any']), 'shared', ['view']);
+    $computed = str_replace("'shared' => ['view'],", "'shared' => self::ABILITIES,", $source);
+
+    expect(DefinitionsFile::groupAbilities($source, 'orders'))->toBe(['view', 'any'])
+        ->and(DefinitionsFile::groupAbilities($source, 'missing'))->toBeNull()
+        ->and(DefinitionsFile::groupAbilities($computed, 'shared'))->toBeNull()
+        ->and(DefinitionsFile::groupAbilities(str_replace("['view', 'any']", '[]', $source), 'orders'))->toBe([]);
+});
