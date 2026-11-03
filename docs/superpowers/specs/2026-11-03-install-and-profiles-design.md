@@ -1,7 +1,7 @@
 # Phase 2 — `engineering:install` + Project Profiles — Design Spec
 
 **Date:** 2026-11-03
-**Status:** Draft for approval
+**Status:** Approved
 **Builds on:** Phase 1 (`docs/superpowers/specs/2026-11-03-toolkit-foundation-design.md`) — package `best/laravel-engineering-blueprint`, `BlueprintServiceProvider`, `config/blueprint.php`, `Compatibility`, `engineering:about`.
 **Supports:** PHP 8.3+, Laravel 12 and 13.
 
