@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Route;
+use Symfony\Component\Process\Process;
 
 beforeEach(function () {
     config()->set('blueprint.profile', 'modular');
@@ -99,14 +101,14 @@ it('generates valid php and blade', function () {
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--web' => true, '--api' => true, '--fields' => WEB_FIELDS.',price:?float,active:bool,tags:array,shippedAt:?Carbon\CarbonImmutable'])->assertExitCode(0);
 
     foreach (['app/Modules/Orders/Controllers/OrderPageController.php', 'tests/Feature/Modules/Orders/OrderWebTest.php', 'app/Modules/Orders/routes/web.php'] as $file) {
-        $lint = new Symfony\Component\Process\Process([PHP_BINARY, '-l', base_path($file)]);
+        $lint = new Process([PHP_BINARY, '-l', base_path($file)]);
         $lint->run();
         expect($lint->getExitCode())->toBe(0, $file.$lint->getOutput());
     }
 
     foreach (glob(resource_path('views/orders/orders/*.blade.php')) as $view) {
         $compiled = Blade::compileString(file_get_contents($view));
-        $lint = new Symfony\Component\Process\Process([PHP_BINARY, '-l']);
+        $lint = new Process([PHP_BINARY, '-l']);
         $lint->setInput($compiled);
         $lint->run();
         expect($lint->getExitCode())->toBe(0, $view.$lint->getOutput());
@@ -161,7 +163,7 @@ it('refuses --web without web routes', function () {
 });
 
 it('refuses a taken web route name', function () {
-    Illuminate\Support\Facades\Route::get('/old', fn () => 'x')->name('orders.index');
+    Route::get('/old', fn () => 'x')->name('orders.index');
     app('router')->getRoutes()->refreshNameLookups();
 
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--web' => true])

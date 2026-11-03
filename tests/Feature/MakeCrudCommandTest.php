@@ -2,6 +2,7 @@
 
 use Best\Blueprint\Support\PestDetector;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Route;
 use Symfony\Component\Process\Process;
 
 beforeEach(function () {
@@ -327,7 +328,7 @@ it('refuses an api route stub without route names', function () {
 });
 
 it('refuses a route name that is already taken', function () {
-    Illuminate\Support\Facades\Route::get('/old-orders', fn () => 'x')->name('api.orders.index');
+    Route::get('/old-orders', fn () => 'x')->name('api.orders.index');
     app('router')->getRoutes()->refreshNameLookups();
 
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])

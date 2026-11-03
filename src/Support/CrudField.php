@@ -2,6 +2,8 @@
 
 namespace Best\Blueprint\Support;
 
+use Illuminate\Support\Str;
+
 /**
  * One make:crud field and the code fragments generated for it.
  */
@@ -110,7 +112,7 @@ final readonly class CrudField
     public function formInput(string $variable): string
     {
         $col = $this->column;
-        $label = \Illuminate\Support\Str::headline($col);
+        $label = Str::headline($col);
         $current = "\${$variable}->{$col}";
 
         $input = match ($this->kind()) {
