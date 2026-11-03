@@ -31,7 +31,7 @@ php artisan make:action Orders CancelOrder --data=OrderData --transaction
 php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web --permissions
 ```
 
-Register auth middleware on the module `Provider.php`. Default `make:crud` policy is **deny-by-default**; use `--permissions` in production or `--open-policy` for demos only.
+Route auth is **opt-in** on `make:crud` (config or `--auth`); greenfield: `bin/new-app` (no `--demo`) or `engineering:install --secure` when keys are still null. See `docs/AUTHENTICATION.md`. Generated API tests use `Best\Blueprint\Testing\ActsAsApiUser` when routes use `auth:sanctum` (never hand-roll token acting-as in stubs). After module edits run `php artisan engineering:architecture`. Policy: **deny-by-default**; production `--permissions`; demos `--open-policy` or `bin/new-app --demo`.
 
 For CRUD details use skill **leb-generate-crud**. To change generated code, run `php artisan vendor:publish --tag=blueprint-stubs` and edit `stubs/blueprint/*.stub`.
 

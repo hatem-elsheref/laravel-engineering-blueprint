@@ -49,7 +49,7 @@ final class OwnedCrud
     public static function controllerValues(bool $owned, string $plural): array
     {
         return $owned
-            ? ['values' => ['indexParameters' => "Request \$request, List{$plural} \$query", 'listArguments' => '$request->user()', 'createArguments' => ', $request->user()'], 'imports' => ['Illuminate\\Http\\Request']]
+            ? ['values' => ['indexParameters' => "Request \$request, List{$plural} \$query", 'listArguments' => '$request->user(), ListPerPage::fromRequest($request)', 'createArguments' => ', $request->user()'], 'imports' => ['Illuminate\\Http\\Request', 'Best\\Blueprint\\Support\\ListPerPage']]
             : ['values' => ['indexParameters' => "List{$plural} \$query", 'listArguments' => '', 'createArguments' => ''], 'imports' => []];
     }
 
@@ -113,7 +113,7 @@ final class OwnedCrud
         foreach ($controllers as $key => $stub) {
             $code = $generated[$paths[$key]];
 
-            if (! str_contains($code, '->handle($request->user())') || ! str_contains($code, ', $request->user())')) {
+            if (! str_contains($code, '->handle($request->user()') || ! str_contains($code, ', $request->user())')) {
                 return "Stub {$stubs->path($stub)} did not produce a valid owned controller (no \$request->user() for the list and the create action). Update or delete it, then re-run.";
             }
         }

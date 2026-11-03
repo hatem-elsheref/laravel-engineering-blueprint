@@ -104,7 +104,8 @@ it('scopes the list to the user unless they may see every record', function () {
 
     $query = file_get_contents(app_path('Modules/Orders/Queries/ListOrders.php'));
 
-    expect($query)->toContain('public function handle(User $user, int $perPage = 15): LengthAwarePaginator')
+    expect($query)->toContain('public function handle(User $user, ?int $perPage = null): LengthAwarePaginator')
+        ->toContain('ListPerPage::resolve($perPage)')
         ->toContain("->when(! \$user->can('any', Order::class), fn (\$query) => \$query->whereBelongsTo(\$user))")
         ->toContain('use App\Models\User;');
 
@@ -153,7 +154,7 @@ it('passes the signed-in user from the controllers', function () {
         $controller = file_get_contents($path);
 
         expect($controller)->toContain('public function index(Request $request, ListOrders $query)')
-            ->toContain('$query->handle($request->user())')
+            ->toContain('$query->handle($request->user(), ListPerPage::fromRequest($request))')
             ->toContain('$action->handle(OrderData::fromRequest($request), $request->user())')
             ->toContain('use Illuminate\Http\Request;');
 
@@ -203,7 +204,7 @@ it('keeps the owned mode when adding a side', function () {
 
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--web' => true, '--permissions' => true, '--owned' => true])->assertExitCode(0);
 
-    expect(file_get_contents(app_path('Modules/Orders/Controllers/OrderPageController.php')))->toContain('$query->handle($request->user())');
+    expect(file_get_contents(app_path('Modules/Orders/Controllers/OrderPageController.php')))->toContain('$query->handle($request->user(), ListPerPage::fromRequest($request))');
 });
 
 it('refuses an old controller stub that drops owner scoping', function (string $stub, array $sides) {

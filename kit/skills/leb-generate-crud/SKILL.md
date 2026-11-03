@@ -57,7 +57,8 @@ Run `php artisan engineering:install --profile=modular` (or `saas`, `tenant-saas
 
 - `make:crud` adds `Route::apiResource(...)` (API) or `Route::resource(...)` (web) to the module's route file.
 - **Default policy** denies all abilities until you implement it (or use `--permissions` / demo `--open-policy`). Guests are denied; missing records follow policy/tests (403 vs 404).
-- Auth for token APIs: `make:crud --auth=sanctum` or `config('blueprint.route_auth')` (module `Provider.php` picks it up for `--api`). Generated API tests use `Best\Blueprint\Testing\ActsAsApiUser` (`actAsApiUser()` → `Sanctum::actingAs` when routes use `auth:sanctum`; requires `laravel/sanctum`). Optional JSON envelope: `--api-envelope` / `blueprint.api_envelope`.
+- **Route auth is opt-in:** plain `make:crud` does not add middleware unless `blueprint.route_auth` / `route_auth_web` or `--auth=…`. New apps: `bin/new-app` (secure) vs `--demo` (sandbox). See repo `docs/AUTHENTICATION.md`.
+- Token APIs: `--auth=sanctum` or `config('blueprint.route_auth')`. Tests use `ActsAsApiUser` + `laravel/sanctum` when routes use `auth:sanctum`. Optional JSON envelope: `--api-envelope` / `blueprint.api_envelope`.
 
 ## tenant-saas profile (multi-tenancy)
 

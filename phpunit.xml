@@ -20,6 +20,14 @@
         <testsuite name="PermissionsTenancy">
             <directory>tests/PermissionsTenancy</directory>
         </testsuite>
+        <testsuite name="MysqlIntegration">
+            <directory>tests/MysqlIntegration</directory>
+            <exclude>tests/MysqlIntegration/MysqlEnvironment.php</exclude>
+            <exclude>tests/MysqlIntegration/MysqlTestCase.php</exclude>
+            <exclude>tests/MysqlIntegration/MysqlTenancyTestCase.php</exclude>
+            <exclude>tests/MysqlIntegration/MysqlSpatieTestCase.php</exclude>
+            <exclude>tests/MysqlIntegration/MysqlSpatieTenancyTestCase.php</exclude>
+        </testsuite>
     </testsuites>
     <source>
         <include>

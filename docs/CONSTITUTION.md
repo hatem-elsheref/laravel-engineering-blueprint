@@ -38,7 +38,7 @@ php artisan make:crud Orders Order --api --api-envelope   # optional { data, met
 
 After module work: `php artisan engineering:architecture` ([MODULE-BOUNDARIES.md](./MODULE-BOUNDARIES.md)).
 
-Production CRUD: prefer **`--permissions`** (and **`--owned`** when rows belong to users). Use **`--auth=sanctum`** or **`config('blueprint.route_auth')`** for API routes. See [SECURITY-GENERATION.md](./SECURITY-GENERATION.md).
+Production CRUD: prefer **`--permissions`** (and **`--owned`** when rows belong to users). Route auth is opt-in on `make:crud`; greenfield: **`bin/new-app`** without **`--demo`**. See [AUTHENTICATION.md](./AUTHENTICATION.md) and [SECURITY-GENERATION.md](./SECURITY-GENERATION.md).
 
 Publish stubs: `php artisan vendor:publish --tag=blueprint-stubs`.
 

@@ -10,7 +10,25 @@ LEB uses **Pest** and Laravel’s testing stack. Generated CRUD includes API and
 | **Feature** | HTTP, authorization, validation, tenancy host, generated routes |
 | **Integration / e2e** | Full install profiles (`bin/e2e`), snapshot regression |
 
-Package gate: `composer check` (Pint, PHPStan level 6 on `src/`, Pest).
+Package gate: `composer check` (Pint, PHPStan level 6 on `src/`, Pest). **MySQL integration tests are not part of `composer check`** — they run in a separate CI job.
+
+## MySQL integration (production-like)
+
+Path: `tests/MysqlIntegration/` (transactions, unique indexes, foreign keys, schema DSL migrations, tenant DB isolation + queued jobs, `permissions:sync`, idempotency with `database` cache + locks). Kit auth parity: `tests/Unit/Kit/KitAuthParityTest.php`.
+
+Local (MySQL 8+):
+
+```bash
+export LEB_MYSQL=1
+export LEB_MYSQL_DATABASE=leb_central
+export LEB_MYSQL_USERNAME=root
+export LEB_MYSQL_PASSWORD=root
+composer test:mysql
+```
+
+Without `LEB_MYSQL=1`, those tests **skip**. CI: GitHub Actions job **mysql-integration** (MySQL service container). Includes `TenancyScheduleMysqlTest` (`tenants:run`).
+
+**Idempotency stress:** `composer test:stress` (pcntl overlap; runs in CI matrix after `composer check`). Stub matrix snapshot: `tests/Permissions/StubMatrixEnvelopeSnapshotTest.php` (`modular-api-envelope`).
 
 ## Generated CRUD tests
 

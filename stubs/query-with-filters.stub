@@ -10,10 +10,10 @@ final class List{{ plural }}
     /**
      * @return LengthAwarePaginator<int, {{ entity }}>
      */
-    public function handle(Request $request, int $perPage = 15): LengthAwarePaginator
+    public function handle(Request $request): LengthAwarePaginator
     {
         $query = {{ entity }}::query();
 {{ nestedScope }}{{ queryFilters }}
-        return $query->latest('{{ listLatestColumn }}')->paginate($perPage);
+        return $query->latest('{{ listLatestColumn }}')->paginate(ListPerPage::fromRequest($request));
     }
 }

@@ -25,7 +25,7 @@ Any new decision must match this blueprint or be documented as an amendment here
 | [SETTINGS.md](./SETTINGS.md) | Tenant settings |
 | [PERMISSIONS.md](./PERMISSIONS.md) | Roles, permissions, ownership |
 | [VALIDATION.md](./VALIDATION.md), [DTO.md](./DTO.md), [ACTIONS.md](./ACTIONS.md) | Request lifecycle details |
-| [API-RESPONSES.md](./API-RESPONSES.md), [TESTING.md](./TESTING.md), [IDEMPOTENCY.md](./IDEMPOTENCY.md) | API, tests, idempotency |
+| [API-RESPONSES.md](./API-RESPONSES.md), [AUTHENTICATION.md](./AUTHENTICATION.md), [TESTING.md](./TESTING.md), [IDEMPOTENCY.md](./IDEMPOTENCY.md) | API, route auth model, tests, idempotency |
 | [ENGINEERING-AUDIT.md](./ENGINEERING-AUDIT.md) | Living audit of gaps vs vision |
 
 Package usage (install, commands, config): [../README.md](../README.md).
@@ -49,3 +49,5 @@ Phase 0 is complete (all criteria met):
 - [x] No unnecessary architecture layers are required.
 
 All phases (0–10) are done; 1.0.0 is prepared (see RELEASING.md). Permissions are specified in [PERMISSIONS.md](./PERMISSIONS.md).
+
+**Hardening (post–Phase 0):** Generators and package behavior are treated as a **platform** — verified, not expanded ad hoc. See [HARDENING.md](./HARDENING.md) (MySQL CI, module dependency graph, e2e matrix, idempotency checklist, kit parity tests).

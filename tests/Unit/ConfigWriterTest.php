@@ -27,6 +27,26 @@ it('publishes the package config', function () {
     expect(file_get_contents($this->path))->toBe(file_get_contents(__DIR__.'/../../config/blueprint.php'));
 });
 
+it('applies secure route auth defaults only when keys are null', function () {
+    $this->writer->publish($this->path);
+
+    expect($this->writer->applySecureRouteAuthDefaults($this->path))->toBeTrue()
+        ->and(file_get_contents($this->path))->toContain("'route_auth' => 'sanctum'")
+        ->and(file_get_contents($this->path))->toContain("'route_auth_web' => 'auth'");
+});
+
+it('does not overwrite existing route auth config', function () {
+    $this->writer->publish($this->path);
+    file_put_contents(
+        $this->path,
+        str_replace("'route_auth' => null", "'route_auth' => 'custom'", file_get_contents($this->path)),
+    );
+
+    expect($this->writer->applySecureRouteAuthDefaults($this->path))->toBeTrue()
+        ->and(file_get_contents($this->path))->toContain("'route_auth' => 'custom'")
+        ->and(file_get_contents($this->path))->toContain("'route_auth_web' => 'auth'");
+});
+
 it('sets profile on a fresh publish', function () {
     $this->writer->publish($this->path);
 

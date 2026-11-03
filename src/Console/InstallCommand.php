@@ -21,7 +21,8 @@ class InstallCommand extends Command
         {--profile= : basic, modular, saas or tenant-saas}
         {--force : Overwrite the published config file}
         {--permissions : Set up roles and permissions (needs spatie/laravel-permission)}
-        {--allow-downgrade : Allow switching to a profile with fewer capabilities}';
+        {--allow-downgrade : Allow switching to a profile with fewer capabilities}
+        {--secure : When route_auth keys are still null, set sanctum + web auth (see docs/AUTHENTICATION.md)}';
 
     protected $description = 'Set up this app with a Laravel Engineering Blueprint project profile';
 
@@ -69,6 +70,8 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
+        $this->applySecureRouteAuth($writer, $profile);
+
         $tenancyReady = true;
 
         if ($profile->usesFeatures()) {
@@ -113,6 +116,25 @@ class InstallCommand extends Command
     /**
      * Writes the profile to the app config. Returns false when it could not be recorded.
      */
+    private function applySecureRouteAuth(ConfigWriter $writer, Profile $profile): void
+    {
+        if (! $this->option('secure') || ! $profile->usesModules()) {
+            return;
+        }
+
+        $path = config_path('blueprint.php');
+
+        if ($writer->applySecureRouteAuthDefaults($path)) {
+            config()->set('blueprint.route_auth', 'sanctum');
+            config()->set('blueprint.route_auth_web', 'auth');
+            $this->line("Set route_auth => 'sanctum' and route_auth_web => 'auth' (install laravel/sanctum for API routes).");
+
+            return;
+        }
+
+        $this->line('Secure route auth skipped: route_auth or route_auth_web already configured.');
+    }
+
     private function writeConfig(ConfigWriter $writer, Profile $profile): bool
     {
         $path = config_path('blueprint.php');

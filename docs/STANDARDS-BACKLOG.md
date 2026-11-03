@@ -7,8 +7,8 @@ Gap between [rules.md](../rules.md) vision and current package output. Items are
 | Feature | Ship as | Notes |
 |---------|---------|--------|
 | Consistent API response structure | **Shipped:** `Best\Blueprint\Http\ApiResponse` + `--api-envelope` / `blueprint.api_envelope` | Validation 422 unchanged; optional `errors` envelope later |
-| Pagination standards | Shared + Query base | Cursor/page, max limit |
-| Idempotency for critical POSTs | **Partial** — `ReplayIdempotentRequests` + [IDEMPOTENCY.md](./IDEMPOTENCY.md) | 409 on payload mismatch still app-owned |
+| Pagination standards | **Offset shipped** — `ListPerPage`, `max_per_page`, `?per_page=` ([HARDENING.md](./HARDENING.md) §3) | Cursor pagination still backlog |
+| Idempotency for critical POSTs | **Shipped (HTTP layer)** — `ReplayIdempotentRequests` + [IDEMPOTENCY.md](./IDEMPOTENCY.md) | 409 on payload mismatch, cache lock, query in fingerprint; still pair with DB uniqueness for money/stock |
 | Database indexing conventions | Doc + schema DSL | FK indexes, composite rules |
 | Transaction management | Action convention + `--transaction` | Already on `make:action`; document when mandatory |
 | Authorization conventions | PERMISSIONS + deny-default policy | See [SECURITY-GENERATION.md](./SECURITY-GENERATION.md) |

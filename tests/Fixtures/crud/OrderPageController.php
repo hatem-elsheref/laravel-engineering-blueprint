@@ -12,17 +12,19 @@ use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Queries\ListOrders;
 use App\Modules\Orders\Requests\StoreOrderRequest;
 use App\Modules\Orders\Requests\UpdateOrderRequest;
+use Best\Blueprint\Support\ListPerPage;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 final class OrderPageController
 {
-    public function index(ListOrders $query): View
+    public function index(Request $request, ListOrders $query): View
     {
         Gate::authorize('viewAny', Order::class);
 
-        return view('orders.orders.index', ['orders' => $query->handle()]);
+        return view('orders.orders.index', ['orders' => $query->handle(ListPerPage::fromRequest($request))]);
     }
 
     public function create(): View

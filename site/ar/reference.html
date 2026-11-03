@@ -406,7 +406,8 @@
                         <tr><td><code>route_auth</code></td><td><code>null</code></td><td>وسيط المصادقة لمسارات API المُولَّدة (<code>sanctum</code> → <code>auth:sanctum</code>)</td></tr>
                         <tr><td><code>route_auth_web</code></td><td><code>null</code></td><td>وسيط <code>auth</code> للجلسة على مسارات الويب المُولَّدة</td></tr>
                         <tr><td><code>api_envelope</code></td><td><code>false</code></td><td>عند <code>true</code> يستخدم <code>make:crud</code> غلاف JSON عبر <code>ApiResponse</code></td></tr>
-                        <tr><td><code>idempotency.header</code>, <code>idempotency.ttl</code></td><td><code>Idempotency-Key</code>, <code>86400</code></td><td>وسيط اختياري <code>idempotent</code> لإعادة تشغيل طلبات POST الحرجة</td></tr>
+                        <tr><td><code>pagination.per_page</code>, <code>pagination.max_per_page</code></td><td><code>15</code>, <code>100</code></td><td>استعلامات القوائم المُولَّدة (<code>ListPerPage</code>)؛ <code>?per_page=</code> على index API</td></tr>
+                        <tr><td><code>idempotency.header</code>, <code>idempotency.ttl</code>, <code>idempotency.lock_seconds</code>, <code>idempotency.wait_seconds</code></td><td><code>Idempotency-Key</code>, <code>86400</code>, <code>30</code>, <code>10</code></td><td>وسيط اختياري <code>idempotent</code>: إعادة تشغيل، 409 عند اختلاف الحمولة، قفل Cache أثناء التنفيذ (يفضّل redis في الإنتاج)</td></tr>
                         <tr><td><code>architecture.forbidden_cross_module_segments</code></td><td>Controllers, Requests, Models, …</td><td>أجزاء الاستيراد بين الوحدات التي يمنعها <code>engineering:architecture</code></td></tr>
                         <tr><td><code>architecture.allowed_cross_module_segments</code></td><td>Actions, Queries, Events, Jobs</td><td>أجزاء مسموح استيرادها كواجهة عامة بين الوحدات</td></tr>
                     </tbody>

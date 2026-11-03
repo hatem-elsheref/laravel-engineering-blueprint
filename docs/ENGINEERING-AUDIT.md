@@ -18,7 +18,7 @@ LEB delivers a **coherent modular monolith toolkit** with deny-default policies,
 
 1. Generated routes **do not include authentication middleware** — authorization is policy/FormRequest-only until developers add `auth` / `auth:sanctum`.
 2. Default **`make:crud` policies deny all abilities** — correct for security, but teams must implement policy, use `--permissions`, or (demo only) `--open-policy`.
-3. **Runtime standards** — API envelope helper shipped (opt-in); idempotency middleware and shared pagination helpers remain backlog.
+3. **Runtime standards** — API envelope helper shipped (opt-in); idempotency HTTP layer shipped; pagination config shipped; MySQL CI and dependency-graph tests remain backlog.
 4. **Cross-tenant CRUD regression** was under-tested (addressed in this audit cycle — see tests).
 
 ---
@@ -53,7 +53,7 @@ LEB delivers a **coherent modular monolith toolkit** with deny-default policies,
 | ID | Finding | Evidence | Status |
 |----|---------|----------|--------|
 | M1 | API uses Laravel default JsonResource shape, not custom envelope | `ApiResponse`, `--api-envelope` | **Partial** — opt-in envelope; default remains JsonResource |
-| M2 | List queries hard-code `paginate(15)` | `stubs/query.stub` | **Open** |
+| M2 | List queries hard-code `paginate(15)` | `ListPerPage` + `blueprint.pagination.*` | **Partial** — config + `?per_page=`; cursor style still open |
 | M3 | `engineering:architecture` unavailable on `basic` profile | `Modules::profileError()` | **Open** — document in README |
 | M4 | `rules.md` references `TESTING_RULES.md` (missing file) | grep | **Partial** — [TESTING.md](./TESTING.md) replaces for agents |
 | M5 | E2E modular profile uses `--permissions --owned`, not default deny path | `bin/e2e` | **Open** — intentional happy path |
@@ -103,11 +103,25 @@ Backlog items that require **new Shared code** remain in [STANDARDS-BACKLOG.md](
 
 ---
 
+## Open priorities (review 2026-11)
+
+| Priority | Item | Status |
+|----------|------|--------|
+| High | Idempotency: 409 + cache lock + query fingerprint | **Done** — pair with DB uniqueness for money/stock; **redis** (or lock-capable cache) in production |
+| High | Real **MySQL/PostgreSQL** in CI | **Shipped (core)** — `mysql-integration` job; fails CI if MySQL unreachable; `tests/MysqlIntegration/` |
+| Medium | Pagination | **Partial** — `ListPerPage`, config, `?per_page=` on generated API index |
+| Medium | API envelope | **Opt-in shipped** — project must choose default vs envelope ([API-RESPONSES.md](./API-RESPONSES.md)) |
+| Medium | Authentication | **Documented model** — [AUTHENTICATION.md](./AUTHENTICATION.md): opt-in `make:crud`; `bin/new-app` / `engineering:install --secure` for greenfield |
+| Medium | Module **dependency graph** Pest tests | **Done** — `ModuleDependencyGraphTest` + fixture graph |
+| Medium | Tenant **jobs / schedule** | **Partial** — CRUD + queue connection doc; deeper multi-job tests open ([QUALITY-ROADMAP.md](./QUALITY-ROADMAP.md)) |
+
 ## Recommended next steps (priority order)
 
-1. **409 on idempotency payload mismatch** — optional app layer; package middleware replays by key + body hash only.
-2. **Pest dependency graph** for module boundaries (ROADMAP track 3).
-3. Deeper **schedule/queue** tenancy scenarios (multi-job ordering) if production patterns demand it.
+Full hardening plan (six workstreams, acceptance criteria): **[HARDENING.md](./HARDENING.md)**.
+
+1. **MySQL (or PostgreSQL) job in CI** for migrations, tenancy, and idempotency locks where SQLite differs.
+2. Optional **k6** idempotency load (beyond `composer test:stress` pcntl test).
+3. Remaining stub matrix rows without dedicated snapshots (see HARDENING §5).
 
 **Closed in §24 follow-up:** optional idempotency middleware; `route_auth_web` / web CRUD auth; schema v4 (filters, hidden/resource shaping, profiles); [PRODUCTION-DEFAULTS.md](./PRODUCTION-DEFAULTS.md); extra queued-job isolation test.
 
@@ -120,3 +134,4 @@ Backlog items that require **new Shared code** remain in [STANDARDS-BACKLOG.md](
 | 2026-11-04 | Initial audit; standard docs; doc/stub fixes; cross-tenant CRUD test; provider auth comment |
 | 2026-11-04 | Schema v3 (casts, defaults, hasMany); `ApiResponse` + `--api-envelope`; `--auth` / `route_auth`; CI e2e Laravel 12 |
 | 2026-11-04 | Schema v4; idempotency middleware; `route_auth_web`; production defaults doc; tenancy queue isolation test |
+| 2026-11-04 | Idempotency 409/lock/fingerprint; AUTHENTICATION.md; ListPerPage; [HARDENING.md](./HARDENING.md) phase doc |

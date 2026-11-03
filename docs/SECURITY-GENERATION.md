@@ -1,5 +1,7 @@
 # Security defaults for generated code
 
+**Authentication on routes** (Sanctum, session `auth`) is **opt-in** on the package; **greenfield apps** bootstrap secure via `bin/new-app`. Read [AUTHENTICATION.md](./AUTHENTICATION.md) for the full product model.
+
 ## Current behavior
 
 | Area | Behavior |
@@ -8,7 +10,7 @@
 | **Policy** (`--open-policy`) | Demo only: every **authenticated** user passes; **guests** denied |
 | **Policy** (`--permissions`) | Checks named permissions; guests denied; see [PERMISSIONS.md](./PERMISSIONS.md) |
 | **Policy** (`--owned`) | Row ownership + optional `.any` permission |
-| **Routes** | Optional `blueprint.route_auth` / `make:crud --auth=sanctum` on API; `blueprint.route_auth_web` / `--auth=auth` on web CRUD; module `Provider.php` picks up both when config is set ([PRODUCTION-DEFAULTS.md](./PRODUCTION-DEFAULTS.md)) |
+| **Routes** | **Not authenticated by default** (`route_auth` / `route_auth_web` => null). Enable via config, `make:crud --auth=…`, or greenfield `bin/new-app` ([AUTHENTICATION.md](./AUTHENTICATION.md), [PRODUCTION-DEFAULTS.md](./PRODUCTION-DEFAULTS.md)) |
 | **Features** | Optional `--feature=` middleware on routes |
 | **Tests** | Guest denial; authenticated success (open policy); 404 vs 403 rules for missing records |
 
@@ -16,7 +18,6 @@ The default stub **denies every ability** until you implement the policy or choo
 
 ## Still planned
 
-- **Web CRUD auth** — session `auth` on `Route::resource` when you add it manually or extend the generator.
 - **Broader tenancy regression** — jobs, schedules beyond CRUD ([QUALITY-ROADMAP.md](./QUALITY-ROADMAP.md)).
 
 ## Provider comments (shipped)

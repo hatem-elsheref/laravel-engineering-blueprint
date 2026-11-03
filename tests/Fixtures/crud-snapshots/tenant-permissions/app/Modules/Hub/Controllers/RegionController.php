@@ -13,18 +13,20 @@ use App\Modules\Hub\Queries\ListRegions;
 use App\Modules\Hub\Requests\StoreRegionRequest;
 use App\Modules\Hub\Requests\UpdateRegionRequest;
 use App\Modules\Hub\Resources\RegionResource;
+use Best\Blueprint\Support\ListPerPage;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
 final class RegionController
 {
-    public function index(ListRegions $query): AnonymousResourceCollection
+    public function index(Request $request, ListRegions $query): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', Region::class);
 
-        return RegionResource::collection($query->handle());
+        return RegionResource::collection($query->handle(ListPerPage::fromRequest($request)));
     }
 
     public function store(StoreRegionRequest $request, CreateRegion $action): JsonResponse
