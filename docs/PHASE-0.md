@@ -10,7 +10,7 @@
 **Multi-tenancy:** stancl/tenancy  
 **Database:** Central database + separate database per tenant  
 
-Phase 0 fixes the engineering constitution. It is approved; the package (`best/laravel-engineering-blueprint`) implements it. Phases 0–9 are shipped.
+Phase 0 fixes the engineering constitution. It is approved; the package (`best/laravel-engineering-blueprint`) implements it. All phases (0–10) are done; 1.0.0 is prepared (see RELEASING.md).
 
 Any new decision must match this blueprint or be documented as an amendment here or in the linked spec files.
 

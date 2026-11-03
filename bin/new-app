@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 # Create a ready-to-work Laravel app that uses this package.
 #
-#   bin/new-app <path> [--profile=modular] [--locales=en,ar] [--laravel=^13.0] [--no-example]
+#   bin/new-app <path> [--profile=modular] [--locales=en,ar] [--laravel=^13.0] [--source=path] [--no-example]
 #
 #   --profile     basic | modular | saas | tenant-saas            (default: modular)
 #   --locales     languages the app serves, first = default        (default: en)
 #   --laravel     laravel/laravel version constraint               (default: ^13.0)
+#   --source      path = this repository (default) | packagist = the released package
 #   --no-example  skip the example Catalog module (Product CRUD, Blade + JSON API)
 #
-# The package is installed from this repository (a Composer path repository), so changes here are
-# picked up by the app. Every generated test runs at the end; the script fails if any test fails.
+# With --source=path the package comes from this repository (a Composer path repository), so changes
+# here are picked up by the app; --source=packagist installs the published release. Every generated test runs at the end; the script fails if any test fails.
 set -uo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -18,6 +19,7 @@ PROFILE="modular"
 LOCALES="en"
 LARAVEL="^13.0"
 EXAMPLE=1
+SOURCE="path"
 
 for arg in "$@"; do
   case "$arg" in
@@ -25,7 +27,8 @@ for arg in "$@"; do
     --locales=*) LOCALES="${arg#*=}" ;;
     --laravel=*) LARAVEL="${arg#*=}" ;;
     --no-example) EXAMPLE=0 ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    --source=*) SOURCE="${arg#*=}" ;;
+    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
     -*) echo "new-app: unknown option $arg" >&2; exit 2 ;;
     *) if [[ -z "$TARGET" ]]; then TARGET="$arg"; else echo "new-app: unexpected argument $arg" >&2; exit 2; fi ;;
   esac
@@ -34,7 +37,8 @@ done
 say() { printf 'new-app: %s\n' "$*"; }
 fail() { say "✗ $*"; exit 1; }
 
-[[ -n "$TARGET" ]] || { sed -n '2,12p' "$0"; exit 2; }
+[[ -n "$TARGET" ]] || { sed -n '2,14p' "$0"; exit 2; }
+[[ "$SOURCE" == "path" || "$SOURCE" == "packagist" ]] || fail "--source must be path or packagist"
 case "$PROFILE" in basic|modular|saas|tenant-saas) ;; *) fail "unknown profile \"$PROFILE\" (basic, modular, saas, tenant-saas)" ;; esac
 [[ "$LOCALES" =~ ^[a-z]{2}(_[A-Z]{2})?(,[a-z]{2}(_[A-Z]{2})?)*$ ]] || fail "--locales must look like en or en,ar"
 if [[ -e "$TARGET" ]] && [[ -n "$(ls -A "$TARGET" 2>/dev/null)" ]]; then fail "$TARGET already exists and is not empty"; fi
@@ -55,8 +59,12 @@ artisan() { (cd "$TARGET" && php artisan "$@"); }
 step "create Laravel app ($LARAVEL)" composer create-project "laravel/laravel:$LARAVEL" "$TARGET" --prefer-dist --no-interaction -q
 TARGET="$(cd "$TARGET" && pwd)"
 
-step "use this package from $REPO" bash -c "cd '$TARGET' && composer config repositories.blueprint path '$REPO' && composer config minimum-stability dev && composer config prefer-stable true"
-step "install best/laravel-engineering-blueprint" bash -c "cd '$TARGET' && composer require 'best/laravel-engineering-blueprint:*' -W --no-interaction -q"
+if [[ "$SOURCE" == "path" ]]; then
+  step "use this package from $REPO" bash -c "cd '$TARGET' && composer config repositories.blueprint path '$REPO' && composer config minimum-stability dev && composer config prefer-stable true"
+  step "install best/laravel-engineering-blueprint (local)" bash -c "cd '$TARGET' && composer require 'best/laravel-engineering-blueprint:*' -W --no-interaction -q"
+else
+  step "install best/laravel-engineering-blueprint (Packagist)" bash -c "cd '$TARGET' && composer require 'best/laravel-engineering-blueprint:^1.0' -W --no-interaction -q"
+fi
 step "install Pest" bash -c "cd '$TARGET' && composer remove phpunit/phpunit --dev --no-interaction -q && composer require pestphp/pest --dev -W --no-interaction -q && (./vendor/bin/pest --init --no-interaction </dev/null >/dev/null 2>&1 || true)"
 
 if [[ "$PROFILE" == "tenant-saas" ]]; then
@@ -84,7 +92,7 @@ if [[ "$EXAMPLE" == 1 && "$PROFILE" != "basic" ]]; then
   FEATURE=()
   [[ "$PROFILE" == "saas" || "$PROFILE" == "tenant-saas" ]] && FEATURE=(--feature=orders)
   step "example module Catalog (Blade + JSON API)" artisan make:module Catalog --api --web
-  step "example CRUD Catalog/Product" artisan make:crud Catalog Product --api --web "${FEATURE[@]}" '--fields=name:string,price:float,active:bool,tags:array'
+  step "example CRUD Catalog/Product" artisan make:crud Catalog Product --api --web ${FEATURE[@]+"${FEATURE[@]}"} '--fields=name:string,price:float,active:bool,tags:array'
   if [[ "$PROFILE" == "tenant-saas" ]]; then
     step "tenants:migrate" artisan tenants:migrate
     step "enable the orders feature for tenant demo" artisan feature:enable orders --tenant=demo

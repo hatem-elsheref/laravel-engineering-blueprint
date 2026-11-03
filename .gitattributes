@@ -11,3 +11,7 @@
 /rules.md export-ignore
 /tests export-ignore
 /AGENTS.md export-ignore
+/.github export-ignore
+/phpstan.neon export-ignore
+/pint.json export-ignore
+/RELEASING.md export-ignore

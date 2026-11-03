@@ -1,6 +1,19 @@
 {
     "name": "best/laravel-engineering-blueprint",
-    "description": "Laravel Engineering Blueprint: modular monolith, tenancy, features and CRUD generators for Laravel.",
+    "description": "Laravel engineering blueprint: profiles, modular monolith, API and Blade CRUD generators, multi-tenancy (stancl/tenancy), features, settings and interface translations.",
+    "keywords": [
+        "laravel",
+        "generator",
+        "crud",
+        "modular-monolith",
+        "multi-tenancy",
+        "tenancy",
+        "feature-flags",
+        "settings",
+        "blade",
+        "api",
+        "i18n"
+    ],
     "type": "library",
     "license": "MIT",
     "require": {
@@ -13,6 +26,9 @@
         "orchestra/testbench": "^10.0 || ^11.0",
         "pestphp/pest": "^4.0",
         "stancl/tenancy": "^3.10"
+    },
+    "suggest": {
+        "stancl/tenancy": "Required for the tenant-saas profile (^3.10)."
     },
     "autoload": {
         "psr-4": {
@@ -48,8 +64,5 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true,
-    "suggest": {
-        "stancl/tenancy": "Required for the tenant-saas profile (^3.10)."
-    }
+    "prefer-stable": true
 }

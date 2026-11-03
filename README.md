@@ -185,7 +185,7 @@ CI runs in `.github/workflows/ci.yml`.
 
 ## Status
 
-Phases 0–9 are shipped (Phase 9: `bin/new-app`). Remaining: Phase 10 (release).
+All phases (0–10) are done; version 1.0.0 is prepared. Publishing steps: [RELEASING.md](RELEASING.md). Changes: [CHANGELOG.md](CHANGELOG.md); upgrading: [UPGRADE.md](UPGRADE.md).
 
 ## License
 

@@ -1,9 +1,9 @@
 {
   "name": "laravel-engineering-blueprint",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "phase": {
-    "current": 9,
-    "name": "Starter app generator (bin/new-app) + interface translations",
+    "current": 10,
+    "name": "Release 1.0.0",
     "specs": [
       "docs/PHASE-0.md",
       "docs/ARCHITECTURE.md",
