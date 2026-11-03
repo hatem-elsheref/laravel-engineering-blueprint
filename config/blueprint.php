@@ -14,7 +14,7 @@ return [
     'permissions' => null, // permission definitions class; null => <shared_path>/Permissions/Permissions.php (requires spatie/laravel-permission)
     'central_permissions' => null, // tenant-saas: central-app permission definitions; null => <shared_path>/Permissions/CentralPermissions.php
     'super_admin' => 'super-admin', // built-in role that passes every permission check
-    'permission_guard' => 'web', // guard the permissions and roles are created for
+    'permission_guard' => 'web', // guard the permissions and roles are created for; must be the User model's guard (spatie checks with the model's guard)
     'tenant_seeder' => 'Database\\Seeders\\TenantSeeder', // tenant:create seeds new tenants with this class when it exists
     'tenant_domain' => env('BLUEPRINT_TENANT_DOMAIN'), // tenant-saas: tenants are <name>.<this>; null => first central domain that is not an IP
     'support' => [

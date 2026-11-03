@@ -54,7 +54,8 @@ Follow `docs/NAMING.md`. Folder implies type (`Actions/CreateOrder.php`).
 
 ## Permissions
 
-- Optional (`spatie/laravel-permission`): `php artisan engineering:install --permissions`; spec in `docs/PERMISSIONS.md`.
+- Optional (`spatie/laravel-permission` 8+; teams mode is refused): `php artisan engineering:install --permissions`, then `php artisan migrate`; spec in `docs/PERMISSIONS.md`. `blueprint.permission_guard` must be the User model's guard.
+- tenant-saas app with existing tenants: `php artisan migrate && php artisan tenants:migrate && php artisan permissions:sync && php artisan permissions:sync --central`. `permissions:sync` reports a tenant without the tables ("no permission tables — run php artisan tenants:migrate") and exits 1.
 - Roles and permission names live in `app/Shared/Permissions/Permissions.php` (`CentralPermissions` for the tenant-saas central side); `php artisan permissions:sync` writes them. Never write permission names as strings elsewhere; never create permission rows by hand.
 - `make:crud --permissions` generates a policy with named permissions (deny by default); add `--owned` for per-user records (`<uri>.any` widens). A record the user cannot view is 404.
 - Grant the new group to a role in `roles()` and run `permissions:sync`; the super-admin role passes every check.

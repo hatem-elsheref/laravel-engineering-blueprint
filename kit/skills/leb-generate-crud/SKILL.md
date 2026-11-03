@@ -68,9 +68,10 @@ Requires `composer require stancl/tenancy:^3.10`, then `php artisan engineering:
 
 ## Permissions
 
-- `--permissions` needs spatie/laravel-permission and `engineering:install --permissions`; without them it refuses with the composer hint. The policy checks `<uri>.view/create/update/delete`; the group is added to `Permissions::groups()` (`CentralPermissions` for `--central`).
+- `--permissions` needs spatie/laravel-permission 8+ and `engineering:install --permissions`; without them it refuses with the composer hint. spatie before 8 and teams mode (`permission.teams`) are refused. The policy checks `<uri>.view/create/update/delete`; the group is added to `Permissions::groups()` (`CentralPermissions` for `--central`).
 - `--owned` (requires `--permissions`): `user_id` column set by the create action (never from input), list scoped to the user's records, `<uri>.any` widens permissions the user holds. A record the user cannot view is 404; viewable but not changeable is 403.
-- After generating: add the group to a role in `roles()`, run `php artisan permissions:sync` (tenant-saas: also `--central` for central modules). Generated tests pass without editing roles.
+- After generating: add the group to a role in `roles()`, run `php artisan permissions:sync` (tenant-saas: also `--central` for central modules). Generated tests create the permissions and a test role themselves, so they pass without editing roles or syncing.
+- If the group already exists (e.g. another module's CRUD with the same URI) without an ability this CRUD checks, `make:crud` warns and names it (`Add 'any' to 'orders' in …`): add it, then sync.
 - Adding a side later must use the same flags as the existing CRUD.
 
 ## Features and settings (saas, tenant-saas)
