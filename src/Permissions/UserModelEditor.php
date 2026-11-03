@@ -15,7 +15,7 @@ final class UserModelEditor
      */
     public static function addHasRoles(string $source): ?string
     {
-        if (preg_match('/^[ \t]*use[ \t]+[^;{]*\bHasRoles\b/m', $source) === 1) {
+        if (preg_match('/^[ \t]+use[ \t]+[^;{]*\bHasRoles\b/m', $source) === 1) {
             return $source;
         }
 
@@ -26,7 +26,7 @@ final class UserModelEditor
             return null;
         }
 
-        return self::addImport($edited);
+        return preg_match('/^use\s+'.preg_quote(self::IMPORT, '/').';/m', $edited) === 1 ? $edited : self::addImport($edited);
     }
 
     private static function addImport(string $source): string
