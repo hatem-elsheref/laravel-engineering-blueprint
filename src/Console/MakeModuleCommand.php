@@ -3,7 +3,7 @@
 namespace Best\Blueprint\Console;
 
 use Best\Blueprint\Support\ModuleName;
-use Best\Blueprint\Support\Profile;
+use Best\Blueprint\Support\Modules;
 use Best\Blueprint\Support\StubException;
 use Best\Blueprint\Support\StubRenderer;
 use Illuminate\Console\Command;
@@ -22,15 +22,13 @@ class MakeModuleCommand extends Command
 
     public function handle(Filesystem $files, StubRenderer $stubs): int
     {
-        if (($error = $this->profileError()) !== null) {
+        $modules = new Modules;
+
+        if (($error = $modules->profileError() ?? $modules->pathError()) !== null) {
             return $this->refuse($error);
         }
 
-        $modulePath = trim((string) config('blueprint.module_path'), '/');
-
-        if (! $this->validModulePath($modulePath)) {
-            return $this->refuse(sprintf('module_path must be inside app/ (got "%s").', config('blueprint.module_path')));
-        }
+        $modulePath = $modules->path();
 
         $input = (string) $this->argument('name');
         $name = ModuleName::normalize($input);
@@ -43,10 +41,10 @@ class MakeModuleCommand extends Command
             $this->line("Using module name \"{$name}\".");
         }
 
-        $namespace = 'App\\'.str_replace('/', '\\', substr($modulePath, strlen('app/'))).'\\'.$name;
+        $namespace = $modules->namespace().'\\'.$name;
         $directory = base_path($modulePath.'/'.$name);
 
-        if (($existing = $this->existingModule($files, base_path($modulePath), $name)) !== null) {
+        if (($existing = Modules::entry(base_path($modulePath), $name)) !== null) {
             return $this->refuse("Module \"{$name}\" already exists at {$modulePath}/{$existing}.");
         }
 
@@ -81,44 +79,6 @@ class MakeModuleCommand extends Command
         return self::SUCCESS;
     }
 
-    /**
-     * The existing directory name matching $name case-insensitively, if any.
-     */
-    private function existingModule(Filesystem $files, string $path, string $name): ?string
-    {
-        if (! $files->isDirectory($path)) {
-            return null;
-        }
-
-        foreach (scandir($path) ?: [] as $entry) {
-            if (strcasecmp($entry, $name) === 0) {
-                return $entry;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * "app/" followed by one or more segments that are valid PHP namespace names.
-     */
-    private function validModulePath(string $path): bool
-    {
-        $segments = explode('/', $path);
-
-        if (array_shift($segments) !== 'app' || $segments === []) {
-            return false;
-        }
-
-        foreach ($segments as $segment) {
-            if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $segment) !== 1) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     private function declaresProvider(string $contents, string $namespace): bool
     {
         return str_contains($contents, "namespace {$namespace};")
@@ -141,21 +101,6 @@ class MakeModuleCommand extends Command
             $this->callSilently('route:clear');
             $this->line('cleared route cache');
         }
-    }
-
-    private function profileError(): ?string
-    {
-        $profile = Profile::current();
-
-        if ($profile === null) {
-            return 'No project profile installed. Run php artisan engineering:install first.';
-        }
-
-        if (! $profile->usesModules()) {
-            return "The \"{$profile->value}\" profile has no modules. Switch profile with php artisan engineering:install --profile=modular.";
-        }
-
-        return null;
     }
 
     /**
