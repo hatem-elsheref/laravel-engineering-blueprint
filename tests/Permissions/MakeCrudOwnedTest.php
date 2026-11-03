@@ -125,6 +125,7 @@ it('generates a policy that checks the permission and the owner', function () {
         ->toContain("public function any(User \$user): bool\n    {\n        return \$user->checkPermissionTo(self::GROUP.'.any');")
         ->toContain('Response::deny()')
         ->toContain('Response::denyAsNotFound()')
+        ->toContain("if (! \$user->checkPermissionTo(self::GROUP.'.view') || ! (\$order->user()->is(\$user) || \$this->any(\$user))) {\n            return Response::denyAsNotFound();\n        }\n\n        return \$user->checkPermissionTo(self::GROUP.'.'.\$ability) ? Response::allow() : Response::deny();")
         ->toContain('Response::allow()')
         ->toContain('use Illuminate\Auth\Access\Response;');
 
@@ -168,11 +169,16 @@ it('writes the owned tests', function () {
 
         expect($test)->toContain("    \$this->grantPermissions(\$this->user, 'orders.view', 'orders.create', 'orders.update', 'orders.delete');\n})")
             ->toContain('Order::factory()->for($this->user)->create();')
+            ->toContain($name === 'OrderApiTest'
+                ? "    \$this->actingAs(\$user)->getJson('/api/orders')->assertForbidden();\n    \$this->actingAs(\$user)->postJson('/api/orders', Order::factory()->raw())->assertForbidden();\n    \$this->actingAs(\$user)->getJson(\"/api/orders/{\$order->id}\")->assertNotFound();\n    \$this->actingAs(\$user)->putJson(\"/api/orders/{\$order->id}\", Order::factory()->raw())->assertNotFound();\n    \$this->actingAs(\$user)->deleteJson(\"/api/orders/{\$order->id}\")->assertNotFound();"
+                : '    $this->actingAs($user)->get(url("/orders/{$order->id}/edit"))->assertNotFound();')
             ->toContain("it(\"hides other users' orders\"")
             ->toContain("it('lets an any-holder act on every order'")
             ->toContain("\$this->grantPermissions(\$this->user, 'orders.view', 'orders.create', 'orders.update', 'orders.delete', 'orders.any');")
             ->toContain("it('keeps the owner when an any-holder updates'")
             ->toContain("it('lets a super-admin see every order'")
+            ->toContain("it('denies an owner without the ability'")
+            ->toContain("    \$this->grantPermissions(\$this->user, 'orders.view');\n    \$order = Order::factory()->for(\$this->user, 'user')->create();")
             ->toContain('->assertNotFound()');
 
         ownedLints($path);

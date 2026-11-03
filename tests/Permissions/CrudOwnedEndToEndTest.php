@@ -88,7 +88,7 @@ it("hides other users' records as not found", function () {
     expect($repair->fresh()->name)->not->toBe('Chair');
 });
 
-it('denies the owner without the permission (403, not 404)', function () {
+it('denies an owner who may view but lacks the ability (403, not 404)', function () {
     $repair = Repair::factory()->for($this->user)->create();
     $this->grantPermissions($this->user, 'repairs.view');
     $this->actingAs($this->user);
@@ -97,9 +97,37 @@ it('denies the owner without the permission (403, not 404)', function () {
     $this->putJson("/api/repairs/{$repair->id}", ['name' => 'Chair'])->assertForbidden();
     $this->deleteJson("/api/repairs/{$repair->id}")->assertForbidden();
 
-    $this->grantPermissions($this->user, 'repairs.update');
-    $this->getJson("/api/repairs/{$repair->id}")->assertForbidden();
+    $this->get("/repairs/{$repair->id}/edit")->assertForbidden();
+    $this->delete("/repairs/{$repair->id}")->assertForbidden();
+});
+
+it('answers not found for any record the user may not view, owned or not', function () {
+    $own = Repair::factory()->for($this->user)->create();
+    $theirs = Repair::factory()->for($this->other)->create();
+    $this->grantPermissions($this->user, 'repairs.update', 'repairs.delete');
+    $this->actingAs($this->user);
+
+    foreach ([$own, $theirs] as $repair) {
+        $this->getJson("/api/repairs/{$repair->id}")->assertNotFound();
+        $this->putJson("/api/repairs/{$repair->id}", ['name' => 'Chair'])->assertNotFound();
+        $this->deleteJson("/api/repairs/{$repair->id}")->assertNotFound();
+        $this->get("/repairs/{$repair->id}/edit")->assertNotFound();
+    }
+
     $this->getJson('/api/repairs')->assertForbidden();
+    $this->postJson('/api/repairs', ['name' => 'Desk'])->assertForbidden();
+    expect(Repair::count())->toBe(2);
+});
+
+it("can't tell another user's record from a missing one by an ability it lacks", function () {
+    $theirs = Repair::factory()->for($this->other)->create();
+    $this->grantPermissions($this->user, 'repairs.view', 'repairs.create');
+    $this->actingAs($this->user);
+
+    $this->deleteJson("/api/repairs/{$theirs->id}")->assertNotFound();
+    $this->deleteJson('/api/repairs/999999')->assertNotFound();
+    $this->putJson("/api/repairs/{$theirs->id}", ['name' => 'Chair'])->assertNotFound();
+    $this->putJson('/api/repairs/999999', ['name' => 'Chair'])->assertNotFound();
 });
 
 it('lets an any-holder act on every record and keeps the owner', function () {
@@ -133,8 +161,8 @@ it('grants nothing with any alone', function () {
     $this->actingAs($this->user);
 
     $this->getJson('/api/repairs')->assertForbidden();
-    $this->getJson("/api/repairs/{$repair->id}")->assertForbidden();
-    $this->deleteJson("/api/repairs/{$repair->id}")->assertForbidden();
+    $this->getJson("/api/repairs/{$repair->id}")->assertNotFound();
+    $this->deleteJson("/api/repairs/{$repair->id}")->assertNotFound();
 });
 
 it('lets a super-admin see and change every record', function () {

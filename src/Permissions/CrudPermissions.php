@@ -122,15 +122,16 @@ final class CrudPermissions
         $v = '$'.$this->names->variable;
         $index = $this->testUrl("/api/{$this->names->uri}");
         $one = $this->testUrl("/api/{$this->names->uri}/{{$v}->id}", true);
+        $record = $this->recordDenied();
 
         return "\nit('denies users without the permission', function (): void {\n"
             ."    \$user = User::factory()->create();\n"
             ."    {$v} = {$e}::factory()->create();\n\n"
             ."    \$this->actingAs(\$user)->getJson({$index})->assertForbidden();\n"
             ."    \$this->actingAs(\$user)->postJson({$index}, {$e}::factory()->raw())->assertForbidden();\n"
-            ."    \$this->actingAs(\$user)->getJson({$one})->assertForbidden();\n"
-            ."    \$this->actingAs(\$user)->putJson({$one}, {$e}::factory()->raw())->assertForbidden();\n"
-            ."    \$this->actingAs(\$user)->deleteJson({$one})->assertForbidden();\n"
+            ."    \$this->actingAs(\$user)->getJson({$one})->{$record}();\n"
+            ."    \$this->actingAs(\$user)->putJson({$one}, {$e}::factory()->raw())->{$record}();\n"
+            ."    \$this->actingAs(\$user)->deleteJson({$one})->{$record}();\n"
             ."});\n"
             .$this->superAdminTest('getJson', $index);
     }
@@ -143,6 +144,7 @@ final class CrudPermissions
         $create = $this->testUrl("/{$this->names->uri}/create", web: true);
         $one = $this->testUrl("/{$this->names->uri}/{{$v}->id}", true, true);
         $edit = $this->testUrl("/{$this->names->uri}/{{$v}->id}/edit", true, true);
+        $record = $this->recordDenied();
 
         return "\nit('denies users without the permission', function (): void {\n"
             ."    \$user = User::factory()->create();\n"
@@ -150,12 +152,18 @@ final class CrudPermissions
             ."    \$this->actingAs(\$user)->get({$index})->assertForbidden();\n"
             ."    \$this->actingAs(\$user)->get({$create})->assertForbidden();\n"
             ."    \$this->actingAs(\$user)->post({$index}, {$formInput}())->assertForbidden();\n"
-            ."    \$this->actingAs(\$user)->get({$one})->assertForbidden();\n"
-            ."    \$this->actingAs(\$user)->get({$edit})->assertForbidden();\n"
-            ."    \$this->actingAs(\$user)->put({$one}, {$formInput}())->assertForbidden();\n"
-            ."    \$this->actingAs(\$user)->delete({$one})->assertForbidden();\n"
+            ."    \$this->actingAs(\$user)->get({$one})->{$record}();\n"
+            ."    \$this->actingAs(\$user)->get({$edit})->{$record}();\n"
+            ."    \$this->actingAs(\$user)->put({$one}, {$formInput}())->{$record}();\n"
+            ."    \$this->actingAs(\$user)->delete({$one})->{$record}();\n"
             ."});\n"
             .$this->superAdminTest('get', $index);
+    }
+
+    /** Owned: a record the user may not view (here another user's) is "not found"; otherwise 403. */
+    private function recordDenied(): string
+    {
+        return $this->owned ? 'assertNotFound' : 'assertForbidden';
     }
 
     private function superAdminTest(string $method, string $index): string

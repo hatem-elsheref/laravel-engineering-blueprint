@@ -7,9 +7,10 @@ namespace {{ namespace }};
 {{ imports }}
 /**
  * Each ability needs a named permission ({{ uri }}.view, .create, .update, .delete). A {{ variable }} belongs to the
- * user who created it: others get "not found" unless they also hold {{ uri }}.any, which widens the permissions
- * they hold to every {{ variable }} and grants nothing alone. Grant them to roles in {{ definitions }}::roles() and
- * run {{ sync }}. Guests are always denied: every method requires a User.
+ * user who created it. A {{ variable }} the user may not view (without .view, or another user's unless they hold
+ * {{ uri }}.any) is "not found"; one they may view but not change is "forbidden". {{ uri }}.any widens the
+ * permissions they hold to every {{ variable }} and grants nothing alone. Grant them to roles in
+ * {{ definitions }}::roles() and run {{ sync }}. Guests are always denied: every method requires a User.
  */
 final class {{ entity }}Policy
 {
@@ -50,11 +51,11 @@ final class {{ entity }}Policy
 
     private function owned(User $user, {{ entity }} ${{ variable }}, string $ability): Response
     {
-        if (! $user->checkPermissionTo(self::GROUP.'.'.$ability)) {
-            return Response::deny();
+        // A {{ variable }} the user may not view is "not found" whatever they ask, so users can't probe which ones exist.
+        if (! $user->checkPermissionTo(self::GROUP.'.view') || ! (${{ variable }}->user()->is($user) || $this->any($user))) {
+            return Response::denyAsNotFound();
         }
 
-        // Others' records answer "not found", so users can't probe which ones exist.
-        return ${{ variable }}->user()->is($user) || $this->any($user) ? Response::allow() : Response::denyAsNotFound();
+        return $user->checkPermissionTo(self::GROUP.'.'.$ability) ? Response::allow() : Response::deny();
     }
 }

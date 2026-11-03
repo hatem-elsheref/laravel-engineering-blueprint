@@ -157,6 +157,10 @@ final class OwnedCrud
                 ."    \$this->actingAs(\$this->user)->delete({$one})->assertRedirectContains('/{$names->uri}');\n";
             $update = "    \$this->actingAs(\$this->user)->put({$one}, {$formInput}(['user_id' => \$this->user->id]))->assertSessionHasNoErrors();\n";
             $superAdmin = "    \$this->actingAs(\$user)->get({$index})->assertOk()->assertSee({$see});\n";
+            $ownerOnly = "    \$this->actingAs(\$this->user)->get({$one})->assertOk();\n"
+                ."    \$this->actingAs(\$this->user)->get({$edit})->assertForbidden();\n"
+                ."    \$this->actingAs(\$this->user)->put({$one}, {$formInput}())->assertForbidden();\n"
+                ."    \$this->actingAs(\$this->user)->delete({$one})->assertForbidden();\n";
         } else {
             $hidden = "    \$this->actingAs(\$this->user)->getJson({$one})->assertNotFound();\n"
                 ."    \$this->actingAs(\$this->user)->putJson({$one}, {$e}::factory()->raw())->assertNotFound();\n"
@@ -167,9 +171,18 @@ final class OwnedCrud
                 ."    \$this->actingAs(\$this->user)->deleteJson({$one})->assertNoContent();\n";
             $update = "    \$this->actingAs(\$this->user)->putJson({$one}, {$e}::factory()->raw(['user_id' => \$this->user->id]))->assertOk();\n";
             $superAdmin = "    \$this->actingAs(\$user)->getJson({$index})->assertOk()->assertJsonCount(2, 'data');\n";
+            $ownerOnly = "    \$this->actingAs(\$this->user)->getJson({$one})->assertOk();\n"
+                ."    \$this->actingAs(\$this->user)->putJson({$one}, {$e}::factory()->raw())->assertForbidden();\n"
+                ."    \$this->actingAs(\$this->user)->deleteJson({$one})->assertForbidden();\n";
         }
 
-        return "\nit(\"hides other users' {$names->uri}\", function (): void {\n"
+        return "\nit('denies an owner without the ability', function (): void {\n"
+            ."    \$this->grantPermissions(\$this->user, '{$p->group()}.view');\n"
+            // ->for(..., 'user'): the stub guard looks for the stub's own ->for($this->user).
+            ."    {$v} = {$e}::factory()->for(\$this->user, 'user')->create();\n\n"
+            .$ownerOnly
+            ."});\n"
+            ."\nit(\"hides other users' {$names->uri}\", function (): void {\n"
             ."    {$v} = {$e}::factory()->create();\n\n"
             .$hidden."\n"
             ."    expect({$e}::count())->toBe(1);\n"
