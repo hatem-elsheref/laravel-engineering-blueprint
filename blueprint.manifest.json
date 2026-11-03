@@ -1,9 +1,9 @@
 {
   "name": "laravel-engineering-blueprint",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "phase": {
-    "current": 7,
-    "name": "Features and Settings",
+    "current": 8,
+    "name": "Blade CRUD + quality pass",
     "specs": [
       "docs/PHASE-0.md",
       "docs/ARCHITECTURE.md",
@@ -13,7 +13,7 @@
       "docs/SETTINGS.md"
     ]
   },
-  "description": "Portable Laravel engineering standard: docs, agent skills, rules, and code stubs.",
+  "description": "Laravel 12/13 package (profiles, modules, DTOs, actions, API and Blade CRUD, multi-tenancy, features and settings) plus a portable agent kit.",
   "kitRoot": "kit",
   "docsRoot": "docs",
   "stubsRoot": "stubs",
@@ -51,15 +51,28 @@
     }
   },
   "future": {
-    "laravelPackage": "best/laravel-engineering-blueprint",
-    "artisanCommands": [
-      "make:module",
-      "make:crud"
-    ],
     "pluginTargets": [
       "cursor",
       "codex",
       "claude-marketplace"
+    ]
+  },
+  "package": {
+    "name": "best/laravel-engineering-blueprint",
+    "commands": [
+      "engineering:about",
+      "engineering:install",
+      "make:module",
+      "make:dto",
+      "make:action",
+      "make:crud",
+      "tenant:create",
+      "feature:list",
+      "feature:enable",
+      "feature:disable",
+      "features:sync",
+      "setting:list",
+      "setting:set"
     ]
   }
 }
