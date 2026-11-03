@@ -423,7 +423,7 @@ class MakeCrudCommand extends Command
         return "\nit('validates a {$names->variable}', function (): void {\n"
             .'    $this->actingAs($this->user)->postJson('.($names->tenant ? "\$this->tenantUrl('/api/{$names->uri}')" : "'/api/{$names->uri}'").", [])\n"
             ."        ->assertUnprocessable()\n"
-            ."        ->assertJsonValidationErrors([".implode(', ', $required)."]);\n"
+            .'        ->assertJsonValidationErrors(['.implode(', ', $required)."]);\n"
             ."});\n";
     }
 

@@ -3,6 +3,7 @@
 use App\Models\User;
 use Best\Blueprint\Facades\Setting;
 use Best\Blueprint\Features\FeatureAdmin;
+use Best\Blueprint\Settings\SettingAdmin;
 use Best\Blueprint\Tenancy\TenantSetup;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
@@ -57,7 +58,7 @@ it('blocks a tenant crud while its feature is disabled', function () {
 });
 
 it('reads tenant settings during a tenant request', function () {
-    tenancy()->find('a')->run(fn () => app(Best\Blueprint\Settings\SettingAdmin::class)->set('orders.limit', 42));
+    tenancy()->find('a')->run(fn () => app(SettingAdmin::class)->set('orders.limit', 42));
     Route::middleware(['api', 'tenant'])->get('/limit', fn () => ['limit' => Setting::get('orders.limit')]);
 
     $this->getJson('http://a.localhost/limit')->assertOk()->assertJsonPath('limit', 42);

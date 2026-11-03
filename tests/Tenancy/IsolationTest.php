@@ -2,10 +2,14 @@
 
 use Best\Blueprint\Tenancy\TenantSetup;
 use Best\Blueprint\Tests\Fixtures\RecordTenantJob;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Foundation\Console\ClosureCommand;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
+use Stancl\Tenancy\Bootstrappers\CacheTenancyBootstrapper;
+use Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper;
 
 beforeEach(function () {
     File::copyDirectory(__DIR__.'/../Fixtures/tenant-migrations', database_path('migrations/tenant'));
@@ -60,8 +64,8 @@ it('runs queued jobs in their tenant', function () {
 });
 
 it('runs scheduled tenant work per tenant', function () {
-    app(Illuminate\Contracts\Console\Kernel::class)->registerCommand(
-        new Illuminate\Foundation\Console\ClosureCommand('test:record-tenant', fn () => DB::table('records')->insert(['tenant' => tenant('id')])),
+    app(Kernel::class)->registerCommand(
+        new ClosureCommand('test:record-tenant', fn () => DB::table('records')->insert(['tenant' => tenant('id')])),
     );
 
     $this->artisan('tenants:run', ['commandname' => 'test:record-tenant'])->assertExitCode(0);
@@ -78,8 +82,8 @@ it('pins the database queue to the central connection', function () {
 it('fails loudly instead of sharing an untaggable cache between tenants', function () {
     config()->set('cache.default', 'file');
     config()->set('tenancy.bootstrappers', [
-        Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper::class,
-        Stancl\Tenancy\Bootstrappers\CacheTenancyBootstrapper::class,
+        DatabaseTenancyBootstrapper::class,
+        CacheTenancyBootstrapper::class,
     ]);
 
     expect(fn () => tenancy()->find('a')->run(fn () => cache()->put('greeting', 'hello a')))

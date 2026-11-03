@@ -5,6 +5,7 @@ use Best\Blueprint\Features\FeatureAdmin;
 use Best\Blueprint\Flags\AdminOnly;
 use Best\Blueprint\Tenancy\TenantSetup;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 
 beforeEach(function () {
     useTestFlags();
@@ -35,7 +36,7 @@ it('isolates tenants', function () {
 
 it('is disabled without a tenant', function () {
     expect(Feature::enabled('orders'))->toBeFalse()
-        ->and(Illuminate\Support\Facades\Schema::hasTable('features'))->toBeFalse();
+        ->and(Schema::hasTable('features'))->toBeFalse();
 });
 
 it('refuses admin writes without a tenant', function () {

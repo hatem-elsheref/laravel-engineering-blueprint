@@ -2,7 +2,15 @@
 
 namespace Best\Blueprint\Tests;
 
+use App\Models\Tenant;
 use Best\Blueprint\BlueprintServiceProvider;
+use Illuminate\Support\Facades\Event;
+use Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper;
+use Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper;
+use Stancl\Tenancy\Events\TenancyEnded;
+use Stancl\Tenancy\Events\TenancyInitialized;
+use Stancl\Tenancy\Listeners\BootstrapTenancy;
+use Stancl\Tenancy\Listeners\RevertToCentralContext;
 use Stancl\Tenancy\TenancyServiceProvider;
 
 /**
@@ -32,13 +40,13 @@ abstract class TenancyTestCase extends TestCase
         $app['config']->set('queue.connections.database.connection', null);
         $app['config']->set('cache.stores.database.connection', null);
         $app['config']->set('cache.stores.database.lock_connection', null);
-        $app['config']->set('tenancy.tenant_model', \App\Models\Tenant::class);
+        $app['config']->set('tenancy.tenant_model', Tenant::class);
         $app['config']->set('tenancy.central_domains', ['localhost']);
         $app['config']->set('tenancy.database.central_connection', 'testing');
         $app['config']->set('tenancy.database.prefix', 'tenant_');
         $app['config']->set('tenancy.bootstrappers', [
-            \Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper::class,
-            \Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper::class,
+            DatabaseTenancyBootstrapper::class,
+            QueueTenancyBootstrapper::class,
         ]);
     }
 
@@ -48,8 +56,8 @@ abstract class TenancyTestCase extends TestCase
 
         // What the app's published App\Providers\TenancyServiceProvider wires up: switch to the tenant's
         // database when tenancy starts and back when it ends.
-        \Illuminate\Support\Facades\Event::listen(\Stancl\Tenancy\Events\TenancyInitialized::class, \Stancl\Tenancy\Listeners\BootstrapTenancy::class);
-        \Illuminate\Support\Facades\Event::listen(\Stancl\Tenancy\Events\TenancyEnded::class, \Stancl\Tenancy\Listeners\RevertToCentralContext::class);
+        Event::listen(TenancyInitialized::class, BootstrapTenancy::class);
+        Event::listen(TenancyEnded::class, RevertToCentralContext::class);
     }
 
     protected function defineDatabaseMigrations(): void

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Modules\Shop\Models\PurchaseOrder;
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
@@ -61,7 +62,7 @@ function purchaseOrderPayload(array $overrides = []): array
 }
 
 it('denies guests on every endpoint', function () {
-    $id = App\Modules\Shop\Models\PurchaseOrder::factory()->create()->id;
+    $id = PurchaseOrder::factory()->create()->id;
 
     $this->getJson('/api/purchase-orders')->assertForbidden();
     $this->postJson('/api/purchase-orders', purchaseOrderPayload())->assertForbidden();
@@ -77,7 +78,7 @@ it('rejects out-of-range numbers with 422', function () {
 });
 
 it('lists purchase orders', function () {
-    App\Modules\Shop\Models\PurchaseOrder::factory()->create(['name' => 'Listed']);
+    PurchaseOrder::factory()->create(['name' => 'Listed']);
 
     $this->actingAs($this->user)->getJson('/api/purchase-orders')
         ->assertOk()

@@ -3,6 +3,7 @@
 namespace Best\Blueprint\Tenancy;
 
 use Best\Blueprint\Support\StubRenderer;
+use Illuminate\Cache\TaggableStore;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\ServiceProvider;
@@ -109,7 +110,7 @@ class TenancySetup
         }
 
         $domains = TenantDomains::centralFromAppUrl((string) config('app.url'));
-        $central = "    'central_domains' => [\n".implode('', array_map(fn ($d) => "        '{$d}',\n", $domains))."    ],";
+        $central = "    'central_domains' => [\n".implode('', array_map(fn ($d) => "        '{$d}',\n", $domains)).'    ],';
 
         if (str_contains($contents, $central)) {
             $lines[] = 'already set up: central_domains';
@@ -135,7 +136,7 @@ class TenancySetup
 
         // stancl isolates tenant cache with tags. A store without tags (database, file) fails loudly
         // inside tenants instead of sharing data between them; say so now.
-        if (! cache()->store()->getStore() instanceof \Illuminate\Cache\TaggableStore) {
+        if (! cache()->store()->getStore() instanceof TaggableStore) {
             $lines[] = 'Tenant cache needs a cache store with tags (redis or memcached); CACHE_STORE='
                 .config('cache.default').' fails inside tenants. Set CACHE_STORE=redis for tenant-saas.';
         }
@@ -150,31 +151,20 @@ class TenancySetup
      */
     private function tenantMigrations(): array
     {
-        $lines = [];
-
-        foreach (['users' => '*_create_users_table.php'] as $label => $pattern) {
-            if ((glob(database_path('migrations/tenant/'.$pattern)) ?: []) !== []) {
-                $lines[] = "already set up: {$label} migration";
-
-                continue;
-            }
-
-            $central = glob(database_path('migrations/'.$pattern)) ?: [];
-
-            if ($central === []) {
-                if ($label === 'users') {
-                    $lines[] = 'No users migration found to copy; add one to database/migrations/tenant for tenant users.';
-                }
-
-                continue;
-            }
-
-            $this->files->ensureDirectoryExists(database_path('migrations/tenant'));
-            $this->files->copy($central[0], database_path('migrations/tenant/'.basename($central[0])));
-            $lines[] = "✓ copied {$label} migration to database/migrations/tenant";
+        if ((glob(database_path('migrations/tenant/*_create_users_table.php')) ?: []) !== []) {
+            return ['already set up: users migration'];
         }
 
-        return $lines;
+        $central = glob(database_path('migrations/*_create_users_table.php')) ?: [];
+
+        if ($central === []) {
+            return ['No users migration found to copy; add one to database/migrations/tenant for tenant users.'];
+        }
+
+        $this->files->ensureDirectoryExists(database_path('migrations/tenant'));
+        $this->files->copy($central[0], database_path('migrations/tenant/'.basename($central[0])));
+
+        return ['✓ copied users migration to database/migrations/tenant'];
     }
 
     private function registerProvider(): string

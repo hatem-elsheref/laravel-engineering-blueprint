@@ -1,0 +1,13 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 6
+    paths:
+        - src
+    tmpDir: .phpstan.cache
+    ignoreErrors:
+        # The testing helper is used by apps' test suites, never inside src/, so PHPStan can't analyse it in context.
+        -
+            identifier: trait.unused
+            path: src/Testing/InteractsWithTenancy.php

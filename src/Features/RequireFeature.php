@@ -3,6 +3,7 @@
 namespace Best\Blueprint\Features;
 
 use Closure;
+use Illuminate\Queue\Jobs\SyncJob;
 
 /**
  * Job middleware: a job for a disabled feature fails (visible in failed jobs) instead of running.
@@ -17,7 +18,7 @@ final class RequireFeature
     {
         if (! app(FeatureManager::class)->enabled($this->key)) {
             // The sync driver has no failed-jobs table: fail loudly instead of silently skipping.
-            if (isset($job->job) && $job->job instanceof \Illuminate\Queue\Jobs\SyncJob) {
+            if (isset($job->job) && $job->job instanceof SyncJob) {
                 throw FeatureDisabled::key($this->key);
             }
 

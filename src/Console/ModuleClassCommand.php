@@ -2,11 +2,11 @@
 
 namespace Best\Blueprint\Console;
 
-use Best\Blueprint\Support\ModuleName;
 use Best\Blueprint\Support\FileWriter;
+use Best\Blueprint\Support\ModuleName;
 use Best\Blueprint\Support\Modules;
-use Best\Blueprint\Support\PhpSource;
 use Best\Blueprint\Support\PhpNames;
+use Best\Blueprint\Support\PhpSource;
 use Best\Blueprint\Support\StubException;
 use Best\Blueprint\Support\StubRenderer;
 use Illuminate\Console\Command;

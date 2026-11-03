@@ -1,6 +1,9 @@
 <?php
 
+use App\Modules\Orders\Actions\RunActionCheck;
+use App\Modules\Orders\Data\ActionCheckData;
 use Illuminate\Support\Facades\File;
+use Symfony\Component\Process\Process;
 
 beforeEach(function () {
     config()->set('blueprint.profile', 'modular');
@@ -121,15 +124,15 @@ it('generated action works', function () {
     $this->artisan('make:action', ['module' => 'Orders', 'name' => 'RunActionCheck', '--data' => 'ActionCheckData', '--transaction' => true])->assertExitCode(0);
 
     foreach (['Data/ActionCheckData.php', 'Actions/RunActionCheck.php'] as $file) {
-        $lint = new Symfony\Component\Process\Process([PHP_BINARY, '-l', app_path('Modules/Orders/'.$file)]);
+        $lint = new Process([PHP_BINARY, '-l', app_path('Modules/Orders/'.$file)]);
         $lint->run();
         expect($lint->getExitCode())->toBe(0);
         require_once app_path('Modules/Orders/'.$file);
     }
 
-    $data = new App\Modules\Orders\Data\ActionCheckData('a');
+    $data = new ActionCheckData('a');
 
-    expect((new App\Modules\Orders\Actions\RunActionCheck)->handle($data))->toBeNull();
+    expect((new RunActionCheck)->handle($data))->toBeNull();
 });
 
 it('refuses reserved class names', function (string $name) {

@@ -8,6 +8,7 @@ use Best\Blueprint\Tenancy\TenantSetup;
 use Best\Blueprint\Tenancy\TenantSetupException;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Event;
+use Stancl\Tenancy\Events\TenancyInitialized;
 
 class TenantCreateCommand extends Command
 {
@@ -26,7 +27,7 @@ class TenantCreateCommand extends Command
             return $this->refuse('tenant:create needs the tenant-saas profile with stancl/tenancy set up. Run php artisan engineering:install --profile=tenant-saas.');
         }
 
-        if (! Event::hasListeners(\Stancl\Tenancy\Events\TenancyInitialized::class)) {
+        if (! Event::hasListeners(TenancyInitialized::class)) {
             return $this->refuse('Tenancy is not bootstrapped (App\Providers\TenancyServiceProvider is not registered), so tenant migrations would hit the central database. Run php artisan engineering:install --profile=tenant-saas.');
         }
 

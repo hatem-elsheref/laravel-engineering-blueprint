@@ -3,6 +3,7 @@
 use App\Models\User;
 use Best\Blueprint\Tenancy\TenantSetup;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 
 // Module names here must not be used by other test files: generated classes stay loaded for the whole run.
 beforeEach(function () {
@@ -67,7 +68,7 @@ it('serves a generated tenant crud', function () {
     $this->actingAs($user)->deleteJson("http://a.localhost/api/products/{$id}")->assertNoContent();
 
     $this->getJson('http://localhost/api/products')->assertNotFound();
-    expect(Illuminate\Support\Facades\Schema::connection('testing')->hasTable('products'))->toBeFalse();
+    expect(Schema::connection('testing')->hasTable('products'))->toBeFalse();
 });
 
 it('caches routes when a central and a tenant module share a resource', function () {

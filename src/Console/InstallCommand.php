@@ -22,11 +22,6 @@ class InstallCommand extends Command
 
     protected $description = 'Set up this app with a Laravel Engineering Blueprint project profile';
 
-    /**
-     * Capabilities whose phase has not shipped yet. Delete an entry when its phase ships.
-     */
-    private const UPCOMING = [];
-
     private const ALL_CAPABILITIES = ['Modules', 'Features', 'Settings', 'Tenancy'];
 
     public function handle(Compatibility $compatibility, ConfigWriter $writer): int
@@ -223,11 +218,8 @@ class InstallCommand extends Command
                 continue;
             }
 
-            $suffix = isset(self::UPCOMING[$capability]) ? ' (coming in Phase '.self::UPCOMING[$capability].')' : '';
-            $this->line("✓ {$capability}{$suffix}");
+            $this->line("✓ {$capability}");
         }
-
-        $modulesShipped = ! isset(self::UPCOMING['Modules']);
 
         if ($profile->usesSettings()) {
             $this->line('Define the manage-settings Gate ability to let tenant owners change settings.');
@@ -239,19 +231,15 @@ class InstallCommand extends Command
             return;
         }
 
-        if ($profile->usesTenancy() && ! $tenancyReady) {
-            $this->line('Next: composer require stancl/tenancy:^3.10');
+        if ($profile->usesTenancy()) {
+            $this->line($tenancyReady
+                ? 'Next: php artisan migrate && php artisan tenant:create acme'
+                : 'Next: composer require stancl/tenancy:^3.10');
 
             return;
         }
 
-        if ($profile->usesTenancy() && $tenancyReady) {
-            $this->line('Next: php artisan migrate && php artisan tenant:create acme');
-
-            return;
-        }
-
-        $this->line($profile->usesModules() && $modulesShipped
+        $this->line($profile->usesModules()
             ? 'Next: php artisan make:module <Name>'
             : 'Next: php artisan engineering:about');
     }

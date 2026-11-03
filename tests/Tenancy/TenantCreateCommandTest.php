@@ -1,9 +1,12 @@
 <?php
 
 use App\Models\Tenant;
+use Best\Blueprint\Tests\Fixtures\RecordingTenantSeeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
+use Stancl\Tenancy\Events\TenancyInitialized;
+use Stancl\Tenancy\Events\TenantCreated;
 
 const RECORDS_MIGRATION = <<<'PHP'
 <?php
@@ -137,16 +140,16 @@ it('retries after failure', function () {
 });
 
 it('does not run the app tenant pipeline', function () {
-    Event::fake([Stancl\Tenancy\Events\TenantCreated::class]);
+    Event::fake([TenantCreated::class]);
 
     $this->artisan('tenant:create', ['name' => 'acme'])->assertExitCode(0);
 
-    Event::assertNotDispatched(Stancl\Tenancy\Events\TenantCreated::class);
+    Event::assertNotDispatched(TenantCreated::class);
 });
 
 it('seeds once when the tenant seeder exists', function () {
     require_once __DIR__.'/../Fixtures/RecordingTenantSeeder.php';
-    config()->set('blueprint.tenant_seeder', Best\Blueprint\Tests\Fixtures\RecordingTenantSeeder::class);
+    config()->set('blueprint.tenant_seeder', RecordingTenantSeeder::class);
 
     $this->artisan('tenant:create', ['name' => 'acme'])->expectsOutputToContain('✓ Seed tenant data')->assertExitCode(0);
     $this->artisan('tenant:create', ['name' => 'acme'])->expectsOutputToContain('– Seed tenant data (already done)')->assertExitCode(0);
@@ -155,7 +158,7 @@ it('seeds once when the tenant seeder exists', function () {
 });
 
 it('refuses when tenancy cannot switch databases', function () {
-    Illuminate\Support\Facades\Event::forget(Stancl\Tenancy\Events\TenancyInitialized::class);
+    Event::forget(TenancyInitialized::class);
 
     $this->artisan('tenant:create', ['name' => 'acme'])
         ->expectsOutputToContain('Tenancy is not bootstrapped (App\Providers\TenancyServiceProvider is not registered), so tenant migrations would hit the central database.')

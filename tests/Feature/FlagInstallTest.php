@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\File;
+use Symfony\Component\Process\Process;
 
 afterEach(function () {
     File::deleteDirectory(app_path('Shared'));
@@ -28,7 +29,7 @@ it('sets up features and settings for saas', function () {
         ->and(glob(database_path('migrations/*_create_settings_table.php')))->toHaveCount(1);
 
     foreach ([app_path('Shared/Features/Features.php'), app_path('Shared/Settings/Settings.php'), ...glob(database_path('migrations/*.php'))] as $file) {
-        $lint = new Symfony\Component\Process\Process([PHP_BINARY, '-l', $file]);
+        $lint = new Process([PHP_BINARY, '-l', $file]);
         $lint->run();
         expect($lint->getExitCode())->toBe(0, $file);
     }

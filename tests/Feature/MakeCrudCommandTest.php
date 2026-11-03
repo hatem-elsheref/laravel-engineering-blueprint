@@ -2,6 +2,7 @@
 
 use Best\Blueprint\Support\PestDetector;
 use Illuminate\Support\Facades\File;
+use Symfony\Component\Process\Process;
 
 beforeEach(function () {
     config()->set('blueprint.profile', 'modular');
@@ -104,7 +105,7 @@ it('generated files are valid php', function () {
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--fields' => CRUD_FIELDS.',price:?float,active:bool,tags:array,shippedAt:?Carbon\CarbonImmutable'])->assertExitCode(0);
 
     foreach ([...crudFiles(), 'app/Modules/Orders/routes/api.php'] as $file) {
-        $lint = new Symfony\Component\Process\Process([PHP_BINARY, '-l', base_path($file)]);
+        $lint = new Process([PHP_BINARY, '-l', base_path($file)]);
         $lint->run();
         expect($lint->getExitCode())->toBe(0, $file.': '.$lint->getOutput());
     }
@@ -301,9 +302,9 @@ it('generates guest checks for every endpoint', function () {
     expect(file_get_contents(base_path('tests/Feature/Modules/Orders/OrderApiTest.php')))
         ->toContain("\$this->getJson('/api/orders')->assertForbidden();")
         ->toContain("\$this->postJson('/api/orders', Order::factory()->raw())->assertForbidden();")
-        ->toContain("\$this->getJson(\"/api/orders/{\$order->id}\")->assertForbidden();")
-        ->toContain("\$this->putJson(\"/api/orders/{\$order->id}\", Order::factory()->raw())->assertForbidden();")
-        ->toContain("\$this->deleteJson(\"/api/orders/{\$order->id}\")->assertForbidden();");
+        ->toContain('$this->getJson("/api/orders/{$order->id}")->assertForbidden();')
+        ->toContain('$this->putJson("/api/orders/{$order->id}", Order::factory()->raw())->assertForbidden();')
+        ->toContain('$this->deleteJson("/api/orders/{$order->id}")->assertForbidden();');
 });
 
 it('generates a guest check for missing records', function () {

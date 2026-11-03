@@ -1,6 +1,7 @@
 <?php
 
 use Best\Blueprint\Facades\Setting;
+use Best\Blueprint\Flags\AdminOnly;
 use Best\Blueprint\Settings\SettingAdmin;
 use Best\Blueprint\Tenancy\TenantSetup;
 use Illuminate\Support\Facades\File;
@@ -29,5 +30,5 @@ it('keeps settings per tenant', function () {
 
 it('falls back to defaults without a tenant and refuses writes', function () {
     expect(Setting::get('orders.limit'))->toBe(10)
-        ->and(fn () => app(SettingAdmin::class)->set('orders.limit', 5))->toThrow(Best\Blueprint\Flags\AdminOnly::class);
+        ->and(fn () => app(SettingAdmin::class)->set('orders.limit', 5))->toThrow(AdminOnly::class);
 });

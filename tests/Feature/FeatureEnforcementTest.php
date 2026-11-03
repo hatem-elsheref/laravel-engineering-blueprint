@@ -5,6 +5,7 @@ use Best\Blueprint\Features\FeatureAdmin;
 use Best\Blueprint\Features\FeatureDisabled;
 use Best\Blueprint\Features\RequireFeature;
 use Best\Blueprint\Features\UnknownFeature;
+use Best\Blueprint\Tests\Fixtures\GatedJob;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 
@@ -106,5 +107,5 @@ it('fails gated jobs loudly on the sync queue', function () {
     require_once __DIR__.'/../Fixtures/GatedJob.php';
     config()->set('queue.default', 'sync');
 
-    expect(fn () => dispatch(new Best\Blueprint\Tests\Fixtures\GatedJob))->toThrow(FeatureDisabled::class);
+    expect(fn () => dispatch(new GatedJob))->toThrow(FeatureDisabled::class);
 });

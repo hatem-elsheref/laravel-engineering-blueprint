@@ -4,7 +4,17 @@ namespace Best\Blueprint;
 
 use Best\Blueprint\Support\Compatibility;
 use Best\Blueprint\Tenancy\TenancyDetector;
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Foundation\Http\Events\RequestHandled;
+use Illuminate\Routing\Events\RouteMatched;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Stancl\Tenancy\Events\TenancyEnded;
+use Stancl\Tenancy\Events\TenancyInitialized;
+use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
+use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
 class BlueprintServiceProvider extends ServiceProvider
 {
@@ -28,18 +38,18 @@ class BlueprintServiceProvider extends ServiceProvider
         $this->app['router']->aliasMiddleware('feature', Http\Middleware\EnsureFeatureEnabled::class);
 
         // Admin writes are refused while a route is being handled, also in an app's own HTTP tests.
-        \Illuminate\Support\Facades\Event::listen(\Illuminate\Routing\Events\RouteMatched::class, fn () => $this->app->make(Flags\HttpDispatch::class)->active = true);
-        \Illuminate\Support\Facades\Event::listen(\Illuminate\Foundation\Http\Events\RequestHandled::class, fn () => $this->app->make(Flags\HttpDispatch::class)->active = false);
+        Event::listen(RouteMatched::class, fn () => $this->app->make(Flags\HttpDispatch::class)->active = true);
+        Event::listen(RequestHandled::class, fn () => $this->app->make(Flags\HttpDispatch::class)->active = false);
 
         if ($this->app->bound('blade.compiler')) {
-            \Illuminate\Support\Facades\Blade::if('feature', fn (string $key): bool => $this->app->make(Features\FeatureManager::class)->enabled($key));
+            Blade::if('feature', fn (string $key): bool => $this->app->make(Features\FeatureManager::class)->enabled($key));
         }
 
         if ($this->app->make(TenancyDetector::class)->active()) {
             $this->registerTenancyMiddleware();
 
-            \Illuminate\Support\Facades\Event::listen(
-                [\Stancl\Tenancy\Events\TenancyInitialized::class, \Stancl\Tenancy\Events\TenancyEnded::class],
+            Event::listen(
+                [TenancyInitialized::class, TenancyEnded::class],
                 function (): void {
                     foreach ([Features\FeatureManager::class, Settings\SettingManager::class] as $manager) {
                         if ($this->app->resolved($manager)) {
@@ -93,18 +103,18 @@ class BlueprintServiceProvider extends ServiceProvider
         $router = $this->app['router'];
 
         $router->middlewareGroup('tenant', [
-            \Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class,
-            \Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains::class,
+            InitializeTenancyByDomain::class,
+            PreventAccessFromCentralDomains::class,
         ]);
         $router->middlewareGroup('central', [Http\Middleware\CentralDomainsOnly::class]);
 
         // Unknown tenant domains are "not found", not a server error.
-        \Stancl\Tenancy\Middleware\InitializeTenancyByDomain::$onFail = fn () => abort(404);
+        InitializeTenancyByDomain::$onFail = fn () => abort(404);
 
         // route() for central-module routes (bound to Route::domain('{central_domain}')); the
         // CentralDomainsOnly middleware overrides this with the request's host.
         $central = (array) config('tenancy.central_domains', []);
-        \Illuminate\Support\Facades\URL::defaults(['central_domain' => $central[0] ?? 'localhost']);
+        URL::defaults(['central_domain' => $central[0] ?? 'localhost']);
 
         // Laravel's database queue uses the *default* connection, which is the tenant's database while
         // tenancy is active; jobs must go to the central database where the worker reads them.
@@ -112,10 +122,9 @@ class BlueprintServiceProvider extends ServiceProvider
             config()->set('queue.connections.database.connection', config('tenancy.database.central_connection'));
         }
 
+        $kernel = $this->app->make(Kernel::class);
 
-        $kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
-
-        foreach ([\Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class, \Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains::class] as $middleware) {
+        foreach ([InitializeTenancyByDomain::class, PreventAccessFromCentralDomains::class] as $middleware) {
             $kernel->prependToMiddlewarePriority($middleware);
         }
     }

@@ -1,7 +1,13 @@
 <?php
 
+use App\Models\Tenant;
+use Best\Blueprint\Facades\Feature;
 use Best\Blueprint\Testing\InteractsWithTenancy;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\ParallelTesting;
+use Stancl\Tenancy\Events\TenancyInitialized;
 
 uses(InteractsWithTenancy::class);
 
@@ -28,23 +34,23 @@ it('cleans up its tenants', function () {
 
     expect(tenancy()->initialized)->toBeFalse()
         ->and(file_exists(database_path('blueprint_test_test')))->toBeFalse()
-        ->and(App\Models\Tenant::find('test'))->toBeNull()
+        ->and(Tenant::find('test'))->toBeNull()
         ->and(DB::table('domains')->count())->toBe(0);
 });
 
 it('gives parallel workers their own tenant', function () {
-    Illuminate\Support\Facades\ParallelTesting::resolveTokenUsing(fn () => '3');
+    ParallelTesting::resolveTokenUsing(fn () => '3');
 
     $this->createTestTenant();
 
     expect(tenant('id'))->toBe('test-3')
         ->and(file_exists(database_path('blueprint_test_test_3')))->toBeTrue();
 
-    Illuminate\Support\Facades\ParallelTesting::resolveTokenUsing(fn () => false);
+    ParallelTesting::resolveTokenUsing(fn () => false);
 });
 
 it('refuses when tenancy is not bootstrapped', function () {
-    Illuminate\Support\Facades\Event::forget(Stancl\Tenancy\Events\TenancyInitialized::class);
+    Event::forget(TenancyInitialized::class);
 
     expect(fn () => $this->createTestTenant())->toThrow(RuntimeException::class, 'Tenancy is not bootstrapped');
 });
@@ -62,12 +68,12 @@ it('runs its cleanup before other teardown callbacks', function () {
 
 it('gives test tenants their default features', function () {
     useTestFlags();
-    Illuminate\Support\Facades\File::ensureDirectoryExists(database_path('migrations/tenant'));
-    Illuminate\Support\Facades\File::copy(__DIR__.'/../../stubs/features-migration.stub', database_path('migrations/tenant/2026_01_01_000100_create_features_table.php'));
+    File::ensureDirectoryExists(database_path('migrations/tenant'));
+    File::copy(__DIR__.'/../../stubs/features-migration.stub', database_path('migrations/tenant/2026_01_01_000100_create_features_table.php'));
 
     $this->createTestTenant();
 
-    expect(Best\Blueprint\Facades\Feature::enabled('orders'))->toBeTrue();
+    expect(Feature::enabled('orders'))->toBeTrue();
 
-    Illuminate\Support\Facades\File::deleteDirectory(database_path('migrations/tenant'));
+    File::deleteDirectory(database_path('migrations/tenant'));
 });

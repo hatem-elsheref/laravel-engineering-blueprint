@@ -2,6 +2,7 @@
 
 use Best\Blueprint\Tenancy\TenancyDetector;
 use Illuminate\Support\Facades\File;
+use Illuminate\Testing\PendingCommand;
 
 beforeEach(function () {
     $this->providersPath = app()->getBootstrapProvidersPath();
@@ -20,7 +21,7 @@ afterEach(function () {
     file_put_contents($this->providersPath, $this->providers);
 });
 
-function installTenantSaas(): Illuminate\Testing\PendingCommand
+function installTenantSaas(): PendingCommand
 {
     return test()->artisan('engineering:install', ['--profile' => 'tenant-saas', '--no-interaction' => true]);
 }

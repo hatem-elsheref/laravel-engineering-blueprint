@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Best\Blueprint\Facades\Setting;
+use Best\Blueprint\Features\FeatureAdmin;
 use Best\Blueprint\Settings\InvalidSettingValue;
 use Best\Blueprint\Settings\SettingAdmin;
 use Best\Blueprint\Settings\SettingNotEditable;
@@ -122,7 +123,7 @@ it('says a platform setting is not editable before checking its value', function
 
 it('stamps created_at on new rows', function () {
     app(SettingAdmin::class)->set('orders.limit', 3);
-    app(Best\Blueprint\Features\FeatureAdmin::class)->enable('reports');
+    app(FeatureAdmin::class)->enable('reports');
 
     expect(DB::table('settings')->where('key', 'orders.limit')->value('created_at'))->not->toBeNull()
         ->and(DB::table('features')->where('key', 'reports')->value('created_at'))->not->toBeNull();

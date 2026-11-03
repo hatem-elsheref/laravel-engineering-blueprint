@@ -30,6 +30,7 @@ final readonly class CrudField
             'bool' => "\$table->boolean('{$this->column}')",
             'array' => "\$table->json('{$this->column}')",
             'date' => "\$table->timestamp('{$this->column}')",
+            default => throw $this->unknownKind(),
         };
 
         return $this->nullable ? $column.'->nullable()' : $column;
@@ -66,6 +67,7 @@ final readonly class CrudField
             'bool' => ['boolean'],
             'array' => ['array'],
             'date' => ['date'],
+            default => throw $this->unknownKind(),
         }];
     }
 
@@ -78,6 +80,7 @@ final readonly class CrudField
             'bool' => 'fake()->boolean()',
             'array' => '[]',
             'date' => 'CarbonImmutable::now()',
+            default => throw $this->unknownKind(),
         };
     }
 
@@ -92,10 +95,16 @@ final readonly class CrudField
             'bool' => "\$request->boolean({$key})",
             'array' => "(array) \$request->validated({$key})",
             'date' => "CarbonImmutable::parse(\$request->validated({$key}))->setTimezone(config('app.timezone'))",
+            default => throw $this->unknownKind(),
         };
 
         return $this->nullable
             ? "\$request->validated({$key}) === null ? null : {$expression}"
             : $expression;
+    }
+
+    private function unknownKind(): \LogicException
+    {
+        return new \LogicException("Unsupported field type {$this->type}.");
     }
 }

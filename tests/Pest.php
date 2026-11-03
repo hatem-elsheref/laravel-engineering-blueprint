@@ -1,5 +1,7 @@
 <?php
 
+use Best\Blueprint\Tests\Fixtures\TestFeatures;
+use Best\Blueprint\Tests\Fixtures\TestSettings;
 use Best\Blueprint\Tests\TenancyTestCase;
 use Best\Blueprint\Tests\TestCase;
 
@@ -17,6 +19,6 @@ function useTestFlags(): void
 {
     require_once __DIR__.'/Fixtures/TestFeatures.php';
     require_once __DIR__.'/Fixtures/TestSettings.php';
-    config()->set('blueprint.features', Best\Blueprint\Tests\Fixtures\TestFeatures::class);
-    config()->set('blueprint.settings', Best\Blueprint\Tests\Fixtures\TestSettings::class);
+    config()->set('blueprint.features', TestFeatures::class);
+    config()->set('blueprint.settings', TestSettings::class);
 }

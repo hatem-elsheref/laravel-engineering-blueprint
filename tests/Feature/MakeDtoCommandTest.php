@@ -1,6 +1,9 @@
 <?php
 
+use App\Modules\Orders\Data\DtoCheckData;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\File;
+use Symfony\Component\Process\Process;
 
 beforeEach(function () {
     config()->set('blueprint.profile', 'modular');
@@ -167,12 +170,12 @@ it('generated data class works', function () {
     $this->artisan('make:dto', ['module' => 'Orders', 'name' => 'DtoCheckData', '--fields' => DTO_FIELDS])->assertExitCode(0);
     $path = app_path('Modules/Orders/Data/DtoCheckData.php');
 
-    $lint = new Symfony\Component\Process\Process([PHP_BINARY, '-l', $path]);
+    $lint = new Process([PHP_BINARY, '-l', $path]);
     $lint->run();
     expect($lint->getExitCode())->toBe(0);
 
     require_once $path;
-    $data = new App\Modules\Orders\Data\DtoCheckData('a', 2, null, Carbon\CarbonImmutable::now());
+    $data = new DtoCheckData('a', 2, null, CarbonImmutable::now());
 
     expect($data->quantity)->toBe(2);
 });

@@ -51,7 +51,7 @@
   - `string` → `<input type="text">`; `int` → `type="number" step="1"`; `float` → `type="number" step="any"`;
   - `bool` → hidden `0` + checkbox `1` (`@checked(old(...))`);
   - `date` → `type="datetime-local"`, edit value `format('Y-m-d\TH:i')`;
-  - `array` → `<textarea>` one value per line *(my call)*; the Store/Update Requests convert a **string** `<col>` to an array of trimmed non-empty lines in `prepareForValidation()` only when the request is not JSON (`! $this->isJson()`), so API behavior is unchanged.
+  - `array` → one `<input name="<col>[]">` per value plus one empty (see builder-check call 6).
 - Labels: `Str::headline(column)`.
 
 **Guests and errors:** same policy (guests 403), same `->missing()` (guests 403, users 404), feature gate 403 — Laravel renders these as HTML error pages for browsers and JSON for API/`Accept: application/json` (verified by tests).
@@ -78,3 +78,12 @@ Golden files for the web controller and `_form`; flags matrix (none / `--api` / 
 6. **Version `0.8.0`.**
 
 Done = `composer check` green on Laravel 12 and 13, and `bin/e2e` green for all four profiles.
+
+## Builder-check calls (Part A)
+
+1. **API route names:** every API route line generated from 0.8.0 is `->names('api.<uri>')` (Phase 5 output changes deliberately; web keeps plain `<uri>.*`). An API route stub that doesn't produce `names(` is refused.
+2. **Adding a side later:** when the entity's shared files (Model, Data, Store/Update Requests, Create/Update/Delete actions, List query, Policy) **all** exist and the requested side's files don't, `make:crud` writes only the requested side (`--web` or `--api`) plus its route and tests (`added web pages to the existing Order CRUD`). Partially existing shared files → the normal collision refusal.
+3. **Taken route names:** before writing, if the app's router already has `<prefix><uri>.index` (web) or `api.<uri>.index` (API), refuse: `Route name "<name>" is already used (for example by an older API route without ->names('api.<uri>')). Rename that route, then re-run.` Existing route files are never rewritten.
+4. **Central modules** (tenant-saas): generated controller redirects and view links use the route-name prefix `central.` (`{{ routeName }}` placeholder = `central.orders` / `orders`).
+5. **`basic` profile in `bin/e2e`:** install, `php artisan test`, `route:cache` only (it has no modules).
+6. **Array fields in forms:** one `<input name="<col>[]">` per existing value plus one empty input (no textarea, no Request change). `Data::fromRequest` drops empty/null elements for array fields (also for JSON input: `[null, "a"]` → `["a"]`).

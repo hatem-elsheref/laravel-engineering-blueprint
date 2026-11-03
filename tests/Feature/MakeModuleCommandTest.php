@@ -1,6 +1,8 @@
 <?php
 
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
+use Symfony\Component\Process\Process;
 
 beforeEach(function () {
     config()->set('blueprint.profile', 'modular');
@@ -234,7 +236,7 @@ it('generated files are valid php', function () {
     $this->artisan('make:module', ['name' => 'Orders', '--api' => true, '--web' => true])->assertExitCode(0);
 
     foreach (['Orders/Provider.php', 'Orders/routes/api.php', 'Orders/routes/web.php'] as $file) {
-        $lint = new Symfony\Component\Process\Process([PHP_BINARY, '-l', app_path('Modules/'.$file)]);
+        $lint = new Process([PHP_BINARY, '-l', app_path('Modules/'.$file)]);
         $lint->run();
         expect($lint->getExitCode())->toBe(0, $lint->getOutput());
     }
@@ -287,7 +289,7 @@ it('refuses stub that only mentions Provider in a comment', function () {
 });
 
 it('rolls back a half-written module', function () {
-    app()->instance(Illuminate\Filesystem\Filesystem::class, new class extends Illuminate\Filesystem\Filesystem
+    app()->instance(Filesystem::class, new class extends Filesystem
     {
         public function put($path, $contents, $lock = false)
         {
@@ -306,7 +308,7 @@ it('rolls back a half-written module', function () {
     expect(is_dir(app_path('Modules/Orders')))->toBeFalse()
         ->and(file_get_contents($this->providersPath))->toBe($this->providers);
 
-    app()->forgetInstance(Illuminate\Filesystem\Filesystem::class);
+    app()->forgetInstance(Filesystem::class);
 
     $this->artisan('make:module', ['name' => 'Orders'])->assertExitCode(0);
 });

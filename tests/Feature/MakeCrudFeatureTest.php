@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\File;
+use Symfony\Component\Process\Process;
 
 beforeEach(function () {
     config()->set('blueprint.profile', 'saas');
@@ -33,7 +34,7 @@ it('protects the routes with the feature', function () {
         ->toContain("it('is blocked when the orders feature is disabled'")
         ->toContain('use Best\Blueprint\Features\FeatureAdmin;');
 
-    $lint = new Symfony\Component\Process\Process([PHP_BINARY, '-l', base_path('tests/Feature/Modules/Orders/OrderApiTest.php')]);
+    $lint = new Process([PHP_BINARY, '-l', base_path('tests/Feature/Modules/Orders/OrderApiTest.php')]);
     $lint->run();
     expect($lint->getExitCode())->toBe(0);
 });
@@ -66,7 +67,7 @@ it('refuses an old route stub that would drop the feature gate', function () {
     file_put_contents(base_path('stubs/blueprint/route.stub'), "Route::apiResource('{{ uri }}', {{ controller }}::class);\n");
 
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--feature' => 'orders'])
-        ->expectsOutputToContain("did not produce a valid route (no feature:orders middleware)")
+        ->expectsOutputToContain('did not produce a valid route (no feature:orders middleware)')
         ->assertExitCode(1);
 
     expect(is_dir(app_path('Modules/Orders/Models')))->toBeFalse()

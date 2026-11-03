@@ -2,6 +2,7 @@
 
 use Best\Blueprint\Tenancy\TenancyDetector;
 use Illuminate\Support\Facades\File;
+use Symfony\Component\Process\Process;
 
 beforeEach(function () {
     config()->set('blueprint.module_path', 'app/Modules');
@@ -93,12 +94,12 @@ it('puts tenant crud migrations in the tenant folder', function () {
     expect(glob(database_path('migrations/tenant/*_create_orders_table.php')))->toHaveCount(1)
         ->and(glob(database_path('migrations/*_create_orders_table.php')))->toBe([])
         ->and(file_get_contents(base_path('tests/Feature/Modules/Orders/OrderApiTest.php')))
-            ->toContain('uses(InteractsWithTenancy::class, DatabaseMigrations::class);')
-            ->toContain("\$this->tenantUrl('/api/orders')")
-            ->toContain("postJson(\$this->tenantUrl('/api/orders'), [])")
-            ->toContain('$this->tenant = $this->createTestTenant();');
+        ->toContain('uses(InteractsWithTenancy::class, DatabaseMigrations::class);')
+        ->toContain("\$this->tenantUrl('/api/orders')")
+        ->toContain("postJson(\$this->tenantUrl('/api/orders'), [])")
+        ->toContain('$this->tenant = $this->createTestTenant();');
 
-    $lint = new Symfony\Component\Process\Process([PHP_BINARY, '-l', base_path('tests/Feature/Modules/Orders/OrderApiTest.php')]);
+    $lint = new Process([PHP_BINARY, '-l', base_path('tests/Feature/Modules/Orders/OrderApiTest.php')]);
     $lint->run();
     expect($lint->getExitCode())->toBe(0, $lint->getOutput());
 });

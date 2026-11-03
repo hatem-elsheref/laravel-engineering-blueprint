@@ -1,5 +1,6 @@
 <?php
 
+use Best\Blueprint\Tenancy\TenantSetup;
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
@@ -23,7 +24,7 @@ it('puts feature and setting tables in tenant migrations', function () {
 });
 
 it('tells existing tenants how to catch up', function () {
-    app(Best\Blueprint\Tenancy\TenantSetup::class)->run('old', 'old.localhost', 'tenant_old');
+    app(TenantSetup::class)->run('old', 'old.localhost', 'tenant_old');
 
     $this->artisan('engineering:install', ['--profile' => 'tenant-saas', '--no-interaction' => true])
         ->expectsOutputToContain('Existing tenants: php artisan tenants:migrate && php artisan features:sync')

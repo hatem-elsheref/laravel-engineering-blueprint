@@ -1,7 +1,12 @@
 <?php
 
 use Best\Blueprint\Support\Compatibility;
+use Best\Blueprint\Support\ConfigWriter;
+use Best\Blueprint\Support\Profile;
+use Best\Blueprint\Support\ProfileWrite;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
+use Illuminate\Testing\PendingCommand;
 
 beforeEach(function () {
     File::delete([config_path('blueprint.php'), app()->getCachedConfigPath()]);
@@ -89,7 +94,7 @@ it('creates no folders', function () {
         ->and(array_map('basename', File::allFiles(app_path('Shared'))))->toEqualCanonicalizing(['Features.php', 'Settings.php']);
 });
 
-function install(array $options = []): \Illuminate\Testing\PendingCommand
+function install(array $options = []): PendingCommand
 {
     return test()->artisan('engineering:install', $options + ['--no-interaction' => true]);
 }
@@ -255,11 +260,11 @@ it('ignores a non-string default_profile', function () {
 });
 
 it('fails when a fresh config cannot record the profile', function () {
-    app()->instance(Best\Blueprint\Support\ConfigWriter::class, new class(new Illuminate\Filesystem\Filesystem) extends Best\Blueprint\Support\ConfigWriter
+    app()->instance(ConfigWriter::class, new class(new Filesystem) extends ConfigWriter
     {
-        public function setProfile(string $path, Best\Blueprint\Support\Profile $profile): Best\Blueprint\Support\ProfileWrite
+        public function setProfile(string $path, Profile $profile): ProfileWrite
         {
-            return new Best\Blueprint\Support\ProfileWrite(Best\Blueprint\Support\ProfileWrite::UNRECORDABLE);
+            return new ProfileWrite(ProfileWrite::UNRECORDABLE);
         }
     });
 

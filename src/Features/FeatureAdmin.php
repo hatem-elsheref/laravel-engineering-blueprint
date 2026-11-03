@@ -3,6 +3,7 @@
 namespace Best\Blueprint\Features;
 
 use Best\Blueprint\Flags\AdminGuard;
+use Best\Blueprint\Settings\SettingManager;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -52,7 +53,7 @@ class FeatureAdmin
         $this->guard->check();
         $this->features->assertDefined($key);
 
-        \Best\Blueprint\Settings\SettingManager::upsert('features', $key, ['enabled' => $enabled]);
+        SettingManager::upsert('features', $key, ['enabled' => $enabled]);
         $this->features->forget();
     }
 }

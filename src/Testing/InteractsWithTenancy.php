@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\ParallelTesting;
 use RuntimeException;
+use Stancl\Tenancy\Events\TenancyInitialized;
 
 /**
  * For tests of tenant code: creates a real tenant (record, domain, database, tenant migrations),
@@ -22,7 +23,7 @@ trait InteractsWithTenancy
 
     protected function createTestTenant(string $id = 'test'): Model
     {
-        if (! Event::hasListeners(\Stancl\Tenancy\Events\TenancyInitialized::class)) {
+        if (! Event::hasListeners(TenancyInitialized::class)) {
             throw new RuntimeException('Tenancy is not bootstrapped (App\Providers\TenancyServiceProvider is not registered), so tenant migrations would hit the central database.');
         }
 

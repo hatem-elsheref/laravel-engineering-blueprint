@@ -8,6 +8,8 @@
         "laravel/framework": "^12.0 || ^13.0"
     },
     "require-dev": {
+        "larastan/larastan": "^3.14",
+        "laravel/pint": "^1.32",
         "orchestra/testbench": "^10.0 || ^11.0",
         "pestphp/pest": "^4.0",
         "stancl/tenancy": "^3.10"
@@ -30,7 +32,14 @@
         }
     },
     "scripts": {
-        "test": "pest"
+        "test": "pest",
+        "analyse": "phpstan analyse --no-progress --memory-limit=1G",
+        "format": "pint",
+        "check": [
+            "pint --test",
+            "@analyse",
+            "@test"
+        ]
     },
     "config": {
         "sort-packages": true,

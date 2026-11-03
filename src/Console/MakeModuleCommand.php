@@ -2,14 +2,14 @@
 
 namespace Best\Blueprint\Console;
 
-use Best\Blueprint\Support\ModuleName;
 use Best\Blueprint\Support\FileWriter;
+use Best\Blueprint\Support\ModuleName;
 use Best\Blueprint\Support\Modules;
 use Best\Blueprint\Support\PhpSource;
 use Best\Blueprint\Support\Profile;
-use Best\Blueprint\Tenancy\TenancyDetector;
 use Best\Blueprint\Support\StubException;
 use Best\Blueprint\Support\StubRenderer;
+use Best\Blueprint\Tenancy\TenancyDetector;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\ServiceProvider;
@@ -200,7 +200,7 @@ class MakeModuleCommand extends Command
         return "        // Registered after central routes, so central (domain-bound) routes win on central hosts.\n"
             ."        \$this->app->booted(function (): void {\n"
             .implode("\n", $lines)."\n"
-            ."        });";
+            .'        });';
     }
 
     /**

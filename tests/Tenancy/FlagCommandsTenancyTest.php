@@ -1,8 +1,11 @@
 <?php
 
 use Best\Blueprint\Facades\Feature;
+use Best\Blueprint\Facades\Setting;
 use Best\Blueprint\Tenancy\TenantSetup;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 
 beforeEach(function () {
     useTestFlags();
@@ -43,7 +46,7 @@ it('refuses unknown tenants', function () {
 
 it('syncs every tenant', function () {
     // Tenants get every default at creation; simulate a feature defined after tenant "a" was created.
-    tenancy()->find('a')->run(fn () => Illuminate\Support\Facades\DB::table('features')->where('key', 'reports')->delete());
+    tenancy()->find('a')->run(fn () => DB::table('features')->where('key', 'reports')->delete());
 
     $this->artisan('features:sync')
         ->expectsOutputToContain('added 1 feature(s) to tenant "a"')
@@ -56,7 +59,7 @@ it('sets a tenant setting', function () {
         ->expectsOutputToContain('Setting "orders.limit" updated for tenant "b".')
         ->assertExitCode(0);
 
-    expect(tenancy()->find('b')->run(fn () => Best\Blueprint\Facades\Setting::get('orders.limit')))->toBe(3);
+    expect(tenancy()->find('b')->run(fn () => Setting::get('orders.limit')))->toBe(3);
 });
 
 it('validates tenants before syncing any', function () {
@@ -67,7 +70,7 @@ it('validates tenants before syncing any', function () {
 });
 
 it('reports a tenant without a features table instead of crashing', function () {
-    tenancy()->find('b')->run(fn () => Illuminate\Support\Facades\Schema::drop('features'));
+    tenancy()->find('b')->run(fn () => Schema::drop('features'));
 
     $this->artisan('features:sync')
         ->expectsOutputToContain('added 0 feature(s) to tenant "a"')

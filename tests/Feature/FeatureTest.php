@@ -5,6 +5,7 @@ use Best\Blueprint\Features\FeatureAdmin;
 use Best\Blueprint\Features\UnknownFeature;
 use Best\Blueprint\Flags\AdminGuard;
 use Best\Blueprint\Flags\AdminOnly;
+use Best\Blueprint\Flags\FlagContext;
 use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
@@ -50,7 +51,7 @@ it('syncs only missing features', function () {
 });
 
 it('refuses admin writes during http requests', function () {
-    app()->instance(AdminGuard::class, new class(app(Best\Blueprint\Flags\FlagContext::class)) extends AdminGuard
+    app()->instance(AdminGuard::class, new class(app(FlagContext::class)) extends AdminGuard
     {
         protected function inHttpRequest(): bool
         {
