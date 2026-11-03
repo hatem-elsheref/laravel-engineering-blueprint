@@ -22,7 +22,7 @@ class InstallCommand extends Command
     /**
      * Capabilities whose phase has not shipped yet. Delete an entry when its phase ships.
      */
-    private const UPCOMING = ['Modules' => 3, 'Tenancy' => 6, 'Features' => 7, 'Settings' => 7];
+    private const UPCOMING = ['Tenancy' => 6, 'Features' => 7, 'Settings' => 7];
 
     private const ALL_CAPABILITIES = ['Modules', 'Features', 'Settings', 'Tenancy'];
 

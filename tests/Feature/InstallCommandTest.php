@@ -21,10 +21,11 @@ it('installs with an explicit profile', function () {
     $this->artisan('engineering:install', ['--profile' => 'saas', '--no-interaction' => true])
         ->expectsOutputToContain('created config/blueprint.php')
         ->expectsOutputToContain('Installed profile: SaaS')
-        ->expectsOutputToContain('✓ Modules (coming in Phase 3)')
+        ->expectsOutputToContain('✓ Modules')
+        ->doesntExpectOutputToContain('Modules (coming')
         ->expectsOutputToContain('✓ Features (coming in Phase 7)')
         ->expectsOutputToContain('– Tenancy (not in this profile)')
-        ->expectsOutputToContain('Next: php artisan engineering:about')
+        ->expectsOutputToContain('Next: php artisan make:module <Name>')
         ->assertExitCode(0);
 
     expect(installedConfig())->toContain("'profile' => 'saas',");
@@ -214,4 +215,10 @@ it('clears cached config even when the profile is unchanged', function () {
         ->assertExitCode(0);
 
     expect(file_exists(app()->getCachedConfigPath()))->toBeFalse();
+});
+
+it('basic keeps the about hint', function () {
+    install(['--profile' => 'basic'])
+        ->expectsOutputToContain('Next: php artisan engineering:about')
+        ->assertExitCode(0);
 });
