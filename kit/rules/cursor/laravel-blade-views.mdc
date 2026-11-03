@@ -1,0 +1,14 @@
+---
+description: Blade / frontend conventions when LEB mixed frontend is used
+globs: resources/views/**/*.blade.php
+alwaysApply: false
+---
+
+# LEB frontend (Blade)
+
+- Dumb views; no business logic in Blade.
+- Page JS: jQuery only in page scripts; pass data via `window.PageData`.
+- Heavy selects: Select2 + AJAX URL with load-more on scroll.
+- Forms: CSRF; disable submit after post; idempotency on critical submits.
+
+If the project has a **frontend-views** skill, prefer that skill for detailed Blade rules.

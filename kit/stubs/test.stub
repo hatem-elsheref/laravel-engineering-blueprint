@@ -1,0 +1,10 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Modules\{{ moduleNamespace }}\Models\{{ model }};
+
+it('creates a {{ modelVariable }}', function (): void {
+    // actingAs tenant user, post to route, assert database
+    expect(true)->toBeTrue();
+});

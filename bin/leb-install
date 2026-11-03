@@ -1,0 +1,214 @@
+#!/usr/bin/env bash
+# Laravel Engineering Blueprint — install kit into a project or global skill paths.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+KIT_SOURCE="$(cd "${SCRIPT_DIR}/.." && pwd)"
+BUNDLE_NAME="laravel-engineering-blueprint"
+DEFAULT_COMPONENTS="docs,skills,rules,stubs,manifest"
+
+DRY_RUN=0
+GLOBAL=0
+LINK_AGENTS=0
+TARGET=""
+ONLY=""
+SKIP=""
+
+usage() {
+  cat <<'EOF'
+Usage: leb-install [TARGET] [options]
+
+  TARGET          Laravel project root (default: current directory)
+  --global        Symlink skills into ~/.cursor/skills, ~/.agents/skills, ~/.claude/skills
+  --link-agents   Symlink project skills + install Cursor rules + agent entry files
+  --only a,b,c    docs,skills,rules,stubs,manifest (default: all)
+  --skip a,b,c    Skip components
+  --dry-run       Print actions only
+  -h, --help      This help
+
+Examples:
+  ./bin/leb-install ~/Sites/my-saas --link-agents
+  ./bin/leb-install --global
+EOF
+}
+
+log() { printf 'leb-install: %s\n' "$*"; }
+run() {
+  if [[ "${DRY_RUN}" -eq 1 ]]; then
+    log "[dry-run] $*"
+  else
+    "$@"
+  fi
+}
+
+expand_home() {
+  local p="$1"
+  if [[ "${p}" == "~/"* ]]; then
+    printf '%s\n' "${HOME}/${p#~/}"
+  else
+    printf '%s\n' "${p}"
+  fi
+}
+
+component_enabled() {
+  local c="$1"
+  if [[ -n "${SKIP}" ]] && echo ",${SKIP}," | grep -q ",${c},"; then
+    return 1
+  fi
+  if [[ -n "${ONLY}" ]]; then
+    echo ",${ONLY}," | grep -q ",${c}," && return 0 || return 1
+  fi
+  echo ",${DEFAULT_COMPONENTS}," | grep -q ",${c},"
+}
+
+symlink_skill() {
+  local skill_name="$1"
+  local link_dir="$2"
+  local rel_target="$3"
+  mkdir -p "${link_dir}"
+  local link_path="${link_dir}/${skill_name}"
+  if [[ -L "${link_path}" ]] || [[ -e "${link_path}" ]]; then
+    log "replace ${link_path}"
+    run rm -rf "${link_path}"
+  fi
+  run ln -s "${rel_target}" "${link_path}"
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --global) GLOBAL=1; shift ;;
+    --link-agents) LINK_AGENTS=1; shift ;;
+    --dry-run) DRY_RUN=1; shift ;;
+    --only) ONLY="$2"; shift 2 ;;
+    --skip) SKIP="$2"; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    --) shift; break ;;
+    -*)
+      log "unknown option: $1"
+      usage
+      exit 1
+      ;;
+    *)
+      if [[ -z "${TARGET}" ]]; then
+        TARGET="$1"
+      else
+        log "unexpected argument: $1"
+        exit 1
+      fi
+      shift
+      ;;
+  esac
+done
+
+if [[ "${GLOBAL}" -eq 0 && -z "${TARGET}" ]]; then
+  TARGET="."
+fi
+
+if [[ "${GLOBAL}" -eq 1 && -n "${TARGET}" && "${TARGET}" != "." ]]; then
+  log "--global ignores TARGET; installing skills only to home directories"
+fi
+
+install_bundle() {
+  local dest_root="$1"
+  local bundle="${dest_root}/${BUNDLE_NAME}"
+  log "bundle → ${bundle}"
+  run mkdir -p "${bundle}"
+
+  if component_enabled manifest; then
+    run cp "${KIT_SOURCE}/blueprint.manifest.json" "${bundle}/"
+    run cp "${KIT_SOURCE}/README.md" "${bundle}/"
+    [[ -f "${KIT_SOURCE}/rules.md" ]] && run cp "${KIT_SOURCE}/rules.md" "${bundle}/"
+  fi
+
+  if component_enabled docs; then
+    run mkdir -p "${bundle}/docs"
+    run cp -R "${KIT_SOURCE}/docs/." "${bundle}/docs/"
+  fi
+
+  if component_enabled skills; then
+    run mkdir -p "${bundle}/kit/skills"
+    run cp -R "${KIT_SOURCE}/kit/skills/." "${bundle}/kit/skills/"
+  fi
+
+  if component_enabled rules; then
+    run mkdir -p "${bundle}/kit/rules"
+    run cp -R "${KIT_SOURCE}/kit/rules/." "${bundle}/kit/rules/"
+  fi
+
+  if component_enabled stubs; then
+    run mkdir -p "${bundle}/kit/stubs"
+    run cp -R "${KIT_SOURCE}/kit/stubs/." "${bundle}/kit/stubs/"
+  fi
+
+  run mkdir -p "${bundle}/bin"
+  run cp "${KIT_SOURCE}/bin/leb-install" "${bundle}/bin/leb-install"
+  run chmod +x "${bundle}/bin/leb-install"
+
+  printf '%s\n' "${bundle}"
+}
+
+link_project_agents() {
+  local project_root="$1"
+  local bundle="${project_root}/${BUNDLE_NAME}"
+  if [[ "${DRY_RUN}" -eq 0 && ! -d "${bundle}/kit/skills/laravel-engineering" ]]; then
+    log "bundle missing; run install first"
+    exit 1
+  fi
+
+  local cursor_skills="${project_root}/.cursor/skills"
+  local rel_eng="../${BUNDLE_NAME}/kit/skills/laravel-engineering"
+  local rel_crud="../${BUNDLE_NAME}/kit/skills/leb-generate-crud"
+  symlink_skill "laravel-engineering" "${cursor_skills}" "${rel_eng}"
+  symlink_skill "leb-generate-crud" "${cursor_skills}" "${rel_crud}"
+
+  local cursor_rules="${project_root}/.cursor/rules"
+  run mkdir -p "${cursor_rules}"
+  run cp "${bundle}/kit/rules/cursor/"*.mdc "${cursor_rules}/"
+
+  for f in AGENTS.md CLAUDE.md GEMINI.md; do
+    local dest="${project_root}/${f}"
+    if [[ -f "${dest}" ]]; then
+      log "keep existing ${dest} (merge manually from kit/rules/templates/${f})"
+    else
+      run cp "${bundle}/kit/rules/templates/${f}" "${dest}"
+    fi
+  done
+
+  log "Cursor rules → ${cursor_rules}"
+  log "Skills → ${cursor_skills}"
+}
+
+link_global_skills() {
+  local bundle="$1"
+  local skills_src="${bundle}/kit/skills"
+  if [[ ! -d "${skills_src}/laravel-engineering" ]]; then
+    skills_src="${KIT_SOURCE}/kit/skills"
+  fi
+
+  for dir in "$(expand_home ~/.cursor/skills)" "$(expand_home ~/.agents/skills)" "$(expand_home ~/.claude/skills)"; do
+    run mkdir -p "${dir}"
+    for skill in laravel-engineering leb-generate-crud; do
+      local link_path="${dir}/${skill}"
+      if [[ -L "${link_path}" ]] || [[ -e "${link_path}" ]]; then
+        run rm -rf "${link_path}"
+      fi
+      run ln -s "${skills_src}/${skill}" "${link_path}"
+      log "global skill ${skill} → ${link_path}"
+    done
+  done
+}
+
+if [[ "${GLOBAL}" -eq 1 ]]; then
+  link_global_skills "${KIT_SOURCE}"
+  exit 0
+fi
+
+TARGET="$(cd "${TARGET}" && pwd)"
+BUNDLE="$(install_bundle "${TARGET}")"
+
+if [[ "${LINK_AGENTS}" -eq 1 ]]; then
+  link_project_agents "${TARGET}"
+fi
+
+log "done. Open ${BUNDLE}/docs/CONSTITUTION.md in your next agent session."
+log "Tip: re-run with --link-agents to wire .cursor/skills and AGENTS.md"

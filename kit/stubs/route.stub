@@ -1,0 +1,14 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Modules\{{ moduleNamespace }}\Http\Controllers\{{ controllerClass }};
+use Illuminate\Support\Facades\Route;
+
+Route::middleware(['api', 'auth:sanctum'])
+    ->prefix('v1/{{ routePrefix }}')
+    ->group(function (): void {
+        // Route::middleware(['feature:{{ featureKey }}'])->group(function (): void {
+        Route::post('/', {{ controllerClass }}::class);
+        // });
+    });

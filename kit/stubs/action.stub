@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\{{ moduleNamespace }}\Actions;
+
+use App\Modules\{{ moduleNamespace }}\Data\{{ actionData }};
+use App\Modules\{{ moduleNamespace }}\Models\{{ model }};
+use Illuminate\Support\Facades\DB;
+
+final class {{ actionClass }}
+{
+    public function execute({{ actionData }} $data): {{ model }}
+    {
+        return DB::transaction(function () use ($data): {{ model }} {
+            // {{ featureKey }} — enforce Feature::enabled when applicable
+
+            ${{ modelVariable }} = new {{ model }}();
+            // map $data → model
+
+            ${{ modelVariable }}->save();
+
+            return ${{ modelVariable }}->refresh();
+        });
+    }
+}

@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\{{ moduleNamespace }}\Data;
+
+use App\Modules\{{ moduleNamespace }}\Http\Requests\{{ requestClass }};
+
+final readonly class {{ dtoClass }}
+{
+    public function __construct(
+        // public string $name,
+    ) {}
+
+    public static function from({{ requestClass }} $request): self
+    {
+        return new self(
+            // ...
+        );
+    }
+}

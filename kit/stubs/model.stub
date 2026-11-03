@@ -1,0 +1,19 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\{{ moduleNamespace }}\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+final class {{ model }} extends Model
+{
+    protected $table = '{{ table }}';
+
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        //
+    ];
+}

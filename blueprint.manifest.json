@@ -1,0 +1,56 @@
+{
+  "name": "laravel-engineering-blueprint",
+  "version": "0.2.0-phase0",
+  "phase": {
+    "current": 0,
+    "name": "Architecture Foundation",
+    "specs": [
+      "docs/PHASE-0.md",
+      "docs/ARCHITECTURE.md",
+      "docs/NAMING.md",
+      "docs/TENANCY.md",
+      "docs/FEATURES.md",
+      "docs/SETTINGS.md"
+    ]
+  },
+  "description": "Portable Laravel engineering standard: docs, agent skills, rules, and code stubs.",
+  "kitRoot": "kit",
+  "docsRoot": "docs",
+  "stubsRoot": "kit/stubs",
+  "skills": [
+    {
+      "id": "laravel-engineering",
+      "path": "kit/skills/laravel-engineering",
+      "name": "laravel-engineering"
+    },
+    {
+      "id": "leb-generate-crud",
+      "path": "kit/skills/leb-generate-crud",
+      "name": "leb-generate-crud"
+    }
+  ],
+  "rules": {
+    "cursor": "kit/rules/cursor",
+    "agentsMd": "kit/rules/templates/AGENTS.md",
+    "claudeMd": "kit/rules/templates/CLAUDE.md",
+    "geminiMd": "kit/rules/templates/GEMINI.md"
+  },
+  "install": {
+    "projectBundleDir": "laravel-engineering-blueprint",
+    "defaultComponents": ["docs", "skills", "rules", "stubs"],
+    "skillLinkTargets": {
+      "cursorProject": ".cursor/skills",
+      "cursorGlobal": "~/.cursor/skills",
+      "agentsGlobal": "~/.agents/skills",
+      "claudeGlobal": "~/.claude/skills"
+    }
+  },
+  "future": {
+    "laravelPackage": "best/laravel-engineering-blueprint",
+    "artisanCommands": [
+      "make:module",
+      "make:crud"
+    ],
+    "pluginTargets": ["cursor", "codex", "claude-marketplace"]
+  }
+}

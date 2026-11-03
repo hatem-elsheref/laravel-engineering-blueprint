@@ -1,0 +1,22 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\{{ moduleNamespace }}\Http\Controllers;
+
+use App\Modules\{{ moduleNamespace }}\Actions\{{ actionClass }};
+use App\Modules\{{ moduleNamespace }}\Data\{{ actionData }};
+use App\Modules\{{ moduleNamespace }}\Http\Requests\{{ requestClass }};
+use App\Modules\{{ moduleNamespace }}\Resources\{{ model }}Resource;
+
+final class {{ controllerClass }}
+{
+    public function __invoke(
+        {{ requestClass }} $request,
+        {{ actionClass }} $action,
+    ): {{ model }}Resource {
+        ${{ modelVariable }} = $action->execute({{ actionData }}::from($request));
+
+        return new {{ model }}Resource(${{ modelVariable }});
+    }
+}

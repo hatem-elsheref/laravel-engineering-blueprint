@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\{{ moduleNamespace }}\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+final class {{ requestClass }} extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user()?->can('{{ policyAbility }}', {{ model }}::class) ?? false;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function rules(): array
+    {
+        return [
+            // 'name' => ['required', 'string', 'max:255'],
+        ];
+    }
+}

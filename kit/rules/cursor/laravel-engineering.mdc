@@ -1,0 +1,20 @@
+---
+description: Laravel Engineering Blueprint — modules, actions, DTOs, tenancy, features
+globs: app/**/*.php
+alwaysApply: false
+---
+
+# Laravel Engineering Blueprint
+
+Follow Phase 0: `laravel-engineering-blueprint/docs/PHASE-0.md` and linked specs.
+
+- Modules: `app/Modules/{Name}/` (Requests, Controllers, routes/, Provider.php — only folders needed).
+- Shared: `app/Shared/Features`, `Settings`, `Support`, `Contracts`.
+- Controllers: HTTP only; Request + Data + Action|Query + Resource.
+- Migrations: `database/migrations/` and `database/migrations/tenant/` only.
+- Tenancy: stancl/tenancy; subdomain; no tenant business data in central DB.
+- Features/settings: tenant DB; backend enforcement when feature disabled.
+
+Until Phase 0 is approved, do not generate application code—docs only.
+
+After Phase 1+, CRUD stubs: `kit/stubs/` + skill **leb-generate-crud**.

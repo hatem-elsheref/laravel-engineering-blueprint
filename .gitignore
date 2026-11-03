@@ -1,0 +1,6 @@
+.install-test/
+.DS_Store
+.idea/
+.vscode/
+*.log
+.claude/settings.local.json
