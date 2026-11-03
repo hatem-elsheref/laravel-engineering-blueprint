@@ -29,7 +29,7 @@ final class ScopeSessionToDomain
         if (! $session->has(self::KEY)) {
             $session->put(self::KEY, $owner);
         } elseif ($session->get(self::KEY) !== $owner) {
-            abort(403, 'This session belongs to another site.');
+            abort(403, __('This session belongs to another site.'));
         }
 
         return $next($request);

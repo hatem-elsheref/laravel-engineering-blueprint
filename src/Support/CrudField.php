@@ -133,7 +133,7 @@ final readonly class CrudField
                 ."    <input id=\"{$col}\" name=\"{$col}\" type=\"checkbox\" value=\"1\" @checked(old('{$col}', {$current}))>",
             'date' => "    <input id=\"{$col}\" name=\"{$col}\" type=\"datetime-local\" value=\"{{ old('{$col}', {$current}?->format('Y-m-d\\TH:i')) }}\">",
             'array' => "    @foreach ([...(array) old('{$col}', {$current} ?? []), ''] as \$value)\n"
-                ."        <input name=\"{$col}[]\" type=\"text\" value=\"{{ \$value }}\" aria-label=\"{$label}\">\n"
+                ."        <input name=\"{$col}[]\" type=\"text\" value=\"{{ \$value }}\" aria-label=\"{{ __('{$label}') }}\">\n"
                 .'    @endforeach',
             default => throw $this->unknownKind(),
         };
@@ -141,7 +141,7 @@ final readonly class CrudField
         $for = $this->kind() === 'array' ? '' : " for=\"{$col}\"";
 
         return "<div>\n"
-            ."    <label{$for}>{$label}</label>\n"
+            ."    <label{$for}>{{ __('{$label}') }}</label>\n"
             ."{$input}\n"
             ."    @error('{$col}') <p role=\"alert\">{{ \$message }}</p> @enderror\n"
             .'</div>';
@@ -155,7 +155,7 @@ final readonly class CrudField
         $value = "\${$variable}->{$this->column}";
 
         return match ($this->kind()) {
-            'bool' => "{{ {$value} ? 'Yes' : 'No' }}",
+            'bool' => "{{ {$value} ? __('Yes') : __('No') }}",
             'date' => "{{ {$value}?->format('Y-m-d H:i') }}",
             'array' => "{{ implode(', ', {$value} ?? []) }}",
             default => "{{ {$value} }}",

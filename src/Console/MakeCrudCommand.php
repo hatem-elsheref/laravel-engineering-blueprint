@@ -249,6 +249,10 @@ class MakeCrudCommand extends Command
             $this->line('cleared route cache');
         }
 
+        if ($web) {
+            $this->addTranslationKeys([Str::headline($entity), Str::headline($names->plural), ...array_map(fn (CrudField $f) => Str::headline($f->column), $fields)]);
+        }
+
         $this->line("Note: {$names->entity}Policy lets every signed-in user do everything (guests get 403). Tighten it for your app.".($api ? " For token APIs add auth middleware (e.g. auth:sanctum) to the api routes in {$names->modulePath}/Provider.php." : ''));
 
         $written = array_filter(["{$entity}ApiTest" => $api && ! in_array($names->files()['test'], $skippedTests, true), "{$entity}WebTest" => $web && ! in_array($names->files()['webTest'], $skippedTests, true)]);
@@ -338,6 +342,41 @@ class MakeCrudCommand extends Command
         }
 
         return null;
+    }
+
+    /**
+     * Adds the entity and field names to lang/<locale>.json for every other configured language,
+     * with the English text as the value to translate; existing translations are kept.
+     *
+     * @param  list<string>  $keys
+     */
+    private function addTranslationKeys(array $keys): void
+    {
+        foreach ((array) config('blueprint.locales', ['en']) as $locale) {
+            if (! is_string($locale) || $locale === 'en') {
+                continue;
+            }
+
+            $path = lang_path("{$locale}.json");
+            $strings = is_file($path) ? (array) json_decode((string) file_get_contents($path), true) : [];
+            $added = 0;
+
+            foreach (array_unique($keys) as $key) {
+                if (! array_key_exists($key, $strings)) {
+                    $strings[$key] = $key;
+                    $added++;
+                }
+            }
+
+            if ($added > 0) {
+                if (! is_dir(dirname($path))) {
+                    mkdir(dirname($path), 0755, true);
+                }
+
+                file_put_contents($path, json_encode($strings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\n");
+                $this->line("added {$added} strings to lang/{$locale}.json — translate them");
+            }
+        }
     }
 
     private function layoutPath(): string
@@ -519,11 +558,11 @@ class MakeCrudCommand extends Command
             'Illuminate\\Contracts\\View\\View', 'Illuminate\\Http\\RedirectResponse', 'Illuminate\\Support\\Facades\\Gate',
         ], $web);
         $files[$paths['viewIndex']] = $stubs->render('view-index.stub', $common + $web + [
-            'headerCells' => $this->lines($fields, fn (CrudField $f) => '<th>'.Str::headline($f->column).'</th>', 20),
+            'headerCells' => $this->lines($fields, fn (CrudField $f) => "<th>{{ __('".Str::headline($f->column)."') }}</th>", 20),
             'rowCells' => $this->lines($fields, fn (CrudField $f) => '<td>'.$f->display($v).'</td>', 24),
         ]);
         $files[$paths['viewShow']] = $stubs->render('view-show.stub', $common + $web + [
-            'details' => $this->lines($fields, fn (CrudField $f) => '<dt>'.Str::headline($f->column)."</dt>\n            <dd>".$f->display($v).'</dd>', 12),
+            'details' => $this->lines($fields, fn (CrudField $f) => "<dt>{{ __('".Str::headline($f->column)."') }}</dt>\n            <dd>".$f->display($v).'</dd>', 12),
         ]);
         $files[$paths['viewCreate']] = $stubs->render('view-create.stub', $common + $web);
         $files[$paths['viewEdit']] = $stubs->render('view-edit.stub', $common + $web);

@@ -57,3 +57,11 @@ Follow `docs/NAMING.md`. Folder implies type (`Actions/CreateOrder.php`).
 Phases 0–8 are shipped (specs, package, generators, tenancy, features, settings, Blade pages). Remaining: Phase 9 (starter app), Phase 10 (release).
 
 Full narrative: `rules.md` at kit root.
+
+## Languages (interface translations)
+
+- All user-facing text goes through `__()` with **English keys**: Blade `{{ __('Save') }}`, flash messages `__(':item created.', ['item' => __('Order')])`, API messages `abort(403, __('This feature is not enabled.'))`. Never hard-code display text in another language and never build sentences by concatenating strings.
+- Translations live in `lang/<locale>.json` (e.g. `lang/ar.json`). The package ships Arabic for its own strings; `make:crud --web` adds the entity and field names for every language in `blueprint.locales` (value = English, to be translated).
+- Configure the languages in `config/blueprint.php`: `'locales' => ['en', 'ar']`. The request language is picked automatically: API → `Accept-Language`; web → the visitor's choice (`route('blueprint.locale', 'ar')`); then the `app.language` setting; then the app default.
+- Right-to-left (`ar`, `fa`, `he`, `ur`, see `blueprint.rtl_locales`) is handled by the layout (`<html lang dir>`). Use logical CSS (`margin-inline-start`, not `margin-left`) in custom pages.
+- Laravel's own validation messages: `php artisan lang:publish` and add `lang/ar/validation.php` (or a translation package).

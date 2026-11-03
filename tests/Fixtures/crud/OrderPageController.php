@@ -36,7 +36,7 @@ final class OrderPageController
     {
         $order = $action->handle(OrderData::fromRequest($request));
 
-        return redirect()->route('orders.show', $order)->with('status', 'Order created.');
+        return redirect()->route('orders.show', $order)->with('status', __(':item created.', ['item' => __('Order')]));
     }
 
     public function show(Order $order): View
@@ -57,7 +57,7 @@ final class OrderPageController
     {
         $order = $action->handle($order, OrderData::fromRequest($request));
 
-        return redirect()->route('orders.show', $order)->with('status', 'Order updated.');
+        return redirect()->route('orders.show', $order)->with('status', __(':item updated.', ['item' => __('Order')]));
     }
 
     public function destroy(Order $order, DeleteOrder $action): RedirectResponse
@@ -66,6 +66,6 @@ final class OrderPageController
 
         $action->handle($order);
 
-        return redirect()->route('orders.index')->with('status', 'Order deleted.');
+        return redirect()->route('orders.index')->with('status', __(':item deleted.', ['item' => __('Order')]));
     }
 }

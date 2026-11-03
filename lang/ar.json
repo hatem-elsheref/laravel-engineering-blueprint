@@ -1,0 +1,22 @@
+{
+    ":item #:id": ":item رقم :id",
+    ":item created.": "تم إنشاء :item.",
+    ":item deleted.": "تم حذف :item.",
+    ":item updated.": "تم تحديث :item.",
+    "Back to list": "العودة إلى القائمة",
+    "Cancel": "إلغاء",
+    "Create": "إنشاء",
+    "Delete": "حذف",
+    "Edit": "تعديل",
+    "Edit :item #:id": "تعديل :item رقم :id",
+    "ID": "المعرّف",
+    "Language": "اللغة",
+    "New :item": ":item جديد",
+    "No": "لا",
+    "Nothing here yet.": "لا يوجد شيء هنا بعد.",
+    "Save": "حفظ",
+    "This feature is not enabled.": "هذه الميزة غير مفعّلة.",
+    "This session belongs to another site.": "هذه الجلسة تخص موقعاً آخر.",
+    "View": "عرض",
+    "Yes": "نعم"
+}

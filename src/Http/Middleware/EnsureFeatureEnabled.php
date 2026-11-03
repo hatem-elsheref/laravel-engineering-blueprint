@@ -19,7 +19,7 @@ final class EnsureFeatureEnabled
         // feature:orders,reports requires every listed feature; none may be ignored.
         foreach ($keys as $key) {
             if (! $this->features->enabled($key)) {
-                abort(403, 'This feature is not enabled.');
+                abort(403, __('This feature is not enabled.'));
             }
         }
 

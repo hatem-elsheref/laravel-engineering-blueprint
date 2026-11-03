@@ -21,3 +21,9 @@ alwaysApply: false
 - Forms: disable submit after post; idempotency on critical submits.
 
 If the project has a **frontend-views** skill, prefer that skill for detailed Blade rules.
+
+## Languages
+
+- Every visible string: `{{ __('English key') }}`; no hard-coded text, no string concatenation for sentences.
+- RTL: rely on `<html dir>` from the layout; use logical CSS properties (`margin-inline-start`, `text-align: start`).
+- Language switcher: `route('blueprint.locale', $locale)` for each of `config('blueprint.locales')`.

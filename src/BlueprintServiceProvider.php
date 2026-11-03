@@ -24,6 +24,9 @@ class BlueprintServiceProvider extends ServiceProvider
 
         // One request or one queued job; Laravel resets scoped instances between them.
         $this->app->singleton(Flags\HttpDispatch::class);
+
+        // The app's own default language; setLocale() overwrites config('app.locale') at runtime.
+        $this->app->instance('blueprint.default_locale', (string) $this->app['config']->get('app.locale', 'en'));
         $this->app->scoped(Features\FeatureManager::class);
         $this->app->scoped(Settings\SettingManager::class);
 
@@ -36,6 +39,13 @@ class BlueprintServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->app['router']->aliasMiddleware('feature', Http\Middleware\EnsureFeatureEnabled::class);
+
+        // Interface translations: package strings, the language switch route, per-request locale.
+        $this->loadJsonTranslationsFrom(__DIR__.'/../lang');
+        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+        $kernel = $this->app->make(Kernel::class);
+        $kernel->appendMiddlewareToGroup('web', Http\Middleware\SetLocale::class);
+        $kernel->appendMiddlewareToGroup('api', Http\Middleware\SetLocale::class);
 
         // Admin writes are refused while a route is being handled, also in an app's own HTTP tests.
         Event::listen(RouteMatched::class, fn () => $this->app->make(Flags\HttpDispatch::class)->active = true);

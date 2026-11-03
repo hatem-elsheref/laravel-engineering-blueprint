@@ -1,16 +1,16 @@
 @extends(config('blueprint.layout', 'layouts.blueprint'))
 
-@section('title', 'Edit {{ headline }} #'.${{ variable }}->id)
+@section('title', __('Edit :item #:id', ['item' => __('{{ headline }}'), 'id' => ${{ variable }}->id]))
 
 @section('content')
-    <h1>Edit {{ headline }} #{{ ${{ variable }}->id }}</h1>
+    <h1>{{ __('Edit :item #:id', ['item' => __('{{ headline }}'), 'id' => ${{ variable }}->id]) }}</h1>
 
     <form method="POST" action="{{ route('{{ routeName }}.update', ${{ variable }}) }}">
         @csrf
         @method('PUT')
         @include('{{ viewPath }}._form')
-        <button type="submit">Save</button>
+        <button type="submit">{{ __('Save') }}</button>
     </form>
 
-    <p><a href="{{ route('{{ routeName }}.show', ${{ variable }}) }}">Cancel</a></p>
+    <p><a href="{{ route('{{ routeName }}.show', ${{ variable }}) }}">{{ __('Cancel') }}</a></p>
 @endsection

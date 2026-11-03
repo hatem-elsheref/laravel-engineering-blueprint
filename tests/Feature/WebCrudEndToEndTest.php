@@ -140,3 +140,23 @@ it('rejects nested arrays instead of storing them', function () {
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['tags.0', 'tags.1']);
 });
+
+it('renders the pages in arabic, right to left', function () {
+    config()->set('blueprint.locales', ['en', 'ar']);
+    $this->actingAs($this->user)->post('/books', bookForm());
+    $book = Book::first();
+
+    $this->actingAs($this->user)->from("/books/{$book->id}")->get('/locale/ar')->assertRedirect("/books/{$book->id}");
+
+    $this->actingAs($this->user)->get("/books/{$book->id}")
+        ->assertOk()
+        ->assertSee('dir="rtl"', false)
+        ->assertSee('lang="ar"', false)
+        ->assertSee('تعديل')
+        ->assertSee('العودة إلى القائمة')
+        ->assertSee('href="http://localhost/locale/en"', false);
+
+    $this->actingAs($this->user)->getJson('/api/books', ['Accept-Language' => 'en'])->assertOk();
+    $this->actingAs($this->user)->get('/locale/en');
+    $this->actingAs($this->user)->get('/books')->assertSee('dir="ltr"', false)->assertSee('View');
+});

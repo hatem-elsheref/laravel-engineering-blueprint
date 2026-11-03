@@ -7,3 +7,5 @@ Skills: install **laravel-engineering** and **leb-generate-crud** from `laravel-
 Constitution: `laravel-engineering-blueprint/docs/CONSTITUTION.md`.
 
 Generate code with the package commands (`make:module`, `make:dto`, `make:action`, `make:crud [--api] [--web]`); never hand-fill stubs. Customize stubs with `php artisan vendor:publish --tag=blueprint-stubs`.
+
+User-facing text always uses `__()` with English keys; translations go in `lang/<locale>.json` (see `blueprint.locales`).

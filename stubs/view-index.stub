@@ -1,21 +1,21 @@
 @extends(config('blueprint.layout', 'layouts.blueprint'))
 
-@section('title', '{{ headlinePlural }}')
+@section('title', __('{{ headlinePlural }}'))
 
 @section('content')
-    <h1>{{ headlinePlural }}</h1>
+    <h1>{{ __('{{ headlinePlural }}') }}</h1>
 
     @can('create', {{ modelClass }}::class)
-        <p><a href="{{ route('{{ routeName }}.create') }}">New {{ headline }}</a></p>
+        <p><a href="{{ route('{{ routeName }}.create') }}">{{ __('New :item', ['item' => __('{{ headline }}')]) }}</a></p>
     @endcan
 
     @if (${{ variablePlural }}->isEmpty())
-        <p>No {{ headlinePluralLower }} yet.</p>
+        <p>{{ __('Nothing here yet.') }}</p>
     @else
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>{{ __('ID') }}</th>
 {{ headerCells }}                    <th></th>
                 </tr>
             </thead>
@@ -23,7 +23,7 @@
                 @foreach (${{ variablePlural }} as ${{ variable }})
                     <tr>
                         <td>{{ ${{ variable }}->id }}</td>
-{{ rowCells }}                        <td><a href="{{ route('{{ routeName }}.show', ${{ variable }}) }}">View</a></td>
+{{ rowCells }}                        <td><a href="{{ route('{{ routeName }}.show', ${{ variable }}) }}">{{ __('View') }}</a></td>
                     </tr>
                 @endforeach
             </tbody>

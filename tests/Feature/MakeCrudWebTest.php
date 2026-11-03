@@ -184,7 +184,7 @@ it('names the form helper after module and entity', function () {
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'OrderItem', '--web' => true])->assertExitCode(0);
 
     expect(file_get_contents(base_path('tests/Feature/Modules/Orders/OrderItemWebTest.php')))->toContain('function ordersOrderItemFormInput(')
-        ->and(file_get_contents(app_path('Modules/Orders/Controllers/OrderItemPageController.php')))->toContain("'Order Item created.'");
+        ->and(file_get_contents(app_path('Modules/Orders/Controllers/OrderItemPageController.php')))->toContain("__(':item created.', ['item' => __('Order Item')])");
 });
 
 it('clears a cached route list', function () {
@@ -219,4 +219,30 @@ it('refuses different fields when adding a side', function () {
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--web' => true, '--fields' => 'title:string'])
         ->expectsOutputToContain("--fields doesn't match the existing Order CRUD (name:string,quantity:int,note:?string). Leave --fields out to reuse them.")
         ->assertExitCode(1);
+});
+
+it('adds the entity and field names to other languages', function () {
+    config()->set('blueprint.locales', ['en', 'ar']);
+    File::ensureDirectoryExists(lang_path());
+    file_put_contents(lang_path('ar.json'), json_encode(['Order' => 'طلب']));
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--web' => true, '--fields' => WEB_FIELDS])
+        ->expectsOutputToContain('added 4 strings to lang/ar.json — translate them')
+        ->assertExitCode(0);
+
+    expect(json_decode(file_get_contents(lang_path('ar.json')), true))->toBe([
+        'Order' => 'طلب', 'Orders' => 'Orders', 'Name' => 'Name', 'Quantity' => 'Quantity', 'Note' => 'Note',
+    ]);
+
+    File::delete(lang_path('ar.json'));
+});
+
+it('uses only translated strings in the pages', function () {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--web' => true, '--fields' => WEB_FIELDS])->assertExitCode(0);
+
+    foreach (glob(resource_path('views/orders/orders/*.blade.php')) as $view) {
+        $text = preg_replace(['/\{\{.*?\}\}/s', '/@\w+\s*(\((?:[^()]|(?1))*\))?/', '/<[^>]+>/'], '', file_get_contents($view));
+
+        expect(trim(preg_replace('/\s+/', ' ', $text)))->toBe('', basename($view));
+    }
 });

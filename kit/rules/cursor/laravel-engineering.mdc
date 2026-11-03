@@ -31,3 +31,7 @@ php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --w
 To change generated code: `php artisan vendor:publish --tag=blueprint-stubs`, then edit `stubs/blueprint/*.stub`. The copy in `laravel-engineering-blueprint/stubs/` is reference only.
 
 Details: skill **leb-generate-crud**.
+
+## Languages
+
+All user-facing text uses `__()` with English keys (Blade, flash, API messages); translations in `lang/<locale>.json`; languages in `blueprint.locales`; RTL is handled by the generated layout.

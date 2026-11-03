@@ -9,6 +9,6 @@ final class FeatureDisabled extends AccessDeniedHttpException
 {
     public static function key(string $key): self
     {
-        return new self('This feature is not enabled.');
+        return new self(__('This feature is not enabled.'));
     }
 }

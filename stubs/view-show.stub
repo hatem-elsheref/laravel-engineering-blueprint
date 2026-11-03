@@ -1,25 +1,25 @@
 @extends(config('blueprint.layout', 'layouts.blueprint'))
 
-@section('title', '{{ headline }} #'.${{ variable }}->id)
+@section('title', __(':item #:id', ['item' => __('{{ headline }}'), 'id' => ${{ variable }}->id]))
 
 @section('content')
-    <h1>{{ headline }} #{{ ${{ variable }}->id }}</h1>
+    <h1>{{ __(':item #:id', ['item' => __('{{ headline }}'), 'id' => ${{ variable }}->id]) }}</h1>
 
     <dl>
 {{ details }}    </dl>
 
     <p>
         @can('update', ${{ variable }})
-            <a href="{{ route('{{ routeName }}.edit', ${{ variable }}) }}">Edit</a>
+            <a href="{{ route('{{ routeName }}.edit', ${{ variable }}) }}">{{ __('Edit') }}</a>
         @endcan
-        <a href="{{ route('{{ routeName }}.index') }}">Back to {{ headlinePluralLower }}</a>
+        <a href="{{ route('{{ routeName }}.index') }}">{{ __('Back to list') }}</a>
     </p>
 
     @can('delete', ${{ variable }})
         <form method="POST" action="{{ route('{{ routeName }}.destroy', ${{ variable }}) }}">
             @csrf
             @method('DELETE')
-            <button type="submit">Delete</button>
+            <button type="submit">{{ __('Delete') }}</button>
         </form>
     @endcan
 @endsection

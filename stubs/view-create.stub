@@ -1,15 +1,15 @@
 @extends(config('blueprint.layout', 'layouts.blueprint'))
 
-@section('title', 'New {{ headline }}')
+@section('title', __('New :item', ['item' => __('{{ headline }}')]))
 
 @section('content')
-    <h1>New {{ headline }}</h1>
+    <h1>{{ __('New :item', ['item' => __('{{ headline }}')]) }}</h1>
 
     <form method="POST" action="{{ route('{{ routeName }}.store') }}">
         @csrf
         @include('{{ viewPath }}._form')
-        <button type="submit">Create</button>
+        <button type="submit">{{ __('Create') }}</button>
     </form>
 
-    <p><a href="{{ route('{{ routeName }}.index') }}">Back to {{ headlinePluralLower }}</a></p>
+    <p><a href="{{ route('{{ routeName }}.index') }}">{{ __('Back to list') }}</a></p>
 @endsection

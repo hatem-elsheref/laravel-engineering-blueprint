@@ -83,6 +83,8 @@ Put auth middleware for token APIs (e.g. `auth:sanctum`) in the module's `Provid
 | `stub_path` | Your own stubs folder (null = published `stubs/blueprint/` or package stubs) |
 | `default_profile` | Profile used when none is given (`modular`) |
 | `layout` | Blade layout the generated pages extend (`layouts.blueprint`) |
+| `locales` | Languages the app serves (`['en']`; e.g. `['en', 'ar']`) |
+| `rtl_locales` | Right-to-left languages (`ar`, `fa`, `he`, `ur`) |
 | `features` | Feature definitions class (null = `<shared_path>/Features/Features`) |
 | `settings` | Setting definitions class (null = `<shared_path>/Settings/Settings`) |
 | `tenant_seeder` | Seeder run by `tenant:create` (`Database\Seeders\TenantSeeder`) |
@@ -102,6 +104,21 @@ Stubs are copied to `stubs/blueprint/` and used automatically (or set `blueprint
 - **Tenancy** ([docs/TENANCY.md](./docs/TENANCY.md)): tenant modules use the `tenant` middleware group (subdomain); `--central` modules answer only on central domains. Tenant migrations live in `database/migrations/tenant` (`php artisan tenants:migrate`). Use `CACHE_STORE=redis` (or memcached). Test helper: `Best\Blueprint\Testing\InteractsWithTenancy`.
 - **Features** ([docs/FEATURES.md](./docs/FEATURES.md)): `Feature::enabled()`, route middleware `feature:a,b`, job middleware `RequireFeature`, Blade `@feature`. Writes only through console commands.
 - **Settings** ([docs/SETTINGS.md](./docs/SETTINGS.md)): typed `Setting::get()`; `Setting::set()` only for tenant-editable settings through their Gate ability.
+
+## Languages
+
+The generated Blade pages and the package's own messages are translatable (`__()` with English keys); Arabic ships for the package strings.
+
+```php
+// config/blueprint.php
+'locales' => ['en', 'ar'],          // languages the app serves
+'rtl_locales' => ['ar', 'fa', 'he', 'ur'],
+```
+
+- Request language: API `Accept-Language` → web visitor choice (`/locale/{code}`, route `blueprint.locale`) → `app.language` setting → app default.
+- The layout sets `<html lang dir>` (right-to-left for Arabic) and shows a language switcher when more than one language is configured.
+- `make:crud --web` adds entity and field names to `lang/<locale>.json` to translate.
+- Laravel's validation messages: `php artisan lang:publish`, then add `lang/ar/validation.php`.
 
 ## Agent kit
 
