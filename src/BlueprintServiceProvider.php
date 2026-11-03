@@ -31,6 +31,8 @@ class BlueprintServiceProvider extends ServiceProvider
             __DIR__.'/../stubs' => base_path('stubs/blueprint'),
         ], 'blueprint-stubs');
 
-        $this->commands([]);
+        $this->commands([
+            Console\AboutCommand::class,
+        ]);
     }
 }
