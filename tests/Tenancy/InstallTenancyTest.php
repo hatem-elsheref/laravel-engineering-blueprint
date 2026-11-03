@@ -82,6 +82,8 @@ it('explains missing stancl', function () {
     installTenantSaas()
         ->expectsOutputToContain('Tenancy needs stancl/tenancy. Run: composer require stancl/tenancy:^3.10')
         ->expectsOutputToContain('✗ Tenancy (stancl/tenancy not installed)')
+        ->expectsOutputToContain('Next: composer require stancl/tenancy:^3.10')
+        ->doesntExpectOutputToContain('Next: php artisan make:module')
         ->assertExitCode(0);
 
     expect(file_get_contents(config_path('blueprint.php')))->toContain("'profile' => 'tenant-saas',")
@@ -92,4 +94,18 @@ it('does nothing tenancy for other profiles', function () {
     $this->artisan('engineering:install', ['--profile' => 'saas', '--no-interaction' => true, '--allow-downgrade' => true])->assertExitCode(0);
 
     expect(file_exists(config_path('tenancy.php')))->toBeFalse();
+});
+
+it('warns when the cache store cannot isolate tenants', function (string $store) {
+    config()->set('cache.default', $store);
+
+    installTenantSaas()
+        ->expectsOutputToContain("Tenant cache needs a cache store with tags (redis or memcached); CACHE_STORE={$store} fails inside tenants. Set CACHE_STORE=redis for tenant-saas.")
+        ->assertExitCode(0);
+})->with(['database', 'file']);
+
+it('pins the database queue to the central connection', function () {
+    installTenantSaas()
+        ->expectsOutputToContain('✓ database queue uses the central connection (testing)')
+        ->assertExitCode(0);
 });

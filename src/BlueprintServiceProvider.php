@@ -66,6 +66,21 @@ class BlueprintServiceProvider extends ServiceProvider
         ]);
         $router->middlewareGroup('central', [Http\Middleware\CentralDomainsOnly::class]);
 
+        // Unknown tenant domains are "not found", not a server error.
+        \Stancl\Tenancy\Middleware\InitializeTenancyByDomain::$onFail = fn () => abort(404);
+
+        // route() for central-module routes (bound to Route::domain('{central_domain}')); the
+        // CentralDomainsOnly middleware overrides this with the request's host.
+        $central = (array) config('tenancy.central_domains', []);
+        \Illuminate\Support\Facades\URL::defaults(['central_domain' => $central[0] ?? 'localhost']);
+
+        // Laravel's database queue uses the *default* connection, which is the tenant's database while
+        // tenancy is active; jobs must go to the central database where the worker reads them.
+        if (config('queue.connections.database.connection') === null) {
+            config()->set('queue.connections.database.connection', config('tenancy.database.central_connection'));
+        }
+
+
         $kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
 
         foreach ([\Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class, \Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains::class] as $middleware) {

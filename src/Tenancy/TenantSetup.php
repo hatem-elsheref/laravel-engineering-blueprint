@@ -104,7 +104,7 @@ class TenantSetup
                     tenancy()->end();
                 }
 
-                throw new TenantSetupException($step, $e);
+                throw new TenantSetupException($step, $e, $results);
             }
 
             [$status, $note] = is_array($status) ? $status : [$status, null];

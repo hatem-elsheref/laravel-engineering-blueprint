@@ -123,3 +123,12 @@ Testbench with sqlite (central in a temp file; tenant DBs via stancl's SQLite ma
 - Stub names and placeholders for the tenant model, tenant/central provider variants and tenant test.
 - How the "simulated missing stancl" test is done (e.g. an injectable detector like `PestDetector`).
 - Exact wording of step lines beyond what's fixed above.
+
+## Amendments (final review, 2026-11-03)
+
+- **Queue:** while tenancy is active Laravel's database queue would use the tenant's connection; the package sets `queue.connections.database.connection` to the central connection when it is unset, so jobs dispatched in a tenant are stored centrally and the worker restores the tenant (stancl's QueueTenancyBootstrapper).
+- **Cache:** stancl isolates tenant cache with tags. Stores without tags (Laravel 13's default `database`, `file`) fail loudly inside tenants; install says `Set CACHE_STORE=redis for tenant-saas`. A per-tenant database cache was tried and rejected: Laravel keeps the cache store (and its DB connection) alive across tenant switches, which leaked one tenant's cache to another.
+- **Unknown tenant domains** get 404 (`InitializeTenancyByDomain::$onFail`), not a 500.
+- **Central routes** are named with a `central.` prefix (so a resource can exist in a central and a tenant module and `route:cache` still works) and `route()` works for them (`URL::defaults` for `central_domain`).
+- **Testing helper:** per-worker tenants under `--parallel`; databases named `blueprint_test_<id>`; refuses when tenancy isn't bootstrapped; its cleanup runs before other teardown callbacks; generated tests keep `$this->tenant`.
+- **Smaller:** tenant `make:crud` hint says `tenants:migrate`; route-less central modules stay recognisable as central; install without stancl says `Next: composer require stancl/tenancy:^3.10`; `tenant:create` failures list the steps that did finish; tenant seeder class is `blueprint.tenant_seeder`.

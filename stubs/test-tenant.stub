@@ -7,7 +7,7 @@ uses(InteractsWithTenancy::class, DatabaseMigrations::class);
 
 beforeEach(function (): void {
     // A real tenant (database + tenant migrations); users live in the tenant database.
-    $this->createTestTenant();
+    $this->tenant = $this->createTestTenant();
     $this->user = User::factory()->create();
 });
 

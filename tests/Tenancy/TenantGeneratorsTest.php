@@ -57,7 +57,7 @@ it('generates central module providers', function () {
 
     expect(file_get_contents(app_path('Modules/Admin/Provider.php')))
         ->toContain("\$domains = implode('|', array_map('preg_quote', config('tenancy.central_domains', [])));")
-        ->toContain("Route::domain('{central_domain}')->where(['central_domain' => \$domains])->middleware(['api', 'central'])->prefix('api')->group(__DIR__.'/routes/api.php');")
+        ->toContain("Route::domain('{central_domain}')->where(['central_domain' => \$domains])->middleware(['api', 'central'])->prefix('api')->name('central.')->group(__DIR__.'/routes/api.php');")
         ->not->toContain('booted')
         ->not->toContain("'web', 'central'");
 });
@@ -95,7 +95,8 @@ it('puts tenant crud migrations in the tenant folder', function () {
         ->and(file_get_contents(base_path('tests/Feature/Modules/Orders/OrderApiTest.php')))
             ->toContain('uses(InteractsWithTenancy::class, DatabaseMigrations::class);')
             ->toContain("\$this->tenantUrl('/api/orders')")
-            ->toContain("postJson(\$this->tenantUrl('/api/orders'), [])");
+            ->toContain("postJson(\$this->tenantUrl('/api/orders'), [])")
+            ->toContain('$this->tenant = $this->createTestTenant();');
 
     $lint = new Symfony\Component\Process\Process([PHP_BINARY, '-l', base_path('tests/Feature/Modules/Orders/OrderApiTest.php')]);
     $lint->run();
@@ -119,5 +120,23 @@ it('checks tenant migrations for collisions', function () {
 
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])
         ->expectsOutputToContain('"database/migrations/tenant/2020_01_01_000000_create_orders_table.php" already exists.')
+        ->assertExitCode(1);
+});
+
+it('tells tenant crud users to run tenant migrations', function () {
+    $this->artisan('make:module', ['name' => 'Orders', '--api' => true])->assertExitCode(0);
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])
+        ->expectsOutputToContain('Next: php artisan tenants:migrate && php artisan test --filter=OrderApiTest')
+        ->assertExitCode(0);
+});
+
+it('keeps a route-less central module central', function () {
+    $this->artisan('make:module', ['name' => 'Billing', '--central' => true])->assertExitCode(0);
+
+    expect(file_get_contents(app_path('Modules/Billing/Provider.php')))->toContain("'central'");
+
+    $this->artisan('make:crud', ['module' => 'Billing', 'entity' => 'Invoice'])
+        ->expectsOutputToContain('or create the module with make:module Billing --api --central.')
         ->assertExitCode(1);
 });

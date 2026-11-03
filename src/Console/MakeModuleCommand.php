@@ -161,7 +161,10 @@ class MakeModuleCommand extends Command
     private function body(array $routes, string $kind): string
     {
         if ($routes === []) {
-            return '';
+            // Keeps the module recognisable as central for make:crud.
+            return $kind === 'central'
+                ? "    // Central (platform) module: routes use the 'central' middleware group on the central domains.\n"
+                : '';
         }
 
         $statements = match ($kind) {
@@ -210,8 +213,8 @@ class MakeModuleCommand extends Command
     {
         $domain = "Route::domain('{central_domain}')->where(['central_domain' => \$domains])";
         $lines = array_intersect_key([
-            'web' => "        {$domain}->middleware(['web', 'central'])->group(__DIR__.'/routes/web.php');",
-            'api' => "        {$domain}->middleware(['api', 'central'])->prefix('api')->group(__DIR__.'/routes/api.php');",
+            'web' => "        {$domain}->middleware(['web', 'central'])->name('central.')->group(__DIR__.'/routes/web.php');",
+            'api' => "        {$domain}->middleware(['api', 'central'])->prefix('api')->name('central.')->group(__DIR__.'/routes/api.php');",
         ], $routes);
 
         return "        \$domains = implode('|', array_map('preg_quote', config('tenancy.central_domains', [])));\n\n"

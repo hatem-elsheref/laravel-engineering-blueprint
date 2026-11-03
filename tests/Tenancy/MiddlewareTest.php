@@ -26,3 +26,7 @@ it('serves central routes only on central domains', function () {
 it('central host gets 404 before binding', function () {
     $this->get('http://localhost/t/acme')->assertNotFound();
 });
+
+it('answers 404 for unknown tenant domains', function () {
+    $this->get('http://nope.localhost/t')->assertNotFound();
+});

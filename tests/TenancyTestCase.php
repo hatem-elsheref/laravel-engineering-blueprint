@@ -29,6 +29,9 @@ abstract class TenancyTestCase extends TestCase
         $app['config']->set('database.connections.testing.database', $this->centralDatabase);
 
         $app['config']->set('blueprint.profile', 'tenant-saas');
+        $app['config']->set('queue.connections.database.connection', null);
+        $app['config']->set('cache.stores.database.connection', null);
+        $app['config']->set('cache.stores.database.lock_connection', null);
         $app['config']->set('tenancy.tenant_model', \App\Models\Tenant::class);
         $app['config']->set('tenancy.central_domains', ['localhost']);
         $app['config']->set('tenancy.database.central_connection', 'testing');

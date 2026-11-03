@@ -4,6 +4,7 @@ namespace Best\Blueprint\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -19,6 +20,7 @@ final class CentralDomainsOnly
 
         // Central module routes are bound to Route::domain('{central_domain}'); controllers never need it.
         $request->route()?->forgetParameter('central_domain');
+        URL::defaults(['central_domain' => $request->getHost()]);
 
         return $next($request);
     }

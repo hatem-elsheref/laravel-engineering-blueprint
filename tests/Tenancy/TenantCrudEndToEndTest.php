@@ -69,3 +69,18 @@ it('serves a generated tenant crud', function () {
     $this->getJson('http://localhost/api/products')->assertNotFound();
     expect(Illuminate\Support\Facades\Schema::connection('testing')->hasTable('products'))->toBeFalse();
 });
+
+it('caches routes when a central and a tenant module share a resource', function () {
+    $this->artisan('make:module', ['name' => 'Platform', '--api' => true, '--central' => true])->assertExitCode(0);
+    $this->artisan('make:module', ['name' => 'Store', '--api' => true])->assertExitCode(0);
+    File::append(app_path('Modules/Platform/routes/api.php'), "Route::get('/items', fn () => 'c')->name('items.index');\n");
+    File::append(app_path('Modules/Store/routes/api.php'), "Route::get('/items', fn () => 't')->name('items.index');\n");
+    app()->register('App\Modules\Platform\Provider');
+    app()->register('App\Modules\Store\Provider');
+
+    app('router')->getRoutes()->refreshNameLookups(); // what Laravel does after booting the app's routes
+    $names = array_keys(app('router')->getRoutes()->getRoutesByName());
+
+    expect($names)->toContain('central.items.index')->toContain('items.index')
+        ->and(route('central.items.index'))->toBe('http://localhost/api/items');
+});

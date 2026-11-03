@@ -114,6 +114,8 @@ it('retries after failure', function () {
     File::put(database_path('migrations/tenant/2025_12_31_000000_broken.php'), "<?php\n\nreturn new class extends Illuminate\\Database\\Migrations\\Migration {\n    public function up(): void { throw new RuntimeException('boom'); }\n};\n");
 
     $this->artisan('tenant:create', ['name' => 'acme'])
+        ->expectsOutputToContain('✓ Create tenant record')
+        ->expectsOutputToContain('✓ Create database')
         ->expectsOutputToContain('✗ Run tenant migrations: boom')
         ->expectsOutputToContain('Fix the problem and run the same command again; finished steps are skipped.')
         ->assertExitCode(1);

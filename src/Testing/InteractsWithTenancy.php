@@ -5,6 +5,9 @@ namespace Best\Blueprint\Testing;
 use Best\Blueprint\Tenancy\TenantDomains;
 use Best\Blueprint\Tenancy\TenantSetup;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\ParallelTesting;
+use RuntimeException;
 
 /**
  * For tests of tenant code: creates a real tenant (record, domain, database, tenant migrations),
@@ -19,12 +22,21 @@ trait InteractsWithTenancy
 
     protected function createTestTenant(string $id = 'test'): Model
     {
+        if (! Event::hasListeners(\Stancl\Tenancy\Events\TenancyInitialized::class)) {
+            throw new RuntimeException('Tenancy is not bootstrapped (App\Providers\TenancyServiceProvider is not registered), so tenant migrations would hit the central database.');
+        }
+
+        // Parallel test workers each get their own tenant and database.
+        $token = ParallelTesting::token();
+        $id = $token ? "{$id}-{$token}" : $id;
         $domain = app(TenantDomains::class)->forTenant($id);
 
-        app(TenantSetup::class)->run($id, $domain, 'tenant_test_'.str_replace('-', '_', $id));
+        // "blueprint_test_" so a real tenant's default database (tenant_<name>) can never collide.
+        app(TenantSetup::class)->run($id, $domain, 'blueprint_test_'.str_replace('-', '_', $id));
 
         if ($this->testTenants === []) {
-            $this->beforeApplicationDestroyed(fn () => $this->cleanUpTestTenants());
+            // First, so tenancy is over before other teardown work (e.g. DatabaseMigrations' rollback).
+            array_unshift($this->beforeApplicationDestroyedCallbacks, $this->cleanUpTestTenants(...));
         }
 
         $tenant = tenancy()->find($id);

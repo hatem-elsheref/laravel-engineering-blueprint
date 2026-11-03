@@ -36,7 +36,9 @@ Requires `composer require stancl/tenancy:^3.10`, then `php artisan engineering:
 - `make:module Orders` makes a **tenant** module (routes answer only on tenant domains); `make:module Admin --central` makes a **platform** module (routes answer only on central domains).
 - `make:crud` in a tenant module writes its migration to `database/migrations/tenant/`; run it with `php artisan tenants:migrate`. Never put tenant tables in `database/migrations/`.
 - Generated tenant tests use `Best\Blueprint\Testing\InteractsWithTenancy` (real test tenant per test).
-- Schedule tenant work with `tenants:run <command>`; the queue's database connection must be the central one.
+- Schedule tenant work with `tenants:run <command>`. The package keeps the database queue on the central connection.
+- Use `CACHE_STORE=redis` (or memcached): tenant cache isolation needs tags; `database`/`file` stores fail inside tenants.
+- Central module routes are named `central.*` (e.g. `route('central.plans.index')`).
 
 ## Customizing output
 

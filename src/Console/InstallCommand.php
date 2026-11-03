@@ -209,6 +209,12 @@ class InstallCommand extends Command
 
         $modulesShipped = ! isset(self::UPCOMING['Modules']);
 
+        if ($profile->usesTenancy() && ! $tenancyReady) {
+            $this->line('Next: composer require stancl/tenancy:^3.10');
+
+            return;
+        }
+
         if ($profile->usesTenancy() && $tenancyReady) {
             $this->line('Next: php artisan migrate && php artisan tenant:create acme');
 

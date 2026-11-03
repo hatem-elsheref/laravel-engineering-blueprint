@@ -45,7 +45,6 @@ it('runs queued jobs in their tenant', function () {
         $table->unsignedInteger('created_at');
     });
     config()->set('queue.default', 'database');
-    config()->set('queue.connections.database.connection', 'testing');
 
     tenancy()->initialize(tenancy()->find('a'));
     RecordTenantJob::dispatch();
@@ -69,4 +68,20 @@ it('runs scheduled tenant work per tenant', function () {
 
     expect(recordsOf('a'))->toBe(['a'])
         ->and(recordsOf('b'))->toBe(['b']);
+});
+
+it('pins the database queue to the central connection', function () {
+    expect(config('queue.connections.database.connection'))->toBe('testing')
+        ->and(config('cache.stores.database.connection'))->toBeNull();
+});
+
+it('fails loudly instead of sharing an untaggable cache between tenants', function () {
+    config()->set('cache.default', 'file');
+    config()->set('tenancy.bootstrappers', [
+        Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper::class,
+        Stancl\Tenancy\Bootstrappers\CacheTenancyBootstrapper::class,
+    ]);
+
+    expect(fn () => tenancy()->find('a')->run(fn () => cache()->put('greeting', 'hello a')))
+        ->toThrow(BadMethodCallException::class, 'does not support tagging');
 });

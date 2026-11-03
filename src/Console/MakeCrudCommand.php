@@ -76,7 +76,9 @@ class MakeCrudCommand extends Command
         $routesPath = base_path($names->modulePath.'/routes/api.php');
 
         if (! $files->isFile($routesPath)) {
-            return $this->refuse("Module \"{$module}\" has no routes/api.php. Add it and load it in its Provider (see docs), or create the module with make:module {$module} --api.");
+            $central = Profile::current() === Profile::TenantSaas && ! $this->isTenantModule(base_path($modules->path().'/'.$module.'/Provider.php'));
+
+            return $this->refuse("Module \"{$module}\" has no routes/api.php. Add it and load it in its Provider (see docs), or create the module with make:module {$module} --api".($central ? ' --central' : '').'.');
         }
 
         if (($collision = $this->collision($files, $names, $routesPath)) !== null) {
@@ -148,7 +150,7 @@ class MakeCrudCommand extends Command
         $this->line("added route to {$names->modulePath}/routes/api.php");
 
         $this->line("Note: routes are protected by {$names->entity}Policy (guests get 403). For token APIs add auth middleware (e.g. auth:sanctum) to the api routes in {$names->modulePath}/Provider.php, so every resource in this module gets it.");
-        $this->line("Next: php artisan migrate && php artisan test --filter={$names->entity}ApiTest");
+        $this->line('Next: php artisan '.($names->tenant ? 'tenants:migrate' : 'migrate')." && php artisan test --filter={$names->entity}ApiTest");
 
         return self::SUCCESS;
     }

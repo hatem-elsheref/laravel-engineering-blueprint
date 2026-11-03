@@ -59,12 +59,27 @@ class TenantCreateCommand extends Command
         try {
             $results = $setup->run($name, $domain, $database);
         } catch (TenantSetupException $e) {
+            $this->printSteps($e->completed);
             $this->error("✗ {$e->step}: {$e->getMessage()}");
             $this->line('Fix the problem and run the same command again; finished steps are skipped.');
 
             return self::FAILURE;
         }
 
+        $this->printSteps($results);
+
+        $this->line('– Create default features (skipped: coming in Phase 7)');
+        $this->line('– Create default settings (skipped: coming in Phase 7)');
+        $this->info("Tenant \"{$name}\" is ready at ".$domains->url($domain));
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @param  list<array{step: string, status: string, note: ?string}>  $results
+     */
+    private function printSteps(array $results): void
+    {
         foreach ($results as $result) {
             $this->line(match ($result['status']) {
                 'done' => "✓ {$result['step']}",
@@ -72,12 +87,6 @@ class TenantCreateCommand extends Command
                 default => "– {$result['step']} (skipped: {$result['note']})",
             });
         }
-
-        $this->line('– Create default features (skipped: coming in Phase 7)');
-        $this->line('– Create default settings (skipped: coming in Phase 7)');
-        $this->info("Tenant \"{$name}\" is ready at ".$domains->url($domain));
-
-        return self::SUCCESS;
     }
 
     private function duplicateError(string $model, string $name, string $domain, string $database): ?string
