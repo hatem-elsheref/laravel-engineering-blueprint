@@ -3,6 +3,7 @@
 namespace Best\Blueprint;
 
 use Best\Blueprint\Support\Compatibility;
+use Best\Blueprint\Tenancy\TenancyDetector;
 use Illuminate\Support\ServiceProvider;
 
 class BlueprintServiceProvider extends ServiceProvider
@@ -19,6 +20,10 @@ class BlueprintServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if ($this->app->make(TenancyDetector::class)->active()) {
+            $this->registerTenancyMiddleware();
+        }
+
         if (! $this->app->runningInConsole()) {
             return;
         }
@@ -43,5 +48,27 @@ class BlueprintServiceProvider extends ServiceProvider
             Console\MakeActionCommand::class,
             Console\MakeCrudCommand::class,
         ]);
+    }
+
+    /**
+     * The "tenant" and "central" route middleware groups. Tenancy middleware goes to the top of the
+     * priority list (as stancl/tenancy's own provider stub does) so tenants are identified before
+     * route-model binding and central-domain requests get a 404, not an exception.
+     */
+    private function registerTenancyMiddleware(): void
+    {
+        $router = $this->app['router'];
+
+        $router->middlewareGroup('tenant', [
+            \Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class,
+            \Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains::class,
+        ]);
+        $router->middlewareGroup('central', [Http\Middleware\CentralDomainsOnly::class]);
+
+        $kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
+
+        foreach ([\Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class, \Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains::class] as $middleware) {
+            $kernel->prependToMiddlewarePriority($middleware);
+        }
     }
 }

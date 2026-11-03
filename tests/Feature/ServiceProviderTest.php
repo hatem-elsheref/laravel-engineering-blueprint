@@ -62,3 +62,7 @@ it('publishes stub files only', function () {
         ->and(count($paths))->toBe(count(glob(__DIR__.'/../../stubs/*.stub')))
         ->and(array_values($paths))->toContain(base_path('stubs/blueprint/model.stub'));
 });
+
+it('does not register tenancy middleware groups outside tenant-saas', function () {
+    expect(app('router')->getMiddlewareGroups())->not->toHaveKey('tenant')->not->toHaveKey('central');
+});
