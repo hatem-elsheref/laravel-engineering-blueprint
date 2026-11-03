@@ -186,3 +186,37 @@ it('names the form helper after module and entity', function () {
     expect(file_get_contents(base_path('tests/Feature/Modules/Orders/OrderItemWebTest.php')))->toContain('function ordersOrderItemFormInput(')
         ->and(file_get_contents(app_path('Modules/Orders/Controllers/OrderItemPageController.php')))->toContain("'Order Item created.'");
 });
+
+it('clears a cached route list', function () {
+    file_put_contents(app()->getCachedRoutesPath(), '<?php');
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--web' => true])
+        ->expectsOutputToContain('cleared route cache')
+        ->assertExitCode(0);
+
+    expect(file_exists(app()->getCachedRoutesPath()))->toBeFalse();
+});
+
+it('refuses uncountable names for web pages', function () {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'News', '--web' => true])
+        ->expectsOutputToContain('Entity "News" has the same singular and plural form, which the web pages cannot tell apart. Choose another name (e.g. Article).')
+        ->assertExitCode(1);
+});
+
+it('reuses the existing fields when adding a side', function () {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--fields' => WEB_FIELDS.',shippedAt:?Carbon\CarbonImmutable'])->assertExitCode(0);
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--web' => true])
+        ->expectsOutputToContain('using the existing fields: name:string,quantity:int,note:?string,shippedAt:?Carbon\CarbonImmutable')
+        ->assertExitCode(0);
+
+    expect(file_get_contents(resource_path('views/orders/orders/_form.blade.php')))->toContain('name="quantity"')->toContain('name="shipped_at"');
+});
+
+it('refuses different fields when adding a side', function () {
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--fields' => WEB_FIELDS])->assertExitCode(0);
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--web' => true, '--fields' => 'title:string'])
+        ->expectsOutputToContain("--fields doesn't match the existing Order CRUD (name:string,quantity:int,note:?string). Leave --fields out to reuse them.")
+        ->assertExitCode(1);
+});

@@ -171,3 +171,24 @@ it('refuses every generator in tenant-saas without stancl', function (string $co
     ['make:dto', ['module' => 'Orders', 'name' => 'OrderData']],
     ['make:action', ['module' => 'Orders', 'name' => 'CreateOrder']],
 ]);
+
+it('refuses modules made before tenant-saas', function () {
+    config()->set('blueprint.profile', 'modular');
+    $this->artisan('make:module', ['name' => 'Orders', '--api' => true])->assertExitCode(0);
+    config()->set('blueprint.profile', 'tenant-saas');
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])
+        ->expectsOutputToContain("Module \"Orders\" was made before tenant-saas: its routes use neither the 'tenant' nor the 'central' group.")
+        ->assertExitCode(1);
+});
+
+it('checks the central domain in generated tenant tests', function () {
+    $this->artisan('make:module', ['name' => 'Orders', '--api' => true, '--web' => true])->assertExitCode(0);
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--api' => true, '--web' => true])->assertExitCode(0);
+
+    expect(file_get_contents(base_path('tests/Feature/Modules/Orders/OrderApiTest.php')))->toContain("it('is not served on the central domain'")->toContain("getJson(url('/api/orders'))->assertNotFound()")
+        ->and(file_get_contents(base_path('tests/Feature/Modules/Orders/OrderWebTest.php')))->toContain("it('is not served on the central domain'")->toContain("get(url('/orders'))->assertNotFound()");
+
+    File::deleteDirectory(resource_path('views/orders'));
+    File::deleteDirectory(resource_path('views/layouts'));
+});

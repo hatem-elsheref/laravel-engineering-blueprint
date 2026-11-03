@@ -5,6 +5,7 @@ namespace Best\Blueprint\Console;
 use Best\Blueprint\Console\Concerns\RunsInFlagContext;
 use Best\Blueprint\Features\FeatureManager;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class FeatureListCommand extends Command
 {
@@ -24,6 +25,12 @@ class FeatureListCommand extends Command
             }
 
             $this->table(['Feature', 'Enabled', 'Default'], $rows);
+
+            $stored = DB::table('features')->pluck('key')->all();
+
+            if (array_diff(array_keys($features->definitions()), $stored) !== []) {
+                $this->line('Some features have no row yet (shown as disabled): run php artisan features:sync');
+            }
         });
     }
 }

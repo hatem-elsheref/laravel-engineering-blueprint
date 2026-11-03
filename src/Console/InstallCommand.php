@@ -78,6 +78,10 @@ class InstallCommand extends Command
             }
         }
 
+        foreach ($this->moduleWarnings($profile) as $warning) {
+            $this->warn($warning);
+        }
+
         $this->renderSummary($profile, $tenancyReady);
 
         return self::SUCCESS;
@@ -194,6 +198,44 @@ class InstallCommand extends Command
         return $this->savedProfile($writer)
             ?? (is_string($configured) ? Profile::tryFrom($configured) : null)
             ?? Profile::Modular;
+    }
+
+    /**
+     * Existing modules that the new profile breaks or leaves half set up.
+     *
+     * @return list<string>
+     */
+    private function moduleWarnings(Profile $profile): array
+    {
+        $root = base_path(trim((string) config('blueprint.module_path', 'app/Modules'), '/'));
+        $tenancyGroups = $plain = $gated = [];
+
+        foreach (glob($root.'/*', GLOB_ONLYDIR) ?: [] as $dir) {
+            $provider = is_file($dir.'/Provider.php') ? (string) file_get_contents($dir.'/Provider.php') : '';
+            $routes = implode('', array_map('file_get_contents', glob($dir.'/routes/*.php') ?: []));
+
+            if (str_contains($provider, "'tenant'") || str_contains($provider, "'central'")) {
+                $tenancyGroups[] = basename($dir);
+            } elseif (str_contains($provider, 'Route::')) {
+                $plain[] = basename($dir);
+            }
+
+            if (str_contains($routes, 'feature:')) {
+                $gated[] = basename($dir);
+            }
+        }
+
+        return array_values(array_filter([
+            ! $profile->usesTenancy() && $tenancyGroups !== []
+                ? "These modules use the 'tenant' or 'central' route groups, which only exist in tenant-saas: ".implode(', ', $tenancyGroups).'.'
+                : null,
+            ! $profile->usesFeatures() && $gated !== []
+                ? 'These modules gate routes with feature middleware, which needs saas or tenant-saas: '.implode(', ', $gated).'.'
+                : null,
+            $profile->usesTenancy() && $plain !== []
+                ? "Modules made before tenant-saas (routes use neither 'tenant' nor 'central'): ".implode(', ', $plain).". Add 'tenant' or 'central' to the Route::middleware(...) calls in their Provider.php."
+                : null,
+        ]));
     }
 
     private function hasTenants(): bool

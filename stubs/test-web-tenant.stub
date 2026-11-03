@@ -37,6 +37,10 @@ it('hides which {{ uri }} exist from guests', function (): void {
     $this->actingAs($this->user)->get({{ url }}('/{{ uri }}/999999'))->assertNotFound();
 });
 
+it('is not served on the central domain', function (): void {
+    $this->actingAs($this->user)->get(url('/{{ uri }}'))->assertNotFound();
+});
+
 it('lists {{ uri }}', function (): void {
     ${{ variable }} = {{ entity }}::factory()->create();
 

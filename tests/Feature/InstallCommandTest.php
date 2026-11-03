@@ -276,3 +276,30 @@ it('fails when a fresh config cannot record the profile', function () {
         ->doesntExpectOutputToContain('Installed profile:')
         ->assertExitCode(1);
 });
+
+it('warns about modules that a profile change breaks', function () {
+    File::ensureDirectoryExists(app_path('Modules/Shop'));
+    file_put_contents(app_path('Modules/Shop/Provider.php'), "<?php // Route::middleware(['api', 'tenant'])\n");
+    File::ensureDirectoryExists(app_path('Modules/Blog/routes'));
+    file_put_contents(app_path('Modules/Blog/Provider.php'), "<?php // Route::middleware('api')\n");
+    file_put_contents(app_path('Modules/Blog/routes/api.php'), "<?php // ->middleware('feature:posts')\n");
+    config()->set('blueprint.profile', 'tenant-saas');
+
+    install(['--profile' => 'modular', '--allow-downgrade' => true])
+        ->expectsOutputToContain("These modules use the 'tenant' or 'central' route groups, which only exist in tenant-saas: Shop.")
+        ->expectsOutputToContain('These modules gate routes with feature middleware, which needs saas or tenant-saas: Blog.')
+        ->assertExitCode(0);
+
+    File::deleteDirectory(app_path('Modules'));
+});
+
+it('lists modules that are not tenant-aware when switching to tenant-saas', function () {
+    File::ensureDirectoryExists(app_path('Modules/Blog'));
+    file_put_contents(app_path('Modules/Blog/Provider.php'), "<?php // Route::middleware('api')\n");
+
+    install(['--profile' => 'tenant-saas'])
+        ->expectsOutputToContain("Modules made before tenant-saas (routes use neither 'tenant' nor 'central'): Blog.")
+        ->assertExitCode(0);
+
+    File::deleteDirectory(app_path('Modules'));
+});

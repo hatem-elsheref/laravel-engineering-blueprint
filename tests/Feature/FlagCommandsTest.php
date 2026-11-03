@@ -89,3 +89,11 @@ it('lists settings', function () {
         ->expectsOutputToContain('orders.limit')
         ->assertExitCode(0);
 });
+
+it('points at features:sync for features without a row', function () {
+    DB::table('features')->insert(['key' => 'orders', 'enabled' => true]);
+
+    $this->artisan('feature:list')
+        ->expectsOutputToContain('Some features have no row yet (shown as disabled): run php artisan features:sync')
+        ->assertExitCode(0);
+});

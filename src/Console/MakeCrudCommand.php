@@ -75,9 +75,10 @@ class MakeCrudCommand extends Command
             $module,
             $modules->namespace().'\\'.$module,
             $modules->path().'/'.$module,
-            $this->isTenantModule(base_path($modules->path().'/'.$module.'/Provider.php')),
+            $this->moduleKind(base_path($modules->path().'/'.$module.'/Provider.php')) === 'tenant',
         );
-        $central = Profile::current() === Profile::TenantSaas && ! $names->tenant;
+        $kind = $this->moduleKind(base_path($modules->path().'/'.$module.'/Provider.php'));
+        $central = $kind === 'central';
         $feature = $this->option('feature');
         $web = (bool) $this->option('web');
         $api = (bool) $this->option('api') || ! $web;
@@ -96,8 +97,31 @@ class MakeCrudCommand extends Command
             }
         }
 
+        if ($kind === 'plain') {
+            return $this->refuse("Module \"{$module}\" was made before tenant-saas: its routes use neither the 'tenant' nor the 'central' group. Add 'tenant' (data per tenant) or 'central' (platform) to the Route::middleware(...) calls in {$names->modulePath}/Provider.php, then re-run.");
+        }
+
+        if ($web && Str::camel($names->plural) === $names->variable) {
+            return $this->refuse("Entity \"{$entity}\" has the same singular and plural form, which the web pages cannot tell apart. Choose another name (e.g. Article).");
+        }
+
         // Adding a side to an existing CRUD: the shared backend is reused, only the new side is written.
         $addingSide = $this->sharedFilesExist($names);
+
+        if ($addingSide) {
+            $existing = $this->existingFields($names);
+
+            if ($this->option('fields') !== null && $this->fieldSignature($fields) !== $this->fieldSignature(CrudFields::parse($existing))) {
+                return $this->refuse("--fields doesn't match the existing {$entity} CRUD ({$existing}). Leave --fields out to reuse them.");
+            }
+
+            $fields = CrudFields::parse($existing);
+            $this->line("using the existing fields: {$existing}");
+
+            if (($error = $this->featureMismatch($names, $feature, $api, $web)) !== null) {
+                return $this->refuse($error);
+            }
+        }
         $keys = [
             ...($addingSide ? [] : CrudNames::SHARED),
             ...($api ? CrudNames::API : []),
@@ -218,6 +242,11 @@ class MakeCrudCommand extends Command
 
         foreach (array_keys($routeLines) as $side) {
             $this->line("added route to {$names->modulePath}/routes/{$side}.php");
+        }
+
+        if (is_file($this->laravel->getCachedRoutesPath())) {
+            $this->callSilently('route:clear');
+            $this->line('cleared route cache');
         }
 
         $this->line("Note: {$names->entity}Policy lets every signed-in user do everything (guests get 403). Tighten it for your app.".($api ? " For token APIs add auth middleware (e.g. auth:sanctum) to the api routes in {$names->modulePath}/Provider.php." : ''));
@@ -654,12 +683,73 @@ class MakeCrudCommand extends Command
     }
 
     /**
-     * In tenant-saas, a module is a tenant module unless its Provider uses the 'central' route group.
+     * "tenant" or "central" in tenant-saas (from the route groups its Provider uses), "plain" for a
+     * tenant-saas module made before the switch, "none" in other profiles.
      */
-    private function isTenantModule(string $provider): bool
+    private function moduleKind(string $provider): string
     {
-        return Profile::current() === Profile::TenantSaas
-            && (! is_file($provider) || ! str_contains((string) file_get_contents($provider), "'central'"));
+        if (Profile::current() !== Profile::TenantSaas) {
+            return 'none';
+        }
+
+        $code = is_file($provider) ? (string) file_get_contents($provider) : '';
+
+        return match (true) {
+            str_contains($code, "'central'") => 'central',
+            str_contains($code, "'tenant'") => 'tenant',
+            str_contains($code, 'Route::') => 'plain',
+            default => 'tenant', // no routes yet: routes added by make:module in tenant-saas are tenant routes
+        };
+    }
+
+    /**
+     * The fields of an existing CRUD, read back from its Data class (name:type list).
+     */
+    private function existingFields(CrudNames $names): string
+    {
+        $code = (string) file_get_contents(base_path($names->files()['data']));
+        preg_match('/function __construct\((.*?)\)\s*\{\}/s', $code, $constructor);
+        preg_match_all('/public (\??)([\w\\\\]+) \$(\w+),/', $constructor[1] ?? '', $properties, PREG_SET_ORDER);
+
+        return implode(',', array_map(
+            fn (array $p) => $p[3].':'.$p[1].($p[2] === 'CarbonImmutable' ? 'Carbon\\CarbonImmutable' : $p[2]),
+            $properties,
+        ));
+    }
+
+    /**
+     * @param  list<CrudField>  $fields
+     */
+    private function fieldSignature(array $fields): string
+    {
+        return implode(',', array_map(fn (CrudField $f) => $f->property.':'.$f->type, $fields));
+    }
+
+    /**
+     * When adding a side, it must be gated by the same feature as the existing side's routes.
+     */
+    private function featureMismatch(CrudNames $names, ?string $feature, bool $api, bool $web): ?string
+    {
+        foreach (array_filter(['api' => ! $api ? "{$names->entity}Controller" : null, 'web' => ! $web ? "{$names->entity}PageController" : null]) as $side => $controller) {
+            $routes = base_path("{$names->modulePath}/routes/{$side}.php");
+
+            if (! is_file($routes)) {
+                continue;
+            }
+
+            preg_match('/\b'.$controller.'::class\)[^;]*?feature:([\w.-]+)/s', (string) file_get_contents($routes), $match);
+            $existing = $match[1] ?? null;
+
+            if ($existing !== null && $existing !== $feature) {
+                return "The existing routes are gated by feature:{$existing}; add --feature={$existing} so the new side is gated too.";
+            }
+
+            if ($existing === null && $feature !== null) {
+                return "The existing routes have no feature gate; gate them with feature:{$feature} first, or leave --feature out.";
+            }
+        }
+
+        return null;
     }
 
     private function refuse(string $message): int

@@ -26,6 +26,10 @@ it('hides which {{ uri }} exist from guests', function (): void {
     $this->actingAs($this->user)->getJson($this->tenantUrl('/api/{{ uri }}/999999'))->assertNotFound();
 });
 
+it('is not served on the central domain', function (): void {
+    $this->actingAs($this->user)->getJson(url('/api/{{ uri }}'))->assertNotFound();
+});
+
 it('lists {{ uri }}', function (): void {
     {{ entity }}::factory()->create();
 

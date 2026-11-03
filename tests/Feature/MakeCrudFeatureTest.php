@@ -17,6 +17,9 @@ afterEach(function () {
     File::deleteDirectory(app_path('Modules'));
     File::cleanDirectory(database_path('migrations'));
     File::deleteDirectory(database_path('factories/Orders'));
+    File::deleteDirectory(database_path('factories/Shop'));
+    File::deleteDirectory(resource_path('views/shop'));
+    File::deleteDirectory(resource_path('views/layouts'));
     File::deleteDirectory(base_path('tests/Feature/Modules'));
     File::deleteDirectory(base_path('stubs'));
     file_put_contents($this->providersPath, $this->providers);
@@ -84,4 +87,16 @@ it('refuses an old test stub that would drop the feature setup', function () {
         ->assertExitCode(1);
 
     expect(is_dir(app_path('Modules/Orders/Models')))->toBeFalse();
+});
+
+it('keeps the feature gate when adding a side', function () {
+    $this->artisan('make:module', ['name' => 'Shop', '--api' => true, '--web' => true])->assertExitCode(0);
+    $this->artisan('make:crud', ['module' => 'Shop', 'entity' => 'Coupon', '--feature' => 'reports'])->assertExitCode(0);
+
+    $this->artisan('make:crud', ['module' => 'Shop', 'entity' => 'Coupon', '--web' => true])
+        ->expectsOutputToContain('The existing routes are gated by feature:reports; add --feature=reports so the new side is gated too.')
+        ->assertExitCode(1);
+
+    $this->artisan('make:crud', ['module' => 'Shop', 'entity' => 'Coupon', '--web' => true, '--feature' => 'reports'])->assertExitCode(0);
+
 });
