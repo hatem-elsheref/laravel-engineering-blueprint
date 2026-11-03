@@ -253,3 +253,25 @@ it('generated provider loads its api routes', function () {
 
     $this->get('/api/route-check')->assertOk()->assertSee('ok');
 });
+
+it('refuses module_path that is not a valid namespace', function (string $path) {
+    config()->set('blueprint.module_path', $path);
+
+    $this->artisan('make:module', ['name' => 'Zed'])
+        ->expectsOutputToContain("module_path must be inside app/ (got \"{$path}\").")
+        ->assertExitCode(1);
+
+    expect(file_get_contents($this->providersPath))->toBe($this->providers)
+        ->and(is_dir(base_path('oops')))->toBeFalse();
+})->with(['app/My-Modules', 'app//Mods', 'app/../oops', 'app/Modules/2nd']);
+
+it('refuses when a file has the module name', function () {
+    File::ensureDirectoryExists(app_path('Modules'));
+    touch(app_path('Modules/Foo'));
+
+    $this->artisan('make:module', ['name' => 'Foo'])
+        ->expectsOutputToContain('Module "Foo" already exists at app/Modules/Foo.')
+        ->assertExitCode(1);
+
+    expect(file_get_contents($this->providersPath))->toBe($this->providers);
+});

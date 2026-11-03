@@ -47,7 +47,7 @@ Steps, in order — any refusal exits 1 and writes nothing:
 1. **Profile gate.** `Profile::current()`:
    - `null` → `No project profile installed. Run php artisan engineering:install first.`
    - profile without modules (`basic`) → `The "basic" profile has no modules. Switch profile with php artisan engineering:install --profile=modular.`
-2. **Module path.** `config('blueprint.module_path')` must be a relative path inside `app/` (e.g. `app/Modules`). Namespace = `App\` + the path after `app/` with `/` → `\` (`app/Modules` → `App\Modules`). Otherwise → `module_path must be inside app/ (got "<value>").`
+2. **Module path.** `config('blueprint.module_path')` must be a relative path inside `app/` (e.g. `app/Modules`), and every segment after `app/` must be a valid PHP namespace name (no `..`, `-`, empty segments, or leading digits) *(final-review amendment)*. Namespace = `App\` + the path after `app/` with `/` → `\` (`app/Modules` → `App\Modules`). Otherwise → `module_path must be inside app/ (got "<value>").`
 3. **Name.**
    - Normalize with `Str::studly()` (`orders` → `Orders`, `purchase_orders` / `purchase-orders` → `PurchaseOrders`).
    - After normalizing it must match `^[A-Z][A-Za-z0-9]*$`. Otherwise → `Invalid module name "<input>". Use letters and numbers, starting with a letter, e.g. Orders.`
@@ -96,7 +96,7 @@ final class Provider extends ServiceProvider
 - Without route flags: `boot()` is omitted entirely, as is the `Route` import — an empty provider class.
 - With only one flag: only that route line.
 
-`routes/api.php` and `routes/web.php`: a `<?php`, `declare(strict_types=1);`, `use Illuminate\Support\Facades\Route;`, and one commented example using the kebab-case plural of the module as the URL (`// Route::get('/orders', ...);`). No live routes.
+`routes/api.php` and `routes/web.php`: a `<?php`, `declare(strict_types=1);`, `use Illuminate\Support\Facades\Route;`, and one commented example using the kebab-case module name as the URL (`Orders` → `// Route::get('/orders', ...);`; not pluralized, since `Inventory` would become `inventories`). No live routes.
 
 ### 6.1 Stubs
 

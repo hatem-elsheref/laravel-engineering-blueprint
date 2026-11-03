@@ -28,7 +28,7 @@ class MakeModuleCommand extends Command
 
         $modulePath = trim((string) config('blueprint.module_path'), '/');
 
-        if (! str_starts_with($modulePath.'/', 'app/') || $modulePath === 'app') {
+        if (! $this->validModulePath($modulePath)) {
             return $this->refuse(sprintf('module_path must be inside app/ (got "%s").', config('blueprint.module_path')));
         }
 
@@ -90,13 +90,33 @@ class MakeModuleCommand extends Command
             return null;
         }
 
-        foreach ($files->directories($path) as $directory) {
-            if (strcasecmp(basename($directory), $name) === 0) {
-                return basename($directory);
+        foreach (scandir($path) ?: [] as $entry) {
+            if (strcasecmp($entry, $name) === 0) {
+                return $entry;
             }
         }
 
         return null;
+    }
+
+    /**
+     * "app/" followed by one or more segments that are valid PHP namespace names.
+     */
+    private function validModulePath(string $path): bool
+    {
+        $segments = explode('/', $path);
+
+        if (array_shift($segments) !== 'app' || $segments === []) {
+            return false;
+        }
+
+        foreach ($segments as $segment) {
+            if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $segment) !== 1) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function declaresProvider(string $contents, string $namespace): bool
