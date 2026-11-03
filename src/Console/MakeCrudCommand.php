@@ -3,6 +3,9 @@
 namespace Best\Blueprint\Console;
 
 use Best\Blueprint\Flags\Definitions;
+use Best\Blueprint\Permissions\CrudPermissions;
+use Best\Blueprint\Permissions\DefinitionsFile;
+use Best\Blueprint\Permissions\InvalidPermissionDefinition;
 use Best\Blueprint\Support\CrudField;
 use Best\Blueprint\Support\CrudFields;
 use Best\Blueprint\Support\CrudNames;
@@ -20,6 +23,7 @@ use Best\Blueprint\Support\StubRenderer;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
+use ReflectionClass;
 use Throwable;
 
 class MakeCrudCommand extends Command
@@ -29,6 +33,7 @@ class MakeCrudCommand extends Command
         {entity : Singular entity name, e.g. Order}
         {--fields= : Comma-separated name:type list, e.g. "name:string,quantity:int,note:?string"}
         {--feature= : Feature key that must be enabled for these routes (saas, tenant-saas)}
+        {--permissions : Policies check named permissions (needs engineering:install --permissions)}
         {--api : JSON API (default when neither --api nor --web is given)}
         {--web : Blade pages}';
 
@@ -91,6 +96,12 @@ class MakeCrudCommand extends Command
             return $this->refuse('Features are per tenant; central module routes have no tenant. Drop --feature or use a tenant module.');
         }
 
+        $permissions = $this->option('permissions') ? new CrudPermissions($names, $central) : null;
+
+        if ($permissions !== null && ($error = CrudPermissions::setupError($permissions->definitionsClass())) !== null) {
+            return $this->refuse($error);
+        }
+
         foreach (array_keys(array_filter(['api' => $api, 'web' => $web])) as $side) {
             if (! $files->isFile(base_path("{$names->modulePath}/routes/{$side}.php"))) {
                 return $this->refuse("Module \"{$module}\" has no routes/{$side}.php. Create {$names->modulePath}/routes/{$side}.php and load it in {$names->modulePath}/Provider.php the way make:module --{$side}".($central ? ' --central' : '').' does, then re-run.');
@@ -118,7 +129,7 @@ class MakeCrudCommand extends Command
             $fields = CrudFields::parse($existing);
             $this->line("using the existing fields: {$existing}");
 
-            if (($error = $this->featureMismatch($names, $feature, $api, $web)) !== null) {
+            if (($error = $this->featureMismatch($names, $feature, $api, $web) ?? $this->permissionsMismatch($names, $permissions !== null)) !== null) {
                 return $this->refuse($error);
             }
         }
@@ -140,12 +151,23 @@ class MakeCrudCommand extends Command
             }
         }
 
+        // The group goes into the definitions file unless it's already there (e.g. added with the other side).
+        $definitions = null;
+
+        if ($permissions !== null) {
+            [$definitions, $error] = $this->definitionsEdit($files, $permissions);
+
+            if ($error !== null) {
+                return $this->refuse($error);
+            }
+        }
+
         $middleware = $feature === null ? '' : "\n    ->middleware('feature:{$feature}')";
         $routeLines = [];
 
         try {
             $selected = array_flip(array_map(fn (string $key) => $names->files()[$key], $keys));
-            $generated = array_intersect_key($this->render($stubs, $names, $fields, $feature, $routeNamePrefix), $selected);
+            $generated = array_intersect_key($this->render($stubs, $names, $fields, $feature, $routeNamePrefix, $permissions), $selected);
 
             if ($api) {
                 $routeLines['api'] = $stubs->render('route.stub', ['uri' => $names->uri, 'controller' => "{$entity}Controller", 'middleware' => $middleware]);
@@ -168,7 +190,7 @@ class MakeCrudCommand extends Command
             }
         }
 
-        foreach ($this->expectedClasses($names) as $key => [$namespace, $class, $stub]) {
+        foreach ($this->expectedClasses($names, $permissions !== null) as $key => [$namespace, $class, $stub]) {
             if (in_array($key, $keys, true) && ! PhpSource::declares($generated[$names->files()[$key]], $namespace, $class)) {
                 return $this->refuse($this->invalidStub($stubs->path($stub), "no {$class} class in namespace {$namespace}"));
             }
@@ -184,6 +206,10 @@ class MakeCrudCommand extends Command
 
                 return $this->refuse("Stub {$stub} did not produce valid tests (no feature setup for {$feature}). Update or delete it, then re-run.");
             }
+        }
+
+        if ($permissions !== null && ($error = $this->permissionsStubError($stubs, $generated, $names, $api, $web)) !== null) {
+            return $this->refuse($error);
         }
 
         $skippedTests = [];
@@ -204,6 +230,7 @@ class MakeCrudCommand extends Command
         $writer = new FileWriter($files);
         $absolute = [];
         $originalRoutes = [];
+        $originalDefinitions = null;
 
         foreach ($generated as $path => $contents) {
             $absolute[base_path($path)] = $contents;
@@ -218,11 +245,20 @@ class MakeCrudCommand extends Command
                 $controller = $side === 'api' ? "{$entity}Controller" : "{$entity}PageController";
                 $files->put($routesPath, RouteFile::addResource($originalRoutes[$routesPath], "{$names->moduleNamespace}\\Controllers\\{$controller}", $line));
             }
+
+            if ($definitions !== null && $definitions['edited'] !== null) {
+                $originalDefinitions = $definitions['original'];
+                $files->put($definitions['path'], $definitions['edited']);
+            }
         } catch (Throwable $e) {
             $writer->rollback();
 
             foreach ($originalRoutes as $path => $contents) {
                 $files->put($path, $contents);
+            }
+
+            if ($definitions !== null && $originalDefinitions !== null) {
+                $files->put($definitions['path'], $originalDefinitions);
             }
 
             return $this->refuse("Could not write the CRUD files ({$e->getMessage()}). Nothing was changed.");
@@ -244,6 +280,10 @@ class MakeCrudCommand extends Command
             $this->line("added route to {$names->modulePath}/routes/{$side}.php");
         }
 
+        if ($permissions !== null && $definitions !== null && $definitions['edited'] !== null) {
+            $this->line("added '{$permissions->group()}' to {$definitions['relative']}");
+        }
+
         if (is_file($this->laravel->getCachedRoutesPath())) {
             $this->callSilently('route:clear');
             $this->line('cleared route cache');
@@ -253,7 +293,21 @@ class MakeCrudCommand extends Command
             $this->addTranslationKeys([Str::headline($entity), Str::headline($names->plural), ...array_map(fn (CrudField $f) => Str::headline($f->column), $fields)]);
         }
 
-        $this->line("Note: {$names->entity}Policy lets every signed-in user do everything (guests get 403). Tighten it for your app.".($api ? " For token APIs add auth middleware (e.g. auth:sanctum) to the api routes in {$names->modulePath}/Provider.php." : ''));
+        $tokenNote = $api ? "For token APIs add auth middleware (e.g. auth:sanctum) to the api routes in {$names->modulePath}/Provider.php." : null;
+
+        if ($permissions !== null && $definitions !== null) {
+            $this->line("Next: add '{$permissions->group()}.*' (or single permissions) to a role in {$definitions['relative']}, then {$permissions->syncCommand()}");
+
+            if ($tokenNote !== null) {
+                $this->line("Note: {$tokenNote}");
+            }
+        } else {
+            $this->line("Note: {$names->entity}Policy lets every signed-in user do everything (guests get 403). Tighten it for your app.".($tokenNote !== null ? " {$tokenNote}" : ''));
+
+            if (CrudPermissions::setupError((new CrudPermissions($names, $central))->definitionsClass()) === null) {
+                $this->line('Tip: --permissions makes the policy check named permissions.');
+            }
+        }
 
         $written = array_filter(["{$entity}ApiTest" => $api && ! in_array($names->files()['test'], $skippedTests, true), "{$entity}WebTest" => $web && ! in_array($names->files()['webTest'], $skippedTests, true)]);
         $steps = array_filter([
@@ -389,7 +443,7 @@ class MakeCrudCommand extends Command
      *
      * @return array<string, array{string, string, string}>
      */
-    private function expectedClasses(CrudNames $names): array
+    private function expectedClasses(CrudNames $names, bool $permissions = false): array
     {
         $ns = $names->moduleNamespace;
         $e = $names->entity;
@@ -407,7 +461,7 @@ class MakeCrudCommand extends Command
             'controller' => ["{$ns}\\Controllers", "{$e}Controller", 'controller.stub'],
             'pageController' => ["{$ns}\\Controllers", "{$e}PageController", 'web-controller.stub'],
             'resource' => ["{$ns}\\Resources", "{$e}Resource", 'resource.stub'],
-            'policy' => ["{$ns}\\Policies", "{$e}Policy", 'policy.stub'],
+            'policy' => ["{$ns}\\Policies", "{$e}Policy", $permissions ? 'policy-permissions.stub' : 'policy.stub'],
         ];
     }
 
@@ -444,7 +498,7 @@ class MakeCrudCommand extends Command
      * @param  list<CrudField>  $fields
      * @return array<string, string> base-relative path => contents
      */
-    private function render(StubRenderer $stubs, CrudNames $names, array $fields, ?string $feature = null, string $routeNamePrefix = ''): array
+    private function render(StubRenderer $stubs, CrudNames $names, array $fields, ?string $feature = null, string $routeNamePrefix = '', ?CrudPermissions $permissions = null): array
     {
         $ns = $names->moduleNamespace;
         $e = $names->entity;
@@ -526,18 +580,21 @@ class MakeCrudCommand extends Command
                     ? "'{$f->column}' => \$this->{$f->column}?->toIso8601String(),"
                     : "'{$f->column}' => \$this->{$f->column},", 12),
             ]),
-            $paths['policy'] => $render('policy.stub', "{$ns}\\Policies", [$model, 'App\\Models\\User']),
+            $paths['policy'] => $permissions === null
+                ? $render('policy.stub', "{$ns}\\Policies", [$model, 'App\\Models\\User'])
+                : $render('policy-permissions.stub', "{$ns}\\Policies", [$model, 'App\\Models\\User'], $permissions->policyValues()),
             $paths['test'] => $stubs->render($names->tenant ? 'test-tenant.stub' : 'test.stub', $common + [
                 'imports' => $this->imports([
                     ...($names->tenant
                         ? [$model, 'App\\Models\\User', 'Best\\Blueprint\\Testing\\InteractsWithTenancy', 'Illuminate\\Foundation\\Testing\\DatabaseMigrations']
                         : [$model, 'App\\Models\\User', 'Illuminate\\Foundation\\Testing\\RefreshDatabase']),
                     ...($feature === null ? [] : ['Best\\Blueprint\\Features\\FeatureAdmin']),
+                    ...($permissions === null ? [] : ['Best\\Blueprint\\Testing\\InteractsWithPermissions']),
                 ]),
                 'validation' => $this->validationTest($names, $fields),
                 'featureSetup' => $feature === null ? '' : "    app(FeatureAdmin::class)->enable('{$feature}');\n",
                 'featureTest' => $feature === null ? '' : $this->featureTest($names, $feature),
-            ]),
+            ] + CrudPermissions::testValues($permissions, web: false)),
         ];
 
         $web = [
@@ -550,6 +607,7 @@ class MakeCrudCommand extends Command
             'modelClass' => '\\'.$model,
         ];
         $v = $names->variable;
+        $formInput = Str::camel($names->module).$e.'FormInput';
 
         $files[$paths['pageController']] = $render('web-controller.stub', "{$ns}\\Controllers", [
             "{$ns}\\Actions\\Create{$e}", "{$ns}\\Actions\\Delete{$e}", "{$ns}\\Actions\\Update{$e}",
@@ -575,13 +633,14 @@ class MakeCrudCommand extends Command
                     ? [$model, 'App\\Models\\User', 'Best\\Blueprint\\Testing\\InteractsWithTenancy', 'Illuminate\\Foundation\\Testing\\DatabaseMigrations']
                     : [$model, 'App\\Models\\User', 'Illuminate\\Foundation\\Testing\\RefreshDatabase']),
                 ...($feature === null ? [] : ['Best\\Blueprint\\Features\\FeatureAdmin']),
+                ...($permissions === null ? [] : ['Best\\Blueprint\\Testing\\InteractsWithPermissions']),
             ]),
             'url' => $names->tenant ? '$this->tenantUrl' : 'url',
-            'formInput' => Str::camel($names->module).$e.'FormInput',
+            'formInput' => $formInput,
             'validation' => $this->webValidationTest($names, $fields),
             'featureSetup' => $feature === null ? '' : "    app(FeatureAdmin::class)->enable('{$feature}');\n",
             'featureTest' => $feature === null ? '' : $this->webFeatureTest($names, $feature),
-        ]);
+        ] + CrudPermissions::testValues($permissions, web: true, formInput: $formInput));
 
         return $files;
     }
@@ -785,6 +844,79 @@ class MakeCrudCommand extends Command
 
             if ($existing === null && $feature !== null) {
                 return "The existing routes have no feature gate; gate them with feature:{$feature} first, or leave --feature out.";
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * When adding a side, it must use permissions exactly when the existing CRUD's policy does.
+     */
+    private function permissionsMismatch(CrudNames $names, bool $permissions): ?string
+    {
+        $policy = $this->existingFile($names, 'policy');
+        $existing = $policy !== null && CrudPermissions::usedBy((string) file_get_contents(base_path($policy)));
+
+        return match (true) {
+            $existing && ! $permissions => "The existing {$names->entity} CRUD uses permissions; add --permissions.",
+            ! $existing && $permissions => "The existing {$names->entity} CRUD does not use permissions; leave --permissions out.",
+            default => null,
+        };
+    }
+
+    /**
+     * The definitions file with the entity's group added (edited is null when the group is already there).
+     *
+     * @return array{0: array{path: string, relative: string, original: string, edited: ?string}|null, 1: ?string}
+     */
+    private function definitionsEdit(Filesystem $files, CrudPermissions $permissions): array
+    {
+        $class = $permissions->definitionsClass();
+        $path = (string) (new ReflectionClass($class))->getFileName();
+        $relative = str_starts_with($path, base_path().'/') ? substr($path, strlen(base_path()) + 1) : $path;
+        $entry = DefinitionsFile::entry($permissions->group(), $permissions->abilities());
+        $manual = "Add {$entry} to it, then re-run.";
+
+        if (! $files->isFile($path) || ! is_writable($path)) {
+            return [null, "Cannot edit the permission definitions in {$relative}. {$manual}"];
+        }
+
+        $original = $files->get($path);
+
+        try {
+            $edited = DefinitionsFile::hasGroup($original, $permissions->group())
+                ? null
+                : DefinitionsFile::addGroup($original, $permissions->group(), $permissions->abilities());
+        } catch (InvalidPermissionDefinition) {
+            return [null, "Could not find the array returned by groups() in {$relative}. {$manual}"];
+        }
+
+        return [['path' => $path, 'relative' => $relative, 'original' => $original, 'edited' => $edited], null];
+    }
+
+    /**
+     * A requested permissions mode must never be dropped by an old published stub: the policy must check
+     * permissions and the generated tests must grant them.
+     *
+     * @param  array<string, string>  $generated
+     */
+    private function permissionsStubError(StubRenderer $stubs, array $generated, CrudNames $names, bool $api, bool $web): ?string
+    {
+        $policy = $generated[$names->files()['policy']] ?? null;
+
+        if ($policy !== null && ! CrudPermissions::usedBy($policy)) {
+            return "Stub {$stubs->path('policy-permissions.stub')} did not produce a valid policy (no checkPermissionTo). Update or delete it, then re-run.";
+        }
+
+        foreach (array_keys(array_filter(['test' => $api, 'webTest' => $web])) as $key) {
+            if (! CrudPermissions::testsSetUp($generated[$names->files()[$key]])) {
+                $stub = $stubs->path(match ($key) {
+                    'test' => $names->tenant ? 'test-tenant.stub' : 'test.stub',
+                    default => $names->tenant ? 'test-web-tenant.stub' : 'test-web.stub',
+                });
+
+                return "Stub {$stub} did not produce valid tests (no permission setup). Update or delete it, then re-run.";
             }
         }
 

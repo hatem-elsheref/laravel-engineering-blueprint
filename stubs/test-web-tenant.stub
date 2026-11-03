@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 {{ imports }}
-uses(InteractsWithTenancy::class, DatabaseMigrations::class);
+uses(InteractsWithTenancy::class, DatabaseMigrations::class{{ permissionUses }});
 
 beforeEach(function (): void {
     // A real tenant (database + tenant migrations); users live in the tenant database.
     $this->tenant = $this->createTestTenant();
     $this->user = User::factory()->create();
-{{ featureSetup }}});
+{{ featureSetup }}{{ permissionSetup }}});
 
 function {{ formInput }}(array $overrides = []): array
 {
@@ -85,4 +85,4 @@ it('deletes a {{ variable }}', function (): void {
 
     expect({{ entity }}::count())->toBe(0);
 });
-{{ featureTest }}
+{{ featureTest }}{{ permissionTest }}

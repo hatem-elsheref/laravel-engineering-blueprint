@@ -1,5 +1,6 @@
 <?php
 
+use Best\Blueprint\Support\StubRenderer;
 use Best\Blueprint\Tests\Fixtures\TestFeatures;
 use Best\Blueprint\Tests\Fixtures\TestSettings;
 use Best\Blueprint\Tests\SpatieTenancyTestCase;
@@ -87,5 +88,21 @@ function assertCrudSnapshot(string $name, array $before): void
 
     foreach ($expected as $path => $contents) {
         expect($actual[$path])->toBe($contents, $path);
+    }
+}
+
+/**
+ * Writes the definitions classes engineering:install --permissions generates (app/Shared/Permissions) and loads
+ * them. The classes stay loaded for the whole run; make:crud edits the files, never the loaded class.
+ */
+function makePermissionDefinitions(string ...$classes): void
+{
+    foreach ($classes ?: ['Permissions'] as $class) {
+        $path = app_path("Shared/Permissions/{$class}.php");
+        File::ensureDirectoryExists(dirname($path));
+        file_put_contents($path, app(StubRenderer::class)->render('permissions-definitions.stub', [
+            'namespace' => 'App\Shared\Permissions', 'class' => $class, 'side' => $class === 'CentralPermissions' ? 'central' : 'app',
+        ]));
+        require_once $path;
     }
 }

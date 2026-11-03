@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 {{ imports }}
-uses(RefreshDatabase::class);
+uses(RefreshDatabase::class{{ permissionUses }});
 
 beforeEach(function (): void {
     $this->user = User::factory()->create();
-{{ featureSetup }}});
+{{ featureSetup }}{{ permissionSetup }}});
 
 function {{ formInput }}(array $overrides = []): array
 {
@@ -79,4 +79,4 @@ it('deletes a {{ variable }}', function (): void {
 
     expect({{ entity }}::count())->toBe(0);
 });
-{{ featureTest }}
+{{ featureTest }}{{ permissionTest }}
