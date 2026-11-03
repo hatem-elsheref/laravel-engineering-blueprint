@@ -6,6 +6,8 @@ use Best\Blueprint\Support\ModuleName;
 use Best\Blueprint\Support\FileWriter;
 use Best\Blueprint\Support\Modules;
 use Best\Blueprint\Support\PhpSource;
+use Best\Blueprint\Support\Profile;
+use Best\Blueprint\Tenancy\TenancyDetector;
 use Best\Blueprint\Support\StubException;
 use Best\Blueprint\Support\StubRenderer;
 use Illuminate\Console\Command;
@@ -19,7 +21,8 @@ class MakeModuleCommand extends Command
     protected $signature = 'make:module
         {name : Module name, e.g. Orders}
         {--api : Add routes/api.php}
-        {--web : Add routes/web.php}';
+        {--web : Add routes/web.php}
+        {--central : tenant-saas only: a platform module whose routes answer on central domains}';
 
     protected $description = 'Create a business module in app/Modules and register its provider';
 
@@ -32,6 +35,11 @@ class MakeModuleCommand extends Command
         }
 
         $modulePath = $modules->path();
+        $kind = $this->kind();
+
+        if (is_int($kind)) {
+            return $kind;
+        }
 
         $input = (string) $this->argument('name');
         $name = ModuleName::normalize($input);
@@ -52,7 +60,7 @@ class MakeModuleCommand extends Command
         }
 
         try {
-            $generated = $this->render($stubs, $namespace, $name);
+            $generated = $this->render($stubs, $namespace, $name, $kind);
         } catch (StubException $e) {
             return $this->refuse($this->invalidStub($e->path, $e->reason));
         }
@@ -120,7 +128,7 @@ class MakeModuleCommand extends Command
      *
      * @return array<string, string> relative path => contents
      */
-    private function render(StubRenderer $stubs, string $namespace, string $name): array
+    private function render(StubRenderer $stubs, string $namespace, string $name, string $kind): array
     {
         $routes = array_filter(['web' => $this->option('web'), 'api' => $this->option('api')]);
         $url = Str::kebab($name);
@@ -128,7 +136,7 @@ class MakeModuleCommand extends Command
         $files = ['Provider.php' => $stubs->render('module-provider.stub', [
             'namespace' => $namespace,
             'imports' => $this->imports($routes),
-            'body' => $this->body($routes),
+            'body' => $this->body($routes, $kind),
         ])];
 
         foreach (array_keys($routes) as $type) {
@@ -150,24 +158,86 @@ class MakeModuleCommand extends Command
     /**
      * @param  array<string, bool>  $routes
      */
-    private function body(array $routes): string
+    private function body(array $routes, string $kind): string
     {
         if ($routes === []) {
             return '';
         }
 
-        $lines = [
-            'web' => "        Route::middleware('web')->group(__DIR__.'/routes/web.php');",
-            'api' => "        Route::middleware('api')->prefix('api')->group(__DIR__.'/routes/api.php');",
-        ];
+        $statements = match ($kind) {
+            'tenant' => $this->tenantRoutes($routes),
+            'central' => $this->centralRoutes($routes),
+            default => implode("\n", array_intersect_key([
+                'web' => "        Route::middleware('web')->group(__DIR__.'/routes/web.php');",
+                'api' => "        Route::middleware('api')->prefix('api')->group(__DIR__.'/routes/api.php');",
+            ], $routes)),
+        };
 
         return "    public function boot(): void\n"
             ."    {\n"
             ."        if (\$this->app->routesAreCached()) {\n"
             ."            return;\n"
             ."        }\n\n"
-            .implode("\n", array_intersect_key($lines, $routes))."\n"
+            .$statements."\n"
             ."    }\n";
+    }
+
+    /**
+     * Tenant routes are registered after boot, so central (domain-bound) routes come first.
+     *
+     * @param  array<string, bool>  $routes
+     */
+    private function tenantRoutes(array $routes): string
+    {
+        $lines = array_intersect_key([
+            'web' => "            Route::middleware(['web', 'tenant'])->group(__DIR__.'/routes/web.php');",
+            'api' => "            Route::middleware(['api', 'tenant'])->prefix('api')->group(__DIR__.'/routes/api.php');",
+        ], $routes);
+
+        return "        // Registered after central routes, so central (domain-bound) routes win on central hosts.\n"
+            ."        \$this->app->booted(function (): void {\n"
+            .implode("\n", $lines)."\n"
+            ."        });";
+    }
+
+    /**
+     * Central routes are bound to the central domains with one domain pattern (one registration, so
+     * route names stay unique for route:cache).
+     *
+     * @param  array<string, bool>  $routes
+     */
+    private function centralRoutes(array $routes): string
+    {
+        $domain = "Route::domain('{central_domain}')->where(['central_domain' => \$domains])";
+        $lines = array_intersect_key([
+            'web' => "        {$domain}->middleware(['web', 'central'])->group(__DIR__.'/routes/web.php');",
+            'api' => "        {$domain}->middleware(['api', 'central'])->prefix('api')->group(__DIR__.'/routes/api.php');",
+        ], $routes);
+
+        return "        \$domains = implode('|', array_map('preg_quote', config('tenancy.central_domains', [])));\n\n"
+            .implode("\n", $lines);
+    }
+
+    /**
+     * "plain" outside tenant-saas; "tenant" or "central" inside it. An int is a refusal exit code.
+     */
+    private function kind(): string|int
+    {
+        $tenantSaas = Profile::current() === Profile::TenantSaas;
+
+        if ($this->option('central') && ! $tenantSaas) {
+            return $this->refuse('--central only applies to the tenant-saas profile.');
+        }
+
+        if (! $tenantSaas) {
+            return 'plain';
+        }
+
+        if (! $this->laravel->make(TenancyDetector::class)->stancl()) {
+            return $this->refuse('Tenancy needs stancl/tenancy. Run: composer require stancl/tenancy:^3.10, then php artisan engineering:install --profile=tenant-saas.');
+        }
+
+        return $this->option('central') ? 'central' : 'tenant';
     }
 
     private function refuse(string $message): int

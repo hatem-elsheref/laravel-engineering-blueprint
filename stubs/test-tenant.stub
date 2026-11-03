@@ -1,0 +1,61 @@
+<?php
+
+declare(strict_types=1);
+
+{{ imports }}
+uses(InteractsWithTenancy::class, DatabaseMigrations::class);
+
+beforeEach(function (): void {
+    // A real tenant (database + tenant migrations); users live in the tenant database.
+    $this->createTestTenant();
+    $this->user = User::factory()->create();
+});
+
+it('denies guests', function (): void {
+    ${{ variable }} = {{ entity }}::factory()->create();
+
+    $this->getJson($this->tenantUrl('/api/{{ uri }}'))->assertForbidden();
+    $this->postJson($this->tenantUrl('/api/{{ uri }}'), {{ entity }}::factory()->raw())->assertForbidden();
+    $this->getJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"))->assertForbidden();
+    $this->putJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"), {{ entity }}::factory()->raw())->assertForbidden();
+    $this->deleteJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"))->assertForbidden();
+});
+
+it('hides which {{ uri }} exist from guests', function (): void {
+    $this->getJson($this->tenantUrl('/api/{{ uri }}/999999'))->assertForbidden();
+    $this->actingAs($this->user)->getJson($this->tenantUrl('/api/{{ uri }}/999999'))->assertNotFound();
+});
+
+it('lists {{ uri }}', function (): void {
+    {{ entity }}::factory()->create();
+
+    $this->actingAs($this->user)->getJson($this->tenantUrl('/api/{{ uri }}'))->assertOk()->assertJsonCount(1, 'data');
+});
+
+it('creates a {{ variable }}', function (): void {
+    $this->actingAs($this->user)->postJson($this->tenantUrl('/api/{{ uri }}'), {{ entity }}::factory()->raw())->assertCreated();
+
+    expect({{ entity }}::count())->toBe(1);
+});
+{{ validation }}
+it('shows a {{ variable }}', function (): void {
+    ${{ variable }} = {{ entity }}::factory()->create();
+
+    $this->actingAs($this->user)->getJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"))
+        ->assertOk()
+        ->assertJsonPath('data.id', ${{ variable }}->id);
+});
+
+it('updates a {{ variable }}', function (): void {
+    ${{ variable }} = {{ entity }}::factory()->create();
+
+    $this->actingAs($this->user)->putJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"), {{ entity }}::factory()->raw())->assertOk();
+});
+
+it('deletes a {{ variable }}', function (): void {
+    ${{ variable }} = {{ entity }}::factory()->create();
+
+    $this->actingAs($this->user)->deleteJson($this->tenantUrl("/api/{{ uri }}/{${{ variable }}->id}"))->assertNoContent();
+
+    expect({{ entity }}::count())->toBe(0);
+});

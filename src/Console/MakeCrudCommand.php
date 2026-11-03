@@ -12,6 +12,7 @@ use Best\Blueprint\Support\Modules;
 use Best\Blueprint\Support\PestDetector;
 use Best\Blueprint\Support\PhpNames;
 use Best\Blueprint\Support\PhpSource;
+use Best\Blueprint\Support\Profile;
 use Best\Blueprint\Support\RouteFile;
 use Best\Blueprint\Support\StubException;
 use Best\Blueprint\Support\StubRenderer;
@@ -65,7 +66,13 @@ class MakeCrudCommand extends Command
             return $this->refuse($e->getMessage());
         }
 
-        $names = CrudNames::for($entity, $module, $modules->namespace().'\\'.$module, $modules->path().'/'.$module);
+        $names = CrudNames::for(
+            $entity,
+            $module,
+            $modules->namespace().'\\'.$module,
+            $modules->path().'/'.$module,
+            $this->isTenantModule(base_path($modules->path().'/'.$module.'/Provider.php')),
+        );
         $routesPath = base_path($names->modulePath.'/routes/api.php');
 
         if (! $files->isFile($routesPath)) {
@@ -150,10 +157,11 @@ class MakeCrudCommand extends Command
     {
         foreach ($names->files() as $key => $path) {
             if ($key === 'migration') {
-                $existing = glob(base_path("database/migrations/*_create_{$names->table}_table.php")) ?: [];
+                $folder = dirname($path);
+                $existing = glob(base_path("{$folder}/*_create_{$names->table}_table.php")) ?: [];
 
                 if ($existing !== []) {
-                    return 'database/migrations/'.basename($existing[0]);
+                    return $folder.'/'.basename($existing[0]);
                 }
 
                 continue;
@@ -313,8 +321,10 @@ class MakeCrudCommand extends Command
                     : "'{$f->column}' => \$this->{$f->column},", 12),
             ]),
             $paths['policy'] => $render('policy.stub', "{$ns}\\Policies", [$model, 'App\\Models\\User']),
-            $paths['test'] => $stubs->render('test.stub', $common + [
-                'imports' => $this->imports([$model, 'App\\Models\\User', 'Illuminate\\Foundation\\Testing\\RefreshDatabase']),
+            $paths['test'] => $stubs->render($names->tenant ? 'test-tenant.stub' : 'test.stub', $common + [
+                'imports' => $this->imports($names->tenant
+                    ? [$model, 'App\\Models\\User', 'Best\\Blueprint\\Testing\\InteractsWithTenancy', 'Illuminate\\Foundation\\Testing\\DatabaseMigrations']
+                    : [$model, 'App\\Models\\User', 'Illuminate\\Foundation\\Testing\\RefreshDatabase']),
                 'validation' => $this->validationTest($names, $fields),
             ]),
         ];
@@ -377,10 +387,19 @@ class MakeCrudCommand extends Command
         }
 
         return "\nit('validates a {$names->variable}', function (): void {\n"
-            ."    \$this->actingAs(\$this->user)->postJson('/api/{$names->uri}', [])\n"
+            .'    $this->actingAs($this->user)->postJson('.($names->tenant ? "\$this->tenantUrl('/api/{$names->uri}')" : "'/api/{$names->uri}'").", [])\n"
             ."        ->assertUnprocessable()\n"
             ."        ->assertJsonValidationErrors([".implode(', ', $required)."]);\n"
             ."});\n";
+    }
+
+    /**
+     * In tenant-saas, a module is a tenant module unless its Provider uses the 'central' route group.
+     */
+    private function isTenantModule(string $provider): bool
+    {
+        return Profile::current() === Profile::TenantSaas
+            && (! is_file($provider) || ! str_contains((string) file_get_contents($provider), "'central'"));
     }
 
     private function refuse(string $message): int

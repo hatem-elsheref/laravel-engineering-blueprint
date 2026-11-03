@@ -20,9 +20,10 @@ final readonly class CrudNames
         public string $moduleNamespace,
         public string $modulePath,
         public string $timestamp,
+        public bool $tenant = false,
     ) {}
 
-    public static function for(string $entity, string $module, string $moduleNamespace, string $modulePath): self
+    public static function for(string $entity, string $module, string $moduleNamespace, string $modulePath, bool $tenant = false): self
     {
         $plural = Str::pluralStudly($entity);
 
@@ -37,6 +38,7 @@ final readonly class CrudNames
             moduleNamespace: $moduleNamespace,
             modulePath: $modulePath,
             timestamp: date('Y_m_d_His'),
+            tenant: $tenant,
         );
     }
 
@@ -52,7 +54,7 @@ final readonly class CrudNames
 
         return [
             'model' => "{$m}/Models/{$e}.php",
-            'migration' => "database/migrations/{$this->timestamp}_create_{$this->table}_table.php",
+            'migration' => 'database/migrations/'.($this->tenant ? 'tenant/' : '')."{$this->timestamp}_create_{$this->table}_table.php",
             'factory' => "database/factories/{$this->module}/{$e}Factory.php",
             'store' => "{$m}/Requests/Store{$e}Request.php",
             'update' => "{$m}/Requests/Update{$e}Request.php",
