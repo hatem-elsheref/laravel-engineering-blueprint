@@ -42,9 +42,12 @@ it('refuses unknown tenants', function () {
 });
 
 it('syncs every tenant', function () {
+    // Tenants get every default at creation; simulate a feature defined after tenant "a" was created.
+    tenancy()->find('a')->run(fn () => Illuminate\Support\Facades\DB::table('features')->where('key', 'reports')->delete());
+
     $this->artisan('features:sync')
-        ->expectsOutputToContain('added 2 feature(s) to tenant "a"')
-        ->expectsOutputToContain('added 2 feature(s) to tenant "b"')
+        ->expectsOutputToContain('added 1 feature(s) to tenant "a"')
+        ->expectsOutputToContain('added 0 feature(s) to tenant "b"')
         ->assertExitCode(0);
 });
 

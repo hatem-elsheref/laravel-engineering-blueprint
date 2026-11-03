@@ -48,8 +48,8 @@ it('creates a tenant', function () {
         ->expectsOutputToContain('✓ Create database')
         ->expectsOutputToContain('✓ Run tenant migrations')
         ->expectsOutputToContain('– Seed tenant data (skipped: no Database\Seeders\TenantSeeder)')
-        ->expectsOutputToContain('– Create default features (skipped: coming in Phase 7)')
-        ->expectsOutputToContain('– Create default settings (skipped: coming in Phase 7)')
+        ->expectsOutputToContain('– Create default features (skipped: run engineering:install to set up features)')
+        ->expectsOutputToContain('– Create default settings (skipped: run engineering:install to set up features)')
         ->expectsOutputToContain('Tenant "acme" is ready at http://acme.localhost')
         ->assertExitCode(0);
 
@@ -163,4 +163,22 @@ it('refuses when tenancy cannot switch databases', function () {
 
     expect(Tenant::count())->toBe(0)
         ->and(DB::getSchemaBuilder()->hasTable('records'))->toBeFalse();
+});
+
+it('creates default features and settings', function () {
+    useTestFlags();
+    File::copy(__DIR__.'/../../stubs/features-migration.stub', database_path('migrations/tenant/2026_01_01_000100_create_features_table.php'));
+    File::copy(__DIR__.'/../../stubs/settings-migration.stub', database_path('migrations/tenant/2026_01_01_000200_create_settings_table.php'));
+
+    $this->artisan('tenant:create', ['name' => 'acme'])
+        ->expectsOutputToContain('✓ Create default features')
+        ->expectsOutputToContain('– Create default settings (already done: defaults come from Settings definitions)')
+        ->assertExitCode(0);
+
+    expect(tenancy()->find('acme')->run(fn () => DB::table('features')->pluck('enabled', 'key')->map(fn ($v) => (bool) $v)->all()))
+        ->toBe(['orders' => true, 'reports' => false]);
+
+    $this->artisan('tenant:create', ['name' => 'acme'])
+        ->expectsOutputToContain('– Create default features (already done)')
+        ->assertExitCode(0);
 });

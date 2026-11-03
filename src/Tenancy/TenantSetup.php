@@ -3,6 +3,8 @@
 namespace Best\Blueprint\Tenancy;
 
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 use Throwable;
 
@@ -92,6 +94,37 @@ class TenantSetup
                 $tenant->save();
 
                 return 'done';
+            },
+            'Create default features' => function () use (&$tenant) {
+                $class = config('blueprint.features');
+
+                if (! is_string($class) || ! class_exists($class)) {
+                    return ['skipped', 'run engineering:install to set up features'];
+                }
+
+                return $tenant->run(function () use ($class) {
+                    if (! Schema::hasTable('features')) {
+                        return ['skipped', 'no features table in the tenant database'];
+                    }
+
+                    $existing = DB::table('features')->pluck('key')->all();
+                    $missing = array_diff_key($class::defaults(), array_flip($existing));
+
+                    foreach ($missing as $key => $enabled) {
+                        DB::table('features')->insert(['key' => $key, 'enabled' => $enabled, 'created_at' => now(), 'updated_at' => now()]);
+                    }
+
+                    return $missing === [] ? 'already' : 'done';
+                });
+            },
+            'Create default settings' => function () {
+                $class = config('blueprint.settings');
+
+                if (! is_string($class) || ! class_exists($class)) {
+                    return ['skipped', 'run engineering:install to set up features'];
+                }
+
+                return ['already', 'defaults come from Settings definitions'];
             },
         ];
 

@@ -59,3 +59,15 @@ it('runs its cleanup before other teardown callbacks', function () {
 
     expect((new ReflectionFunction($first))->getName())->toBe('cleanUpTestTenants');
 });
+
+it('gives test tenants their default features', function () {
+    useTestFlags();
+    Illuminate\Support\Facades\File::ensureDirectoryExists(database_path('migrations/tenant'));
+    Illuminate\Support\Facades\File::copy(__DIR__.'/../../stubs/features-migration.stub', database_path('migrations/tenant/2026_01_01_000100_create_features_table.php'));
+
+    $this->createTestTenant();
+
+    expect(Best\Blueprint\Facades\Feature::enabled('orders'))->toBeTrue();
+
+    Illuminate\Support\Facades\File::deleteDirectory(database_path('migrations/tenant'));
+});

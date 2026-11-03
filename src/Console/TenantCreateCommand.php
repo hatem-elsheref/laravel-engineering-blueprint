@@ -68,8 +68,6 @@ class TenantCreateCommand extends Command
 
         $this->printSteps($results);
 
-        $this->line('– Create default features (skipped: coming in Phase 7)');
-        $this->line('– Create default settings (skipped: coming in Phase 7)');
         $this->info("Tenant \"{$name}\" is ready at ".$domains->url($domain));
 
         return self::SUCCESS;
@@ -83,7 +81,7 @@ class TenantCreateCommand extends Command
         foreach ($results as $result) {
             $this->line(match ($result['status']) {
                 'done' => "✓ {$result['step']}",
-                'already' => "– {$result['step']} (already done)",
+                'already' => "– {$result['step']} (already done".($result['note'] ? ": {$result['note']}" : '').')',
                 default => "– {$result['step']} (skipped: {$result['note']})",
             });
         }
