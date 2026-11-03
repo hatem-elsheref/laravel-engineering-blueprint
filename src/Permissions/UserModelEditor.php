@@ -19,6 +19,12 @@ final class UserModelEditor
             return $source;
         }
 
+        // The short name is already imported from another class: leave the model to the user.
+        if (preg_match_all('/^use[ \t]+([^;\n]*\bHasRoles)[ \t]*;/m', $source, $imports) > 0
+            && array_diff(array_map('trim', $imports[1]), [self::IMPORT, '\\'.self::IMPORT]) !== []) {
+            return null;
+        }
+
         // First indented `use Foo, Bar;` (an in-class trait line; imports are not indented).
         $edited = preg_replace('/^([ \t]+use[ \t]+[A-Za-z_\\\\][^;{]*?)[ \t]*;/m', '$1, HasRoles;', $source, 1, $count);
 
@@ -26,7 +32,7 @@ final class UserModelEditor
             return null;
         }
 
-        return preg_match('/^use\s+'.preg_quote(self::IMPORT, '/').';/m', $edited) === 1 ? $edited : self::addImport($edited);
+        return preg_match('/^use[ \t]+'.preg_quote(self::IMPORT, '/').'[ \t]*;/m', $edited) === 1 ? $edited : self::addImport($edited);
     }
 
     private static function addImport(string $source): string

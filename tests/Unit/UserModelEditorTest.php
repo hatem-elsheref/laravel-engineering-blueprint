@@ -49,3 +49,10 @@ it('adds the trait when only the import exists, without duplicating it', functio
         ->and(substr_count($result, 'use Spatie\Permission\Traits\HasRoles;'))->toBe(1)
         ->and(lintSource($result))->toBe(0);
 });
+
+it('returns null when another HasRoles is already imported', function (string $import) {
+    $source = (string) file_get_contents(__DIR__.'/../Fixtures/user-models/laravel-12.php.txt');
+    $source = str_replace("use Illuminate\\Notifications\\Notifiable;\n", "use Illuminate\\Notifications\\Notifiable;\n{$import}\n", $source);
+
+    expect(UserModelEditor::addHasRoles($source))->toBeNull();
+})->with(['use Other\HasRoles;', 'use Other\Traits\Roles as HasRoles;']);
