@@ -8,11 +8,11 @@ use Illuminate\Console\Command;
 
 class AboutCommand extends Command
 {
+    use RendersCompatibility;
+
     protected $signature = 'engineering:about';
 
     protected $description = 'Show Laravel Engineering Blueprint version and environment compatibility';
-
-    private const LABELS = ['php' => 'PHP', 'laravel' => 'Laravel'];
 
     public function handle(Compatibility $compatibility): int
     {
@@ -20,15 +20,7 @@ class AboutCommand extends Command
 
         $result = $compatibility->check();
 
-        foreach ($result->checks as $check) {
-            $this->line(sprintf(
-                '%s %s >= %s (actual %s)',
-                $check['passed'] ? '✓' : '✗',
-                self::LABELS[$check['name']] ?? $check['name'],
-                $check['required'],
-                $check['actual'],
-            ));
-        }
+        $this->renderCompatibility($result);
 
         if (! $result->passed) {
             $this->error('Environment is not compatible: upgrade the items marked ✗.');
