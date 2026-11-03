@@ -12,6 +12,9 @@ class BlueprintServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/blueprint.php', 'blueprint');
 
+        // One request or one queued job; Laravel resets scoped instances between them.
+        $this->app->scoped(Features\FeatureManager::class);
+
         $this->app->singleton(Compatibility::class, fn ($app) => new Compatibility(
             (string) ($app['config']->get('blueprint.support.php') ?: '8.3'),
             (string) ($app['config']->get('blueprint.support.laravel') ?: '12'),
@@ -22,6 +25,11 @@ class BlueprintServiceProvider extends ServiceProvider
     {
         if ($this->app->make(TenancyDetector::class)->active()) {
             $this->registerTenancyMiddleware();
+
+            \Illuminate\Support\Facades\Event::listen(
+                [\Stancl\Tenancy\Events\TenancyInitialized::class, \Stancl\Tenancy\Events\TenancyEnded::class],
+                fn () => $this->app->resolved(Features\FeatureManager::class) ? $this->app->make(Features\FeatureManager::class)->forget() : null,
+            );
         }
 
         if (! $this->app->runningInConsole()) {
