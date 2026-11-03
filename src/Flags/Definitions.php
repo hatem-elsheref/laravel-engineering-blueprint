@@ -18,6 +18,16 @@ final class Definitions
         return self::resolve('settings', 'Settings\\Settings');
     }
 
+    public static function permissions(): string
+    {
+        return self::resolve('permissions', 'Permissions\\Permissions');
+    }
+
+    public static function centralPermissions(): string
+    {
+        return self::resolve('central_permissions', 'Permissions\\CentralPermissions');
+    }
+
     /** Namespace of blueprint.shared_path, or null when it isn't inside app/. */
     public static function sharedNamespace(): ?string
     {

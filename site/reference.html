@@ -347,6 +347,10 @@
                         <tr><td><code>layout</code></td><td><code>'layouts.blueprint'</code></td><td>Blade layout the generated pages extend; created once by <code>make:crud --web</code></td></tr>
                         <tr><td><code>features</code></td><td><code>null</code></td><td>Feature definitions class; <code>null</code> means <code>&lt;shared_path&gt;/Features/Features.php</code></td></tr>
                         <tr><td><code>settings</code></td><td><code>null</code></td><td>Setting definitions class; <code>null</code> means <code>&lt;shared_path&gt;/Settings/Settings.php</code></td></tr>
+                        <tr><td><code>permissions</code></td><td><code>null</code></td><td>Permission definitions class; <code>null</code> means <code>&lt;shared_path&gt;/Permissions/Permissions.php</code></td></tr>
+                        <tr><td><code>central_permissions</code></td><td><code>null</code></td><td>tenant-saas: central-app permission definitions; <code>null</code> means <code>&lt;shared_path&gt;/Permissions/CentralPermissions.php</code></td></tr>
+                        <tr><td><code>super_admin</code></td><td><code>'super-admin'</code></td><td>Built-in role that passes every permission check</td></tr>
+                        <tr><td><code>permission_guard</code></td><td><code>'web'</code></td><td>Guard the permissions and roles are created for</td></tr>
                         <tr><td><code>tenant_seeder</code></td><td><code>'Database\\Seeders\\TenantSeeder'</code></td><td>Seeder <code>tenant:create</code> runs for new tenants when the class exists</td></tr>
                         <tr><td><code>tenant_domain</code></td><td><code>env('BLUEPRINT_TENANT_DOMAIN')</code></td><td>tenant-saas: tenants are <code>&lt;name&gt;.&lt;this&gt;</code>; <code>null</code> means the first central domain</td></tr>
                         <tr><td><code>support.php</code></td><td><code>'8.3'</code></td><td>Minimum PHP version checked by <code>engineering:about</code> and <code>engineering:install</code></td></tr>
