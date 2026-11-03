@@ -106,3 +106,21 @@ function makePermissionDefinitions(string ...$classes): void
         require_once $path;
     }
 }
+
+/** Pretends spatie/laravel-permission 6.x is installed. */
+function useOldSpatie(): void
+{
+    app()->instance(\Best\Blueprint\Permissions\PermissionsDetector::class, new class extends \Best\Blueprint\Permissions\PermissionsDetector
+    {
+        protected function installedVersion(): ?string
+        {
+            return 'v6.24.0';
+        }
+    });
+}
+
+/** The ways an installed spatie is refused, with the message each one prints. */
+dataset('unsupported spatie', [
+    'spatie <8' => [fn () => useOldSpatie(), 'spatie/laravel-permission 6.24.0 is not supported; permissions need ^8.0'],
+    'teams mode' => [fn () => config()->set('permission.teams', true), 'spatie teams mode (permission.teams) is not supported'],
+]);

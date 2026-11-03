@@ -129,6 +129,10 @@ class TenantSetup
                     return ['skipped', 'run engineering:install --permissions to set up permissions'];
                 }
 
+                if (($unsupported = app(PermissionsDetector::class)->unsupported()) !== null) {
+                    return ['skipped', $unsupported];
+                }
+
                 $set = PermissionSet::fromClass($class);
 
                 return $tenant->run(function () use ($set) {

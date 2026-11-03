@@ -25,6 +25,10 @@ class PermissionsSyncCommand extends Command
             return $this->refuse('Permissions need spatie/laravel-permission. Run: composer require spatie/laravel-permission');
         }
 
+        if (($unsupported = app(PermissionsDetector::class)->unsupported()) !== null) {
+            return $this->refuse($unsupported);
+        }
+
         $tenancy = Profile::current()?->usesTenancy() ?? false;
         $tenantIds = (array) $this->option('tenant');
         $central = (bool) $this->option('central');

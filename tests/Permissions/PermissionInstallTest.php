@@ -75,3 +75,19 @@ it('tells the user when there is no User model', function () {
         ->expectsOutputToContain('Add "use HasRoles;" to App\Models\User')
         ->assertExitCode(0);
 });
+
+it('refuses an unsupported spatie setup before changing anything', function (Closure $setup, string $message) {
+    $setup();
+
+    installPermissions()
+        ->expectsOutputToContain($message)
+        ->expectsOutputToContain('Nothing was changed.')
+        ->assertExitCode(1);
+
+    expect(file_exists(app_path('Shared/Permissions/Permissions.php')))->toBeFalse()
+        ->and(file_exists(config_path('blueprint.php')))->toBeFalse();
+})->with('unsupported spatie');
+
+it('accepts spatie 8', function () {
+    expect(app(\Best\Blueprint\Permissions\PermissionsDetector::class)->unsupported())->toBeNull();
+});

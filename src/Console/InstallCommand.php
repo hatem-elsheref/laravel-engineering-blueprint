@@ -44,11 +44,18 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
-        if ($this->option('permissions') && ! $this->laravel->make(PermissionsDetector::class)->spatie()) {
-            $this->error('--permissions needs spatie/laravel-permission. Run: composer require spatie/laravel-permission');
-            $this->line('Nothing was changed.');
+        if ($this->option('permissions')) {
+            $detector = $this->laravel->make(PermissionsDetector::class);
+            $error = $detector->spatie()
+                ? $detector->unsupported()
+                : '--permissions needs spatie/laravel-permission. Run: composer require spatie/laravel-permission';
 
-            return self::FAILURE;
+            if ($error !== null) {
+                $this->error($error);
+                $this->line('Nothing was changed.');
+
+                return self::FAILURE;
+            }
         }
 
         if (! $this->allowsDowngrade($profile, $writer)) {

@@ -111,3 +111,11 @@ it('hints at a plain --prune outside tenant-saas', function () {
         ->expectsOutputToContain('Run permissions:sync --prune to delete them.')
         ->assertExitCode(0);
 });
+
+it('refuses an unsupported spatie setup', function (Closure $setup, string $message) {
+    $setup();
+
+    $this->artisan('permissions:sync')->expectsOutputToContain($message)->assertExitCode(1);
+
+    expect(Permission::query()->count())->toBe(0);
+})->with('unsupported spatie');

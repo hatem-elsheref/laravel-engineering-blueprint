@@ -28,8 +28,10 @@ class TenantPermissionCache
     {
         $registrar = app(PermissionRegistrar::class);
 
-        // Re-reads the cache store and the configured key, and clears the loaded permissions and roles.
+        // Re-reads the cache store and the configured key. spatie 8 also drops the loaded permissions there;
+        // older versions keep them, so clear them explicitly or the next tenant reuses this one's map.
         $registrar->initializeCache();
+        $registrar->clearPermissionsCollection();
 
         if ($key !== null) {
             $registrar->cacheKey = $key;

@@ -201,3 +201,15 @@ it('refuses an old test stub that would drop the permission setup', function (st
     'api' => ['test.stub', ['--api' => true]],
     'web' => ['test-web.stub', ['--web' => true]],
 ]);
+
+it('refuses an unsupported spatie setup', function (Closure $setup, string $message) {
+    $setup();
+    $definitions = file_get_contents($this->definitions);
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--permissions' => true])
+        ->expectsOutputToContain($message)
+        ->assertExitCode(1);
+
+    expect(is_dir(app_path('Modules/Orders/Models')))->toBeFalse()
+        ->and(file_get_contents($this->definitions))->toBe($definitions);
+})->with('unsupported spatie');

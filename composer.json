@@ -33,6 +33,9 @@
         "spatie/laravel-permission": "^8.0",
         "stancl/tenancy": "^3.10"
     },
+    "conflict": {
+        "spatie/laravel-permission": "<8.0"
+    },
     "suggest": {
         "spatie/laravel-permission": "Required for roles and permissions (^8.0).",
         "stancl/tenancy": "Required for the tenant-saas profile (^3.10)."

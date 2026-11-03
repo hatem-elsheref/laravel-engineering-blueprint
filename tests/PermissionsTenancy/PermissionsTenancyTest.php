@@ -221,3 +221,33 @@ it('hints at pruning only the tenant that has stale entries', function () {
         ->doesntExpectOutputToContain('Run permissions:sync --prune to delete them.')
         ->assertExitCode(0);
 });
+
+/** spatie <8: initializeCache() re-reads the cache config but keeps the loaded permissions in memory. */
+final class PtKeepsPermissionsRegistrar extends PermissionRegistrar
+{
+    public function initializeCache(): void
+    {
+        $this->cacheExpirationTime = config('permission.cache.expiration_time') ?: DateInterval::createFromDateString('24 hours');
+        $this->teams = (bool) config('permission.teams', false);
+        $this->teamsKey = config('permission.column_names.team_foreign_key', 'team_id');
+        $this->cacheKey = config('permission.cache.key');
+        $this->pivotRole = config('permission.column_names.role_pivot_key') ?: 'role_id';
+        $this->pivotPermission = config('permission.column_names.permission_pivot_key') ?: 'permission_id';
+        $this->cacheManager = app('cache');
+        $this->cache = $this->getCacheStoreFromConfig();
+    }
+}
+
+it('rebuilds the loaded permissions on every tenant switch, also when spatie keeps them in initializeCache()', function () {
+    app()->instance(PermissionRegistrar::class, new PtKeepsPermissionsRegistrar(app('cache')));
+
+    tenancy()->find('b')->run(fn () => DB::table('permissions')->insert(['name' => 'b.only', 'guard_name' => 'web']));
+    DB::connection('testing')->table('permissions')->insert(['name' => 'central.only', 'guard_name' => 'web']);
+
+    $loaded = fn () => app(PermissionRegistrar::class)->getPermissions()->pluck('name')->sort()->values()->all();
+
+    expect(tenancy()->find('a')->run($loaded))->toBe(['orders.view', 'products.update', 'products.view'])
+        ->and(tenancy()->find('b')->run($loaded))->toBe(['b.only', 'orders.view', 'products.update', 'products.view'])
+        ->and($loaded())->toBe(['central.only'])
+        ->and(tenancy()->find('a')->run($loaded))->toBe(['orders.view', 'products.update', 'products.view']);
+});

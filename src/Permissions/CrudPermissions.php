@@ -62,6 +62,10 @@ final class CrudPermissions
             return '--permissions needs spatie/laravel-permission. Run: composer require spatie/laravel-permission && php artisan engineering:install --permissions';
         }
 
+        if (($unsupported = app(PermissionsDetector::class)->unsupported()) !== null) {
+            return $unsupported;
+        }
+
         if (! class_exists($definitionsClass)) {
             return "Permission definitions not found ({$definitionsClass}). Run: php artisan engineering:install --permissions";
         }
