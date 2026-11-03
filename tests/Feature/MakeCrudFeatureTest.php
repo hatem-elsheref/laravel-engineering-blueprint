@@ -26,7 +26,7 @@ it('protects the routes with the feature', function () {
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--feature' => 'orders'])->assertExitCode(0);
 
     expect(file_get_contents(app_path('Modules/Orders/routes/api.php')))
-        ->toContain("Route::apiResource('orders', OrderController::class)\n    ->middleware('feature:orders')\n    ->missing(");
+        ->toContain("Route::apiResource('orders', OrderController::class)->names('api.orders')\n    ->middleware('feature:orders')\n    ->missing(");
 
     $test = file_get_contents(base_path('tests/Feature/Modules/Orders/OrderApiTest.php'));
 
@@ -64,7 +64,7 @@ it('refuses --feature without features', function () {
 
 it('refuses an old route stub that would drop the feature gate', function () {
     File::ensureDirectoryExists(base_path('stubs/blueprint'));
-    file_put_contents(base_path('stubs/blueprint/route.stub'), "Route::apiResource('{{ uri }}', {{ controller }}::class);\n");
+    file_put_contents(base_path('stubs/blueprint/route.stub'), "Route::apiResource('{{ uri }}', {{ controller }}::class)->names('api.{{ uri }}');\n");
 
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order', '--feature' => 'orders'])
         ->expectsOutputToContain('did not produce a valid route (no feature:orders middleware)')

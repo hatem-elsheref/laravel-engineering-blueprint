@@ -96,6 +96,12 @@ class MakeCrudCommand extends Command
             return $this->refuse("\"{$collision}\" already exists. make:crud never overwrites files.");
         }
 
+        $routeNamePrefix = Profile::current() === Profile::TenantSaas && ! $names->tenant ? 'central.' : '';
+
+        if (($taken = $this->takenRouteName("{$routeNamePrefix}api.{$names->uri}.index")) !== null) {
+            return $this->refuse($taken);
+        }
+
         $controller = "{$names->entity}Controller";
 
         try {
@@ -111,6 +117,11 @@ class MakeCrudCommand extends Command
 
         if (! str_contains($routeLine, "{$controller}::class")) {
             return $this->refuse('Stub '.$stubs->path('route.stub')." did not produce a valid route (no {$controller}::class). Update or delete it, then re-run.");
+        }
+
+        // Named api.<uri>.* so a web resource for the same entity can use the plain names (route:cache needs unique names).
+        if (! str_contains($routeLine, "->names('api.{$names->uri}')")) {
+            return $this->refuse('Stub '.$stubs->path('route.stub')." did not produce a valid route (no ->names('api.{$names->uri}')). Update or delete it, then re-run.");
         }
 
         // A requested feature gate must never be silently dropped (e.g. by an old published route.stub).
@@ -425,6 +436,16 @@ class MakeCrudCommand extends Command
             ."        ->assertUnprocessable()\n"
             .'        ->assertJsonValidationErrors(['.implode(', ', $required)."]);\n"
             ."});\n";
+    }
+
+    private function takenRouteName(string $name): ?string
+    {
+        $routes = app('router')->getRoutes();
+        $routes->refreshNameLookups();
+
+        return $routes->hasNamedRoute($name)
+            ? "Route name \"{$name}\" is already used (for example by an older route without ->names()). Rename that route, then re-run."
+            : null;
     }
 
     private function featureTest(CrudNames $names, string $feature): string

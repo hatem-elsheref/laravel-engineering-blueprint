@@ -78,7 +78,7 @@ it('wires the route', function () {
 
     expect(file_get_contents(app_path('Modules/Orders/routes/api.php')))
         ->toContain("use App\\Modules\\Orders\\Controllers\\OrderController;\n")
-        ->toEndWith("Route::apiResource('orders', OrderController::class)\n    ->missing(fn (\$request) => abort(\$request->user() === null ? 403 : 404));\n");
+        ->toEndWith("Route::apiResource('orders', OrderController::class)->names('api.orders')\n    ->missing(fn (\$request) => abort(\$request->user() === null ? 403 : 404));\n");
 });
 
 it('adds a second entity', function () {
@@ -271,12 +271,12 @@ it('refuses module folders that are not namespace names', function () {
 
 it('uses the route stub', function () {
     File::ensureDirectoryExists(base_path('stubs/blueprint'));
-    file_put_contents(base_path('stubs/blueprint/route.stub'), "Route::apiResource('{{ uri }}', {{ controller }}::class)->middleware('auth:sanctum');\n");
+    file_put_contents(base_path('stubs/blueprint/route.stub'), "Route::apiResource('{{ uri }}', {{ controller }}::class)->names('api.{{ uri }}')->middleware('auth:sanctum');\n");
 
     $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])->assertExitCode(0);
 
     expect(file_get_contents(app_path('Modules/Orders/routes/api.php')))
-        ->toEndWith("Route::apiResource('orders', OrderController::class)->middleware('auth:sanctum');\n");
+        ->toEndWith("Route::apiResource('orders', OrderController::class)->names('api.orders')->middleware('auth:sanctum');\n");
 });
 
 it('refuses a route stub without the controller', function () {
@@ -313,4 +313,26 @@ it('generates a guest check for missing records', function () {
     expect(file_get_contents(base_path('tests/Feature/Modules/Orders/OrderApiTest.php')))
         ->toContain("\$this->getJson('/api/orders/999999')->assertForbidden();")
         ->toContain("\$this->actingAs(\$this->user)->getJson('/api/orders/999999')->assertNotFound();");
+});
+
+it('refuses an api route stub without route names', function () {
+    File::ensureDirectoryExists(base_path('stubs/blueprint'));
+    file_put_contents(base_path('stubs/blueprint/route.stub'), "Route::apiResource('{{ uri }}', {{ controller }}::class);\n");
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])
+        ->expectsOutputToContain("did not produce a valid route (no ->names('api.orders'))")
+        ->assertExitCode(1);
+
+    assertNothingWritten($this);
+});
+
+it('refuses a route name that is already taken', function () {
+    Illuminate\Support\Facades\Route::get('/old-orders', fn () => 'x')->name('api.orders.index');
+    app('router')->getRoutes()->refreshNameLookups();
+
+    $this->artisan('make:crud', ['module' => 'Orders', 'entity' => 'Order'])
+        ->expectsOutputToContain('Route name "api.orders.index" is already used')
+        ->assertExitCode(1);
+
+    assertNothingWritten($this);
 });
