@@ -1,0 +1,57 @@
+<?php
+
+use Best\Blueprint\Facades\Feature;
+use Best\Blueprint\Tenancy\TenantSetup;
+use Illuminate\Support\Facades\File;
+
+beforeEach(function () {
+    useTestFlags();
+    File::ensureDirectoryExists(database_path('migrations/tenant'));
+    File::copy(__DIR__.'/../../stubs/features-migration.stub', database_path('migrations/tenant/2026_01_01_000100_create_features_table.php'));
+    File::copy(__DIR__.'/../../stubs/settings-migration.stub', database_path('migrations/tenant/2026_01_01_000200_create_settings_table.php'));
+
+    foreach (['a', 'b'] as $id) {
+        app(TenantSetup::class)->run($id, "{$id}.localhost", "tenant_{$id}");
+    }
+});
+
+afterEach(function () {
+    File::deleteDirectory(database_path('migrations/tenant'));
+});
+
+it('changes one tenant only', function () {
+    $this->artisan('feature:enable', ['key' => 'reports', '--tenant' => 'a'])
+        ->expectsOutputToContain('Feature "reports" enabled for tenant "a".')
+        ->assertExitCode(0);
+
+    expect(tenancy()->find('a')->run(fn () => Feature::enabled('reports')))->toBeTrue()
+        ->and(tenancy()->find('b')->run(fn () => Feature::enabled('reports')))->toBeFalse()
+        ->and(tenancy()->initialized)->toBeFalse();
+});
+
+it('requires --tenant', function () {
+    $this->artisan('feature:enable', ['key' => 'reports'])
+        ->expectsOutputToContain('--tenant is required in the tenant-saas profile.')
+        ->assertExitCode(1);
+});
+
+it('refuses unknown tenants', function () {
+    $this->artisan('feature:enable', ['key' => 'reports', '--tenant' => 'zzz'])
+        ->expectsOutputToContain('Tenant "zzz" not found.')
+        ->assertExitCode(1);
+});
+
+it('syncs every tenant', function () {
+    $this->artisan('features:sync')
+        ->expectsOutputToContain('added 2 feature(s) to tenant "a"')
+        ->expectsOutputToContain('added 2 feature(s) to tenant "b"')
+        ->assertExitCode(0);
+});
+
+it('sets a tenant setting', function () {
+    $this->artisan('setting:set', ['key' => 'orders.limit', 'value' => '3', '--tenant' => 'b'])
+        ->expectsOutputToContain('Setting "orders.limit" updated for tenant "b".')
+        ->assertExitCode(0);
+
+    expect(tenancy()->find('b')->run(fn () => Best\Blueprint\Facades\Setting::get('orders.limit')))->toBe(3);
+});
