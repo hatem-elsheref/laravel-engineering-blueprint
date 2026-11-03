@@ -7,7 +7,7 @@ description: Use when scaffolding a new Laravel module or CRUD inside the Bluepr
 
 **Gate:** Use only after Phase 0 is approved and Phase 1+ Laravel foundation exists. During Phase 0, do not scaffold application code.
 
-Artisan commands are **not** wired yet. Use `kit/stubs/` and transform placeholders manually (or with agent edits).
+Artisan commands are **not** wired yet. Use `stubs/` and transform placeholders manually (or with agent edits).
 
 Target module layout: `docs/ARCHITECTURE.md` (`Requests/`, `Controllers/`, `routes/`, `Provider.php`). Stubs will be realigned in Phase 3 to match namespaces.
 

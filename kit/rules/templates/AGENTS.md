@@ -34,7 +34,7 @@ When working on Laravel backend modules, CRUD, tenancy, or features:
 
 ## Stubs
 
-Generator templates: `laravel-engineering-blueprint/kit/stubs/`.
+Generator templates: `laravel-engineering-blueprint/stubs/`.
 
 ## User overrides
 

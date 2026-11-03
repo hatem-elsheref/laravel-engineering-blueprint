@@ -17,4 +17,4 @@ Follow Phase 0: `laravel-engineering-blueprint/docs/PHASE-0.md` and linked specs
 
 Until Phase 0 is approved, do not generate application code—docs only.
 
-After Phase 1+, CRUD stubs: `kit/stubs/` + skill **leb-generate-crud**.
+After Phase 1+, CRUD stubs: `stubs/` + skill **leb-generate-crud**.

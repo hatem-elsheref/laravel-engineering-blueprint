@@ -11,7 +11,7 @@ Inspired by composable agent kits (e.g. Superpowers): one source tree, multiple 
 | `docs/` | **Phase 0** specs: `PHASE-0.md`, architecture, naming, tenancy, features, settings, constitution |
 | `kit/skills/` | Agent skills (`laravel-engineering`, `leb-generate-crud`) |
 | `kit/rules/` | Cursor rules + `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` templates |
-| `kit/stubs/` | Generator templates (for future `make:module` / `make:crud`) |
+| `stubs/` | Generator templates (for future `make:module` / `make:crud`) |
 | `rules.md` | Full Arabic/English engineering guide (source narrative) |
 | `bin/leb-install` | Install or refresh kit files in a target project or global skills dir |
 
@@ -58,7 +58,7 @@ Later: package as a Cursor/Codex plugin (see `blueprint.manifest.json`).
 
 1. **Now** — Kit files, docs, stubs, installer (you are here).
 2. **Phase 1** — Laravel package or app skeleton with module registration.
-3. **Phase 3** — Artisan commands that consume `kit/stubs/`.
+3. **Phase 3** — Artisan commands that consume `stubs/`.
 
 ## License
 

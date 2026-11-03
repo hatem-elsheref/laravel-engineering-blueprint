@@ -136,8 +136,8 @@ install_bundle() {
   fi
 
   if component_enabled stubs; then
-    run mkdir -p "${bundle}/kit/stubs"
-    run cp -R "${KIT_SOURCE}/kit/stubs/." "${bundle}/kit/stubs/"
+    run mkdir -p "${bundle}/stubs"
+    run cp -R "${KIT_SOURCE}/stubs/." "${bundle}/stubs/"
   fi
 
   run mkdir -p "${bundle}/bin"

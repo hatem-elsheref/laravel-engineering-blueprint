@@ -16,7 +16,7 @@
   "description": "Portable Laravel engineering standard: docs, agent skills, rules, and code stubs.",
   "kitRoot": "kit",
   "docsRoot": "docs",
-  "stubsRoot": "kit/stubs",
+  "stubsRoot": "stubs",
   "skills": [
     {
       "id": "laravel-engineering",
