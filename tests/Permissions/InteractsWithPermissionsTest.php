@@ -21,17 +21,35 @@ it('grants exactly the given permissions', function () {
 
     expect($user->checkPermissionTo('products.view'))->toBeTrue()
         ->and($user->checkPermissionTo('products.create'))->toBeTrue()
-        ->and(fn () => $user->checkPermissionTo('products.delete'))->not->toThrow(Throwable::class)
+        ->and($user->checkPermissionTo('products.delete'))->toBeFalse()
         ->and(Gate::forUser($user)->allows('products.delete'))->toBeFalse();
 });
 
-it('is not served stale data after a second grant to the same user', function () {
+it('holds only the latest grant after a second grant to the same user', function () {
     $user = RoleUser::create(['name' => 'a']);
     $this->grantPermissions($user, 'a.view');
     expect($user->can('a.view'))->toBeTrue();
 
     $this->grantPermissions($user, 'b.view');
-    expect($user->can('b.view'))->toBeTrue();
+    expect($user->can('b.view'))->toBeTrue()
+        ->and($user->can('a.view'))->toBeFalse();
+});
+
+it('drops everything when granted no permissions', function () {
+    $user = RoleUser::create(['name' => 'a']);
+    $this->grantPermissions($user, 'a.view');
+    $this->grantPermissions($user);
+
+    expect($user->can('a.view'))->toBeFalse();
+});
+
+it('replaces an earlier super-admin role when granting', function () {
+    $user = RoleUser::create(['name' => 'a']);
+    $this->makeSuperAdmin($user);
+    $this->grantPermissions($user, 'a.view');
+
+    expect(Gate::forUser($user)->allows('a.view'))->toBeTrue()
+        ->and(Gate::forUser($user)->allows('other'))->toBeFalse();
 });
 
 it('reuses one role for the same set in any order', function () {
