@@ -25,19 +25,26 @@ return [
     // Directories (under the app root) searched for make:crud --schema= paths
     'schema_paths' => ['schemas'],
 
-    // Generated API routes: null = no extra auth middleware; "sanctum" => auth:sanctum on make:crud and make:module --api (see docs/PRODUCTION-DEFAULTS.md)
-    'route_auth' => null,
+    // Route auth is opt-in here so existing apps stay compatible. Greenfield: bin/new-app sets sanctum + web auth unless --demo. See docs/AUTHENTICATION.md
+    'route_auth' => null, // "sanctum" => auth:sanctum on make:crud / make:module --api
 
-    // Generated web CRUD routes: null or "auth" for session auth on Route::resource (make:crud --web)
-    'route_auth_web' => null,
+    'route_auth_web' => null, // "auth" => session auth on make:crud --web / make:module --web
 
     // make:crud JSON API: use controller-api-envelope.stub (Best\Blueprint\Http\ApiResponse)
     'api_envelope' => false,
 
     // Optional ReplayIdempotentRequests middleware (alias: idempotent)
+    'pagination' => [
+        'per_page' => 15,
+        'max_per_page' => 100,
+    ],
+
     'idempotency' => [
         'header' => 'Idempotency-Key',
         'ttl' => 86400,
+        // Cache lock while the first request runs (requires redis, file, database, etc.).
+        'lock_seconds' => 30,
+        'wait_seconds' => 10,
     ],
 
     // engineering:architecture — cross-module import rules (MODULE-BOUNDARIES.md)

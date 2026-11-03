@@ -61,3 +61,57 @@ jobs:
 
       - name: Build and test generated apps on Laravel 12
         run: bin/e2e --laravel=^12.0
+
+  mysql-integration:
+    name: MySQL integration (Pest)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: leb_central
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php: '8.4'
+          extensions: pdo_mysql
+          coverage: none
+
+      - name: Install dependencies (Laravel 13)
+        run: composer update --prefer-dist --no-interaction --no-progress -W --with "laravel/framework:^13.0"
+
+      - name: Wait for MySQL
+        run: |
+          php -r '
+          for ($i = 0; $i < 30; $i++) {
+              try {
+                  new PDO("mysql:host=127.0.0.1;port=3306;dbname=leb_central", "root", "root", [PDO::ATTR_TIMEOUT => 2]);
+                  exit(0);
+              } catch (Throwable) {
+                  sleep(2);
+              }
+          }
+          fwrite(STDERR, "MySQL did not become ready in time\n");
+          exit(1);
+          '
+
+      - name: MySQL integration tests
+        env:
+          LEB_MYSQL: '1'
+          LEB_MYSQL_HOST: 127.0.0.1
+          LEB_MYSQL_PORT: 3306
+          LEB_MYSQL_DATABASE: leb_central
+          LEB_MYSQL_USERNAME: root
+          LEB_MYSQL_PASSWORD: root
+        run: composer test:mysql

@@ -1,6 +1,8 @@
-# Suggested production defaults (new apps)
+# Production defaults (new apps)
 
-These are **recommendations**, not package defaults — existing apps stay backward compatible until you opt in.
+**Product rule:** [AUTHENTICATION.md](./AUTHENTICATION.md) — the **package** keeps auth config at `null` so existing apps stay compatible; **`bin/new-app`** (without **`--demo`**) applies secure defaults (Sanctum, `route_auth`, web auth, permissions example). Use **`--demo`** only when you explicitly want a permissive sandbox.
+
+The checklist below applies when you bootstrap manually or tune after `bin/new-app`.
 
 ## Checklist (new Laravel app)
 

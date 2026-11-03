@@ -24,6 +24,24 @@ function installedConfig(): string
     return file_get_contents(config_path('blueprint.php'));
 }
 
+it('sets secure route auth defaults with --secure on a fresh config', function (): void {
+    install(['--profile' => 'modular', '--secure' => true])
+        ->expectsOutputToContain("Set route_auth => 'sanctum'")
+        ->assertExitCode(0);
+
+    expect(installedConfig())
+        ->toContain("'route_auth' => 'sanctum'")
+        ->toContain("'route_auth_web' => 'auth'");
+});
+
+it('does not overwrite route auth when --secure is passed again', function (): void {
+    install(['--profile' => 'modular', '--secure' => true])->assertExitCode(0);
+
+    install(['--profile' => 'modular', '--secure' => true])
+        ->expectsOutputToContain('Secure route auth skipped')
+        ->assertExitCode(0);
+});
+
 it('installs with an explicit profile', function () {
     $this->artisan('engineering:install', ['--profile' => 'saas', '--no-interaction' => true])
         ->expectsOutputToContain('created config/blueprint.php')

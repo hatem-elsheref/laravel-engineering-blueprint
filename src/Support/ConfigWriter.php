@@ -12,6 +12,10 @@ class ConfigWriter
      */
     private const PROFILE_LINE = '/^(?<prefix>(?:    |\t)\'profile\'\s*=>\s*)(?<value>null|\'[^\'\n]*\'|"[^"\n$]*")(?=\s*,)/m';
 
+    private const ROUTE_AUTH_NULL = "/(?<prefix>(?:    |\t)'route_auth'\\s*=>\\s*)null(?=\\s*,)/";
+
+    private const ROUTE_AUTH_WEB_NULL = "/(?<prefix>(?:    |\t)'route_auth_web'\\s*=>\\s*)null(?=\\s*,)/";
+
     public function __construct(private readonly Filesystem $files) {}
 
     public function publish(string $target): void
@@ -53,6 +57,24 @@ class ConfigWriter
         $match = $this->profileMatch($this->files->get($path));
 
         return $match === null || $match[2] === 'null' ? null : substr($match[2], 1, -1);
+    }
+
+    /** Sets route_auth / route_auth_web when still null (does not overwrite existing values). */
+    public function applySecureRouteAuthDefaults(string $path): bool
+    {
+        $contents = $this->files->get($path);
+        $updated = $contents;
+
+        $updated = preg_replace(self::ROUTE_AUTH_NULL, "$1'sanctum'", $updated, 1) ?? $updated;
+        $updated = preg_replace(self::ROUTE_AUTH_WEB_NULL, "$1'auth'", $updated, 1) ?? $updated;
+
+        if ($updated === $contents) {
+            return false;
+        }
+
+        $this->files->put($path, $updated);
+
+        return true;
     }
 
     /**

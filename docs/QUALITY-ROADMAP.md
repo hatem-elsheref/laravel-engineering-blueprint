@@ -16,7 +16,7 @@ Treat green CI on the **default branch** as the release gate; matrix jobs can fa
 | Area | Purpose |
 |------|---------|
 | Upgrade tests | Install from previous package version, run migrations/commands |
-| Production-like DB | MySQL/PostgreSQL in CI, not SQLite-only where behavior differs |
+| Production-like DB | **Shipped (initial):** CI job `mysql-integration` → `composer test:mysql` / `tests/MysqlIntegration/` (transactions, unique indexes, FK enforcement, tenant DB isolation, permissions sync, idempotency + database cache). Expand over time; not part of `composer check`. |
 | Tenancy security tests | Cross-tenant CRUD by ID (**shipped** in `TenantCrudEndToEndTest`); extend to jobs, scheduled tasks |
 | Generated-code regression | Schema/profile changes cannot silently alter snapshots |
 | Published stub compatibility | Apps with `vendor:publish --tag=blueprint-stubs` tested against new releases |

@@ -12,17 +12,19 @@ use App\Modules\Shop\Models\PurchaseOrder;
 use App\Modules\Shop\Queries\ListPurchaseOrders;
 use App\Modules\Shop\Requests\StorePurchaseOrderRequest;
 use App\Modules\Shop\Requests\UpdatePurchaseOrderRequest;
+use Best\Blueprint\Support\ListPerPage;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 final class PurchaseOrderPageController
 {
-    public function index(ListPurchaseOrders $query): View
+    public function index(Request $request, ListPurchaseOrders $query): View
     {
         Gate::authorize('viewAny', PurchaseOrder::class);
 
-        return view('shop.purchase-orders.index', ['purchaseOrders' => $query->handle()]);
+        return view('shop.purchase-orders.index', ['purchaseOrders' => $query->handle(ListPerPage::fromRequest($request))]);
     }
 
     public function create(): View

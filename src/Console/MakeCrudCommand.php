@@ -645,6 +645,10 @@ class MakeCrudCommand extends Command
             $controller['values']['indexParameters'] = "Request \$request, List{$names->plural} \$query";
             $controller['values']['listArguments'] = '$request';
             $controller['imports'] = [...$controller['imports'], 'Illuminate\\Http\\Request'];
+        } elseif ($owner === null) {
+            $controller['values']['indexParameters'] = "Request \$request, List{$names->plural} \$query";
+            $controller['values']['listArguments'] = 'ListPerPage::fromRequest($request)';
+            $controller['imports'] = [...$controller['imports'], 'Illuminate\\Http\\Request', 'Best\\Blueprint\\Support\\ListPerPage'];
         }
 
         $resourceFields = array_values(array_filter($fields, fn (CrudField $f): bool => ! $f->resourceHidden));
@@ -736,6 +740,7 @@ class MakeCrudCommand extends Command
                 [
                     $model,
                     'Illuminate\\Contracts\\Pagination\\LengthAwarePaginator',
+                    'Best\\Blueprint\\Support\\ListPerPage',
                     ...($schemaMeta->hasQueryFilters || $nestedScopeSnippet !== '' ? ['Illuminate\\Http\\Request'] : []),
                     ...$user,
                 ],

@@ -56,8 +56,17 @@ Prefer URL prefix convention (`/api/v1/...`) in new apps; register module routes
 
 ## Pagination
 
-Generated list queries use `paginate(15)` in `query.stub`. Align page size with product requirements; document max limits in app Query classes ([STANDARDS-BACKLOG.md](./STANDARDS-BACKLOG.md)).
+Generated list queries use `Best\Blueprint\Support\ListPerPage` with `config('blueprint.pagination.per_page')` (default **15**) and `max_per_page` (default **100**). API `index` actions pass `?per_page=` when the controller receives `Request` (all generated JSON list endpoints). Override in config or in the Query class when a module needs a different cap.
+
+## API envelope — project decision
+
+| Choice | When | Config / flag |
+|--------|------|----------------|
+| **Laravel default** | Public APIs, mobile clients that expect Laravel pagination meta on resources | `api_envelope` => false (package default) |
+| **`{ data, meta }` envelope** | One JSON shape for every endpoint; SPA/admin dashboards | `api_envelope` => true or `make:crud --api-envelope` |
+
+Pick one per app and document it in the app README; do not mix envelopes on the same API surface without versioning.
 
 ## Authentication
 
-JSON routes are **not** authenticated by default. Add `auth:sanctum` (or session `auth` for SPA) on module route groups — [SECURITY-GENERATION.md](./SECURITY-GENERATION.md).
+See **[AUTHENTICATION.md](./AUTHENTICATION.md)** — `make:crud` does not force auth; `bin/new-app` (without `--demo`) bootstraps secure route auth; package config stays `null` for backward compatibility.

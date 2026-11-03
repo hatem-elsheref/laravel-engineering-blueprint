@@ -28,7 +28,7 @@ Production-oriented config and CRUD flags: [docs/PRODUCTION-DEFAULTS.md](./docs/
 bin/new-app ~/Sites/shop --profile=saas --locales=en,ar
 ```
 
-Builds a fresh Laravel app with this package installed, Pest set up, your profile and languages configured, migrations run, and an example `Catalog` module (Product CRUD with Blade pages and JSON API) whose generated tests pass. By default the example uses **`--permissions`**, installs spatie/laravel-permission and laravel/sanctum, and sets **`route_auth` => `sanctum`** and **`route_auth_web` => `auth`** in config (see [docs/PRODUCTION-DEFAULTS.md](./docs/PRODUCTION-DEFAULTS.md)). Use **`--demo`** for the old `--open-policy` sandbox without permissions.
+Builds a fresh Laravel app with secure defaults (Sanctum, `route_auth`, web auth, permissions example) unless you pass **`--demo`** for an explicit open sandbox. See [docs/AUTHENTICATION.md](./docs/AUTHENTICATION.md) (greenfield vs package opt-in) and [docs/PRODUCTION-DEFAULTS.md](./docs/PRODUCTION-DEFAULTS.md).
 
 Options: `--profile=basic|modular|saas|tenant-saas`, `--locales=en,ar` (first = default), `--laravel=^13.0`, `--no-example`, `--demo`. For `tenant-saas` it also installs stancl/tenancy and creates a `demo` tenant (`http://demo.localhost:8000`).
 
@@ -78,7 +78,7 @@ Example: `php artisan make:crud Orders Order --api --web`. The entity must be si
 - Run once with one side and add the other later; it reuses the existing fields and feature gate.
 - Pages are plain Blade (no JS) and extend `config('blueprint.layout')`. The layout `resources/views/layouts/blueprint.blade.php` is created once.
 - Tests are Pest; they are skipped with a message if Pest is missing.
-- Default policy is **deny-by-default** (guests and signed-in users get 403 until you implement the policy). For production use `--permissions`; for local demos without permission setup use `--open-policy`. Register auth middleware on the module provider. See [`docs/SECURITY-GENERATION.md`](docs/SECURITY-GENERATION.md). Guests get 403 also for ids that do not exist.
+- Default policy is **deny-by-default** (guests and signed-in users get 403 until you implement the policy). For production use `--permissions`; for local demos use `--open-policy` or `bin/new-app --demo`. **Route auth** is opt-in on `make:crud` (config or `--auth`); new apps: [`docs/AUTHENTICATION.md`](docs/AUTHENTICATION.md). See [`docs/SECURITY-GENERATION.md`](docs/SECURITY-GENERATION.md). Guests get 403 also for ids that do not exist.
 - `--permissions` (needs `engineering:install --permissions`): the policy checks `<uri>.view/create/update/delete`, the group is added to `Permissions::groups()`, and the generated tests prove the rules. Grant it to a role in `roles()` and run `permissions:sync`. If the group already exists without an ability this CRUD checks, it warns and names it. `--owned` adds `user_id`, scopes the list to the user's records and answers 404 for records they may not view; `<uri>.any` widens what they hold to every record. See [docs/PERMISSIONS.md](./docs/PERMISSIONS.md).
 - `--feature=orders` adds `->middleware('feature:orders')` to the routes (saas, tenant-saas).
 - Generated web tests fail with 419 if config is cached (`php artisan optimize`). Run `php artisan optimize:clear` before tests.
@@ -91,7 +91,7 @@ Example: `php artisan make:crud Orders Order --api --web`. The entity must be si
 | Web | `<uri>.*` (e.g. `orders.index`) |
 | Central module (tenant-saas) | `central.api.<uri>.*`, `central.<uri>.*` |
 
-Put auth middleware for token APIs (e.g. `auth:sanctum`) in the module's `Provider.php` API route group.
+Enable route auth via `blueprint.route_auth` / `route_auth_web`, `make:crud --auth=…`, or greenfield `bin/new-app` — not automatic on every `make:crud`. Details: [`docs/AUTHENTICATION.md`](docs/AUTHENTICATION.md).
 
 ## Config (`config/blueprint.php`)
 

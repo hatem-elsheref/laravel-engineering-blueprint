@@ -61,6 +61,8 @@ Tune lists in `config/blueprint.php` → `architecture.forbidden_cross_module_se
 
 Agents and CI should run this after module changes ([AI-WORKFLOW.md](./AI-WORKFLOW.md)).
 
+Pest regression: `ModuleDependencyGraphTest` against the golden fixture ([DEPENDENCY-GRAPH.md](../tests/Fixtures/module-boundaries/DEPENDENCY-GRAPH.md)).
+
 ### PHPStan (deeper than `use` lines)
 
 Include the package extension in your app's `phpstan.neon` (or `phpstan.dist.neon`):

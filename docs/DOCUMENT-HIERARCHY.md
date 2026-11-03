@@ -6,7 +6,7 @@ Conflicts between `rules.md`, stubs, generated output, and agent files are resol
 |----------|--------|------|
 | 1 | [PHASE-0.md](./PHASE-0.md) | Approved scope and stack |
 | 2 | Phase 0 specs | [ARCHITECTURE.md](./ARCHITECTURE.md), [NAMING.md](./NAMING.md), [TENANCY.md](./TENANCY.md), [FEATURES.md](./FEATURES.md), [SETTINGS.md](./SETTINGS.md), [PERMISSIONS.md](./PERMISSIONS.md) |
-| 3 | Extension specs | [MODULE-BOUNDARIES.md](./MODULE-BOUNDARIES.md), [TENANCY-EXTENSIBILITY.md](./TENANCY-EXTENSIBILITY.md), [SECURITY-GENERATION.md](./SECURITY-GENERATION.md), [VALIDATION.md](./VALIDATION.md), [DTO.md](./DTO.md), [ACTIONS.md](./ACTIONS.md), [API-RESPONSES.md](./API-RESPONSES.md), [IDEMPOTENCY.md](./IDEMPOTENCY.md), [TESTING.md](./TESTING.md), [STANDARDS-BACKLOG.md](./STANDARDS-BACKLOG.md) |
+| 3 | Extension specs | [MODULE-BOUNDARIES.md](./MODULE-BOUNDARIES.md), [TENANCY-EXTENSIBILITY.md](./TENANCY-EXTENSIBILITY.md), [SECURITY-GENERATION.md](./SECURITY-GENERATION.md), [AUTHENTICATION.md](./AUTHENTICATION.md), [VALIDATION.md](./VALIDATION.md), [DTO.md](./DTO.md), [ACTIONS.md](./ACTIONS.md), [API-RESPONSES.md](./API-RESPONSES.md), [IDEMPOTENCY.md](./IDEMPOTENCY.md), [TESTING.md](./TESTING.md), [STANDARDS-BACKLOG.md](./STANDARDS-BACKLOG.md) |
 | 3b | Audit (living) | [ENGINEERING-AUDIT.md](./ENGINEERING-AUDIT.md) — gaps and remediation; amend when closing findings |
 | 4 | Roadmaps | [ROADMAP.md](./ROADMAP.md), [GENERATOR-ROADMAP.md](./GENERATOR-ROADMAP.md), [QUALITY-ROADMAP.md](./QUALITY-ROADMAP.md), [AI-WORKFLOW.md](./AI-WORKFLOW.md) |
 | 5 | [rules.md](../rules.md) | Narrative and history — update when specs change |

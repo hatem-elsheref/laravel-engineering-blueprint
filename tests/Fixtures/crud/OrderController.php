@@ -13,18 +13,20 @@ use App\Modules\Orders\Queries\ListOrders;
 use App\Modules\Orders\Requests\StoreOrderRequest;
 use App\Modules\Orders\Requests\UpdateOrderRequest;
 use App\Modules\Orders\Resources\OrderResource;
+use Best\Blueprint\Support\ListPerPage;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
 final class OrderController
 {
-    public function index(ListOrders $query): AnonymousResourceCollection
+    public function index(Request $request, ListOrders $query): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', Order::class);
 
-        return OrderResource::collection($query->handle());
+        return OrderResource::collection($query->handle(ListPerPage::fromRequest($request)));
     }
 
     public function store(StoreOrderRequest $request, CreateOrder $action): JsonResponse

@@ -7,7 +7,8 @@
 | [PRODUCT.md](./PRODUCT.md) | Three pillars: Standard, Toolkit, AI Kit |
 | [ENGINEERING-AUDIT.md](./ENGINEERING-AUDIT.md) | Repository audit findings and status |
 | [DOCUMENT-HIERARCHY.md](./DOCUMENT-HIERARCHY.md) | Single source of truth order |
-| [ROADMAP.md](./ROADMAP.md) | Next priorities (constitution, generator, enforcement) |
+| [ROADMAP.md](./ROADMAP.md) | Strategic tracks (constitution, generator, enforcement) |
+| [HARDENING.md](./HARDENING.md) | **Current phase:** verification, MySQL CI, dependency graph, stub matrix |
 
 ## Phase 0 — Architecture Foundation (approved)
 
@@ -37,7 +38,9 @@
 | [SCHEMA-DSL.md](./SCHEMA-DSL.md) | `make:crud --schema=` YAML format |
 | [SCHEMA-BACKLOG.md](./SCHEMA-BACKLOG.md) | Schema DSL shipped vs planned |
 | [GENERATOR-ROADMAP.md](./GENERATOR-ROADMAP.md) | Schema backlog, relationships, profiles |
-| [SECURITY-GENERATION.md](./SECURITY-GENERATION.md) | Policy/auth defaults (current vs target) |
+| [SECURITY-GENERATION.md](./SECURITY-GENERATION.md) | Policy defaults for generated CRUD |
+| [AUTHENTICATION.md](./AUTHENTICATION.md) | Route auth: package opt-in vs `bin/new-app` secure bootstrap |
+| [PRODUCTION-DEFAULTS.md](./PRODUCTION-DEFAULTS.md) | Greenfield checklist (auth, permissions, idempotency) |
 | [STANDARDS-BACKLOG.md](./STANDARDS-BACKLOG.md) | API envelope, pagination, idempotency, … |
 | [QUALITY-ROADMAP.md](./QUALITY-ROADMAP.md) | CI, tenancy tests, upgrade tests |
 | [AI-WORKFLOW.md](./AI-WORKFLOW.md) | Target agent loop |

@@ -12,11 +12,11 @@ final class List{{ plural }}
      *
      * @return LengthAwarePaginator<int, {{ entity }}>
      */
-    public function handle(User $user, int $perPage = 15): LengthAwarePaginator
+    public function handle(User $user, ?int $perPage = null): LengthAwarePaginator
     {
         return {{ entity }}::query()
             ->when(! $user->can('any', {{ entity }}::class), fn ($query) => $query->whereBelongsTo($user))
             ->latest('id')
-            ->paginate($perPage);
+            ->paginate(ListPerPage::resolve($perPage));
     }
 }

@@ -62,6 +62,7 @@
     },
     "scripts": {
         "test": "pest",
+        "test:mysql": "LEB_MYSQL=1 pest tests/MysqlIntegration",
         "analyse": "phpstan analyse --no-progress --memory-limit=1G",
         "format": "pint",
         "check": [

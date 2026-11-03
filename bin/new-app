@@ -8,7 +8,7 @@
 #   --laravel     laravel/laravel version constraint               (default: ^13.0)
 #   --source      path = this repository (default) | packagist = the released package
 #   --no-example  skip the example Catalog module (Product CRUD, Blade + JSON API)
-#   --demo        example Catalog uses --open-policy (no spatie); default is --permissions
+#   --demo        explicit opt-out: open-policy example, no spatie/sanctum production config (default is secure bootstrap)
 #
 # With --source=path the package comes from this repository (a Composer path repository), so changes
 # here are picked up by the app; --source=packagist installs the published release. Every generated test runs at the end; the script fails if any test fails.
