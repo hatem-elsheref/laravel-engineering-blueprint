@@ -57,7 +57,7 @@ final class Modules
         }
 
         foreach (scandir($directory) ?: [] as $entry) {
-            if (strcasecmp($entry, $name) === 0) {
+            if ($entry !== '.' && $entry !== '..' && strcasecmp($entry, $name) === 0) {
                 return $entry;
             }
         }

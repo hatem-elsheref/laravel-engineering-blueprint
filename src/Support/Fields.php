@@ -64,6 +64,10 @@ final class Fields
                 $import = $type;
                 $type = class_basename($type);
 
+                if (PhpNames::isReserved($type)) {
+                    throw new FieldException($entry, "reserved class name {$type}");
+                }
+
                 if (isset($imports[$type]) && $imports[$type] !== $import) {
                     throw new FieldException($entry, "two class types named {$type}");
                 }

@@ -176,3 +176,28 @@ it('generated data class works', function () {
 
     expect($data->quantity)->toBe(2);
 });
+
+it('refuses reserved class names', function (string $name) {
+    $this->artisan('make:dto', ['module' => 'Orders', 'name' => $name])
+        ->expectsOutputToContain("Invalid class name \"{$name}\".")
+        ->assertExitCode(1);
+
+    expect(is_dir(app_path('Modules/Orders/Data')))->toBeFalse();
+})->with(['Class', 'List']);
+
+it('refuses a field type named like the class', function () {
+    $this->artisan('make:dto', ['module' => 'Orders', 'name' => 'OrderData', '--fields' => 'x:Billing\OrderData'])
+        ->expectsOutputToContain('Field type Billing\OrderData has the same short name as the class OrderData.')
+        ->assertExitCode(1);
+
+    expect(is_dir(app_path('Modules/Orders/Data')))->toBeFalse();
+});
+
+it('refuses dot module names', function (string $module) {
+    $this->artisan('make:dto', ['module' => $module, 'name' => 'Weird'])
+        ->expectsOutputToContain("Module \"{$module}\" not found")
+        ->assertExitCode(1);
+
+    expect(file_exists(app_path('Modules/Data/Weird.php')))->toBeFalse()
+        ->and(file_exists(app_path('Data/Weird.php')))->toBeFalse();
+})->with(['.', '..']);

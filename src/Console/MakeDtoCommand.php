@@ -37,6 +37,12 @@ class MakeDtoCommand extends ModuleClassCommand
             return $e->getMessage();
         }
 
+        foreach (array_filter(array_column($fields, 'import')) as $import) {
+            if (strcasecmp(class_basename($import), $class) === 0) {
+                return "Field type {$import} has the same short name as the class {$class}.";
+            }
+        }
+
         $properties = $fields === []
             ? "        // public string \$name,\n"
             : implode('', array_map(fn (array $f) => "        public {$f['type']} \${$f['name']},\n", $fields));

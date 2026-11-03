@@ -4,6 +4,7 @@ namespace Best\Blueprint\Console;
 
 use Best\Blueprint\Support\ModuleName;
 use Best\Blueprint\Support\Modules;
+use Best\Blueprint\Support\PhpNames;
 use Best\Blueprint\Support\StubException;
 use Best\Blueprint\Support\StubRenderer;
 use Illuminate\Console\Command;
@@ -49,7 +50,7 @@ abstract class ModuleClassCommand extends Command
         $input = (string) $this->argument('name');
         $class = ModuleName::normalize($input);
 
-        if ($class === null) {
+        if ($class === null || PhpNames::isReserved($class)) {
             return $this->refuse("Invalid class name \"{$input}\". Use letters and numbers, starting with a letter, e.g. {$this->example()}.");
         }
 

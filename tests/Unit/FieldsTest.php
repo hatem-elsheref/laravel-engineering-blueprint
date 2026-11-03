@@ -46,3 +46,7 @@ it('refuses invalid entries', function (string $spec, string $entry, string $rea
     'rejects invalid class types' => ['a:Carbon\1Bad', 'a:Carbon\1Bad', 'unknown type Carbon\1Bad'],
     'rejects double backslash' => ['a:App\\\\Double', 'a:App\\\\Double', 'unknown type App\\\\Double'],
 ]);
+
+it('refuses reserved class short names', function (string $spec) {
+    expect(fn () => Fields::parse($spec))->toThrow(FieldException::class, 'reserved class name');
+})->with(['x:App\Int', 'x:App\String', 'x:?App\Mixed', 'x:App\Self']);

@@ -131,3 +131,11 @@ it('generated action works', function () {
 
     expect((new App\Modules\Orders\Actions\RunActionCheck)->handle($data))->toBeNull();
 });
+
+it('refuses reserved class names', function (string $name) {
+    $this->artisan('make:action', ['module' => 'Orders', 'name' => $name])
+        ->expectsOutputToContain("Invalid class name \"{$name}\".")
+        ->assertExitCode(1);
+
+    expect(is_dir(app_path('Modules/Orders/Actions')))->toBeFalse();
+})->with(['Void', 'Print', 'Clone']);
