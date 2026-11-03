@@ -1,7 +1,7 @@
 # Phase 4 — `make:dto` + `make:action` — Design Spec
 
 **Date:** 2026-11-03
-**Status:** Draft for approval
+**Status:** Approved
 **Builds on:** Phase 3 (`make:module`, `StubRenderer`, `ModuleName`, profile gate, `module_path` validation).
 **Supports:** PHP 8.3+, Laravel 12 and 13.
 **Authority:** `docs/ARCHITECTURE.md` §1.2–1.3 (`Data/`, `Actions/`), `docs/NAMING.md` (`OrderData`, `CreateOrder`, `handle()`), `docs/PHASE-0.md` ("DTO: Native PHP").
