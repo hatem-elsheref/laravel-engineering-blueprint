@@ -1,0 +1,23 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+{{ imports }}
+final class Create{{ entity }}
+{
+    /**
+     * The owner is the signed-in user, never request input.
+     */
+    public function handle({{ entity }}Data $data, User $owner): {{ entity }}
+    {
+        return DB::transaction(function () use ($data, $owner): {{ entity }} {
+            ${{ variable }} = new {{ entity }}($data->toArray());
+            ${{ variable }}->user()->associate($owner);
+            ${{ variable }}->save();
+
+            return ${{ variable }};
+        });
+    }
+}

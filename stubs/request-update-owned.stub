@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+{{ imports }}
+final class {{ class }} extends FormRequest
+{
+    /**
+     * The policy's answer as is, so another user's {{ variable }} is "not found" (404), not "forbidden".
+     */
+    public function authorize(): Response
+    {
+        return Gate::inspect({{ ability }});
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    public function rules(): array
+    {
+        return [
+{{ rules }}        ];
+    }
+}

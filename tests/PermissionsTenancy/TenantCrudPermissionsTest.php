@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Modules\Kiosk\Models\Badge;
+use App\Modules\Kiosk\Models\Coupon;
 use Best\Blueprint\Testing\InteractsWithPermissions;
 use Best\Blueprint\Testing\InteractsWithTenancy;
 use Illuminate\Support\Facades\File;
@@ -129,4 +130,58 @@ it('denies instead of erroring when the tenant never synced permissions', functi
 
     $this->actingAs($user)->getJson($this->tenantUrl('/api/badges'))->assertForbidden();
     $this->actingAs($user)->postJson($this->tenantUrl('/api/badges'), ['name' => 'Gold'])->assertForbidden();
+});
+
+it('serves an owned tenant crud by permission and owner', function () {
+    $this->artisan('make:crud', ['module' => 'Kiosk', 'entity' => 'Coupon', '--api' => true, '--web' => true, '--permissions' => true, '--owned' => true, '--fields' => 'name:string'])->assertExitCode(0);
+    app()->register('App\Modules\Kiosk\Provider');
+
+    expect(file_get_contents(app_path('Shared/Permissions/Permissions.php')))->toContain("'coupons' => ['view', 'create', 'update', 'delete', 'any'],")
+        ->and(file_get_contents(glob(database_path('migrations/tenant/*_create_coupons_table.php'))[0]))->toContain("\$table->foreignId('user_id')->constrained()->cascadeOnDelete();");
+
+    $this->createTestTenant();
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $this->grantPermissions($owner, 'coupons.view', 'coupons.create', 'coupons.update', 'coupons.delete');
+    $this->grantPermissions($other, 'coupons.view', 'coupons.create', 'coupons.update', 'coupons.delete');
+
+    $id = $this->actingAs($owner)->postJson($this->tenantUrl('/api/coupons'), ['name' => 'Gold'])->assertCreated()->json('data.id');
+    expect(Coupon::find($id)->user_id)->toBe($owner->id);
+    $this->actingAs($owner)->getJson($this->tenantUrl("/api/coupons/{$id}"))->assertOk();
+
+    $this->actingAs($other)->getJson($this->tenantUrl("/api/coupons/{$id}"))->assertNotFound();
+    $this->actingAs($other)->putJson($this->tenantUrl("/api/coupons/{$id}"), ['name' => 'Silver'])->assertNotFound();
+    $this->actingAs($other)->deleteJson($this->tenantUrl("/api/coupons/{$id}"))->assertNotFound();
+    $this->actingAs($other)->getJson($this->tenantUrl('/api/coupons'))->assertOk()->assertJsonCount(0, 'data');
+
+    $this->grantPermissions($other, 'coupons.view', 'coupons.update', 'coupons.any');
+    $this->actingAs($other)->getJson($this->tenantUrl('/api/coupons'))->assertOk()->assertJsonCount(1, 'data');
+    $this->actingAs($other)->putJson($this->tenantUrl("/api/coupons/{$id}"), ['name' => 'Silver'])->assertOk();
+    expect(Coupon::find($id)->user_id)->toBe($owner->id);
+
+    $admin = User::factory()->create();
+    $this->makeSuperAdmin($admin);
+    $this->actingAs($admin)->getJson($this->tenantUrl('/api/coupons'))->assertOk()->assertJsonCount(1, 'data');
+});
+
+it('writes owned tests for tenant and central modules', function () {
+    $this->artisan('make:crud', ['module' => 'Kiosk', 'entity' => 'Coupon', '--api' => true, '--web' => true, '--permissions' => true, '--owned' => true])->assertExitCode(0);
+    $this->artisan('make:crud', ['module' => 'Hq', 'entity' => 'Office', '--permissions' => true, '--owned' => true])->assertExitCode(0);
+
+    expect(file_get_contents(app_path('Shared/Permissions/CentralPermissions.php')))->toContain("'offices' => ['view', 'create', 'update', 'delete', 'any'],");
+
+    foreach (['Kiosk/CouponApiTest', 'Kiosk/CouponWebTest', 'Hq/OfficeApiTest'] as $name) {
+        $path = base_path("tests/Feature/Modules/{$name}.php");
+        $test = file_get_contents($path);
+
+        expect($test)->toContain('->for($this->user)->create();')
+            ->toContain("it('lets an any-holder act on every")
+            ->toContain("it('lets a super-admin see every");
+
+        $lint = new Process([PHP_BINARY, '-l', $path]);
+        $lint->run();
+        expect($lint->getExitCode())->toBe(0, $lint->getOutput());
+    }
+
+    expect(file_get_contents(base_path('tests/Feature/Modules/Kiosk/CouponApiTest.php')))->toContain('$this->tenantUrl(');
 });

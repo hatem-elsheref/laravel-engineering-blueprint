@@ -1,0 +1,60 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+{{ imports }}
+/**
+ * Each ability needs a named permission ({{ uri }}.view, .create, .update, .delete). A {{ variable }} belongs to the
+ * user who created it: others get "not found" unless they also hold {{ uri }}.any, which widens the permissions
+ * they hold to every {{ variable }} and grants nothing alone. Grant them to roles in {{ definitions }}::roles() and
+ * run {{ sync }}. Guests are always denied: every method requires a User.
+ */
+final class {{ entity }}Policy
+{
+    private const GROUP = '{{ uri }}';
+
+    public function viewAny(User $user): bool
+    {
+        return $user->checkPermissionTo(self::GROUP.'.view');
+    }
+
+    public function view(User $user, {{ entity }} ${{ variable }}): Response
+    {
+        return $this->owned($user, ${{ variable }}, 'view');
+    }
+
+    public function create(User $user): bool
+    {
+        return $user->checkPermissionTo(self::GROUP.'.create');
+    }
+
+    public function update(User $user, {{ entity }} ${{ variable }}): Response
+    {
+        return $this->owned($user, ${{ variable }}, 'update');
+    }
+
+    public function delete(User $user, {{ entity }} ${{ variable }}): Response
+    {
+        return $this->owned($user, ${{ variable }}, 'delete');
+    }
+
+    /**
+     * Whether the user may reach every {{ variable }}, not only their own (List{{ plural }} asks this too).
+     */
+    public function any(User $user): bool
+    {
+        return $user->checkPermissionTo(self::GROUP.'.any');
+    }
+
+    private function owned(User $user, {{ entity }} ${{ variable }}, string $ability): Response
+    {
+        if (! $user->checkPermissionTo(self::GROUP.'.'.$ability)) {
+            return Response::deny();
+        }
+
+        // Others' records answer "not found", so users can't probe which ones exist.
+        return ${{ variable }}->user()->is($user) || $this->any($user) ? Response::allow() : Response::denyAsNotFound();
+    }
+}

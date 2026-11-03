@@ -25,7 +25,7 @@ it('hides which {{ uri }} exist from guests', function (): void {
 });
 
 it('lists {{ uri }}', function (): void {
-    {{ entity }}::factory()->create();
+    {{ entity }}::factory(){{ factoryOwner }}->create();
 
     $this->actingAs($this->user)->getJson('/api/{{ uri }}')->assertOk()->assertJsonCount(1, 'data');
 });
@@ -37,7 +37,7 @@ it('creates a {{ variable }}', function (): void {
 });
 {{ validation }}
 it('shows a {{ variable }}', function (): void {
-    ${{ variable }} = {{ entity }}::factory()->create();
+    ${{ variable }} = {{ entity }}::factory(){{ factoryOwner }}->create();
 
     $this->actingAs($this->user)->getJson("/api/{{ uri }}/{${{ variable }}->id}")
         ->assertOk()
@@ -45,7 +45,7 @@ it('shows a {{ variable }}', function (): void {
 });
 
 it('updates a {{ variable }}', function (): void {
-    ${{ variable }} = {{ entity }}::factory()->create();
+    ${{ variable }} = {{ entity }}::factory(){{ factoryOwner }}->create();
 
     $this->travel(1)->minutes();
 
@@ -55,7 +55,7 @@ it('updates a {{ variable }}', function (): void {
 });
 
 it('deletes a {{ variable }}', function (): void {
-    ${{ variable }} = {{ entity }}::factory()->create();
+    ${{ variable }} = {{ entity }}::factory(){{ factoryOwner }}->create();
 
     $this->actingAs($this->user)->deleteJson("/api/{{ uri }}/{${{ variable }}->id}")->assertNoContent();
 

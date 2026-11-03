@@ -8,7 +8,8 @@ use Best\Blueprint\Support\CrudNames;
 /**
  * What make:crud --permissions adds for one entity: the permission group, the definitions class it belongs
  * to, and the policy and test fragments. The generated policy checks <group>.<ability> with
- * checkPermissionTo(), which is false (403) for a permission that was never synced.
+ * checkPermissionTo(), which is false (403) for a permission that was never synced. With --owned the group
+ * also has <group>.any and OwnedCrud adds the owner parts.
  */
 final class CrudPermissions
 {
@@ -21,6 +22,7 @@ final class CrudPermissions
     public function __construct(
         public readonly CrudNames $names,
         public readonly bool $central,
+        public readonly bool $owned = false,
     ) {}
 
     public function group(): string
@@ -31,7 +33,7 @@ final class CrudPermissions
     /** @return list<string> */
     public function abilities(): array
     {
-        return self::ABILITIES;
+        return $this->owned ? [...self::ABILITIES, OwnedCrud::ABILITY] : self::ABILITIES;
     }
 
     /** @return list<string> */
@@ -97,10 +99,14 @@ final class CrudPermissions
             return ['permissionUses' => '', 'permissionSetup' => '', 'permissionTest' => ''];
         }
 
+        // The tests' user holds the four abilities, not <group>.any: owned tests grant that where they need it.
+        $granted = array_map(fn (string $ability) => "'{$permissions->group()}.{$ability}'", self::ABILITIES);
+
         return [
             'permissionUses' => ', InteractsWithPermissions::class',
-            'permissionSetup' => '    $this->grantPermissions($this->user, '.implode(', ', array_map(fn (string $p) => "'{$p}'", $permissions->permissions())).");\n",
-            'permissionTest' => $web ? $permissions->webTests($formInput) : $permissions->apiTests(),
+            'permissionSetup' => '    $this->grantPermissions($this->user, '.implode(', ', $granted).");\n",
+            'permissionTest' => ($web ? $permissions->webTests($formInput) : $permissions->apiTests())
+                .($permissions->owned ? (new OwnedCrud($permissions))->tests($web, $formInput) : ''),
         ];
     }
 
@@ -114,8 +120,8 @@ final class CrudPermissions
     {
         $e = $this->names->entity;
         $v = '$'.$this->names->variable;
-        $index = $this->url("/api/{$this->names->uri}");
-        $one = $this->url("/api/{$this->names->uri}/{{$v}->id}", true);
+        $index = $this->testUrl("/api/{$this->names->uri}");
+        $one = $this->testUrl("/api/{$this->names->uri}/{{$v}->id}", true);
 
         return "\nit('denies users without the permission', function (): void {\n"
             ."    \$user = User::factory()->create();\n"
@@ -133,10 +139,10 @@ final class CrudPermissions
     {
         $e = $this->names->entity;
         $v = '$'.$this->names->variable;
-        $index = $this->url("/{$this->names->uri}", web: true);
-        $create = $this->url("/{$this->names->uri}/create", web: true);
-        $one = $this->url("/{$this->names->uri}/{{$v}->id}", true, true);
-        $edit = $this->url("/{$this->names->uri}/{{$v}->id}/edit", true, true);
+        $index = $this->testUrl("/{$this->names->uri}", web: true);
+        $create = $this->testUrl("/{$this->names->uri}/create", web: true);
+        $one = $this->testUrl("/{$this->names->uri}/{{$v}->id}", true, true);
+        $edit = $this->testUrl("/{$this->names->uri}/{{$v}->id}/edit", true, true);
 
         return "\nit('denies users without the permission', function (): void {\n"
             ."    \$user = User::factory()->create();\n"
@@ -162,7 +168,7 @@ final class CrudPermissions
     }
 
     /** A URL expression as the test stubs write it. */
-    private function url(string $path, bool $interpolated = false, bool $web = false): string
+    public function testUrl(string $path, bool $interpolated = false, bool $web = false): string
     {
         $literal = $interpolated ? "\"{$path}\"" : "'{$path}'";
 

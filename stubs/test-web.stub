@@ -36,7 +36,7 @@ it('hides which {{ uri }} exist from guests', function (): void {
 });
 
 it('lists {{ uri }}', function (): void {
-    ${{ variable }} = {{ entity }}::factory()->create();
+    ${{ variable }} = {{ entity }}::factory(){{ factoryOwner }}->create();
 
     $this->actingAs($this->user)->get({{ url }}('/{{ uri }}'))->assertOk()->assertSee("/{{ uri }}/{${{ variable }}->id}");
 });
@@ -54,14 +54,14 @@ it('creates a {{ variable }}', function (): void {
 });
 {{ validation }}
 it('shows and edits a {{ variable }}', function (): void {
-    ${{ variable }} = {{ entity }}::factory()->create();
+    ${{ variable }} = {{ entity }}::factory(){{ factoryOwner }}->create();
 
     $this->actingAs($this->user)->get({{ url }}("/{{ uri }}/{${{ variable }}->id}"))->assertOk();
     $this->actingAs($this->user)->get({{ url }}("/{{ uri }}/{${{ variable }}->id}/edit"))->assertOk();
 });
 
 it('updates a {{ variable }}', function (): void {
-    ${{ variable }} = {{ entity }}::factory()->create();
+    ${{ variable }} = {{ entity }}::factory(){{ factoryOwner }}->create();
 
     $this->travel(1)->minutes();
 
@@ -73,7 +73,7 @@ it('updates a {{ variable }}', function (): void {
 });
 
 it('deletes a {{ variable }}', function (): void {
-    ${{ variable }} = {{ entity }}::factory()->create();
+    ${{ variable }} = {{ entity }}::factory(){{ factoryOwner }}->create();
 
     $this->actingAs($this->user)->delete({{ url }}("/{{ uri }}/{${{ variable }}->id}"))->assertRedirectContains('/{{ uri }}');
 

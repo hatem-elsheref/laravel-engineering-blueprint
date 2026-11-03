@@ -7,16 +7,16 @@ namespace {{ namespace }};
 {{ imports }}
 final class {{ entity }}Controller
 {
-    public function index(List{{ plural }} $query): AnonymousResourceCollection
+    public function index({{ indexParameters }}): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', {{ entity }}::class);
 
-        return {{ entity }}Resource::collection($query->handle());
+        return {{ entity }}Resource::collection($query->handle({{ listArguments }}));
     }
 
     public function store(Store{{ entity }}Request $request, Create{{ entity }} $action): JsonResponse
     {
-        ${{ variable }} = $action->handle({{ entity }}Data::fromRequest($request));
+        ${{ variable }} = $action->handle({{ entity }}Data::fromRequest($request){{ createArguments }});
 
         return (new {{ entity }}Resource(${{ variable }}))->response()->setStatusCode(201);
     }

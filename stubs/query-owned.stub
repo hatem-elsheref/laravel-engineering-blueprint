@@ -1,0 +1,22 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+{{ imports }}
+final class List{{ plural }}
+{
+    /**
+     * The user's own {{ uri }}, or every one when they may see all ({{ entity }}Policy::any()).
+     *
+     * @return LengthAwarePaginator<int, {{ entity }}>
+     */
+    public function handle(User $user, int $perPage = 15): LengthAwarePaginator
+    {
+        return {{ entity }}::query()
+            ->when(! $user->can('any', {{ entity }}::class), fn ($query) => $query->whereBelongsTo($user))
+            ->latest('id')
+            ->paginate($perPage);
+    }
+}

@@ -6,6 +6,7 @@ use Best\Blueprint\Flags\Definitions;
 use Best\Blueprint\Permissions\CrudPermissions;
 use Best\Blueprint\Permissions\DefinitionsFile;
 use Best\Blueprint\Permissions\InvalidPermissionDefinition;
+use Best\Blueprint\Permissions\OwnedCrud;
 use Best\Blueprint\Support\CrudField;
 use Best\Blueprint\Support\CrudFields;
 use Best\Blueprint\Support\CrudNames;
@@ -34,6 +35,7 @@ class MakeCrudCommand extends Command
         {--fields= : Comma-separated name:type list, e.g. "name:string,quantity:int,note:?string"}
         {--feature= : Feature key that must be enabled for these routes (saas, tenant-saas)}
         {--permissions : Policies check named permissions (needs engineering:install --permissions)}
+        {--owned : Records belong to the user who creates them (needs --permissions)}
         {--api : JSON API (default when neither --api nor --web is given)}
         {--web : Blade pages}';
 
@@ -96,7 +98,17 @@ class MakeCrudCommand extends Command
             return $this->refuse('Features are per tenant; central module routes have no tenant. Drop --feature or use a tenant module.');
         }
 
-        $permissions = $this->option('permissions') ? new CrudPermissions($names, $central) : null;
+        $owned = (bool) $this->option('owned');
+
+        if ($owned && ! $this->option('permissions')) {
+            return $this->refuse('--owned needs --permissions.');
+        }
+
+        if ($owned && ($error = OwnedCrud::fieldError($fields)) !== null) {
+            return $this->refuse($error);
+        }
+
+        $permissions = $this->option('permissions') ? new CrudPermissions($names, $central, $owned) : null;
 
         if ($permissions !== null && ($error = CrudPermissions::setupError($permissions->definitionsClass())) !== null) {
             return $this->refuse($error);
@@ -129,7 +141,7 @@ class MakeCrudCommand extends Command
             $fields = CrudFields::parse($existing);
             $this->line("using the existing fields: {$existing}");
 
-            if (($error = $this->featureMismatch($names, $feature, $api, $web) ?? $this->permissionsMismatch($names, $permissions !== null)) !== null) {
+            if (($error = $this->featureMismatch($names, $feature, $api, $web) ?? $this->permissionsMismatch($names, $permissions !== null, $owned)) !== null) {
                 return $this->refuse($error);
             }
         }
@@ -190,7 +202,7 @@ class MakeCrudCommand extends Command
             }
         }
 
-        foreach ($this->expectedClasses($names, $permissions !== null) as $key => [$namespace, $class, $stub]) {
+        foreach ($this->expectedClasses($names, $permissions !== null, $owned) as $key => [$namespace, $class, $stub]) {
             if (in_array($key, $keys, true) && ! PhpSource::declares($generated[$names->files()[$key]], $namespace, $class)) {
                 return $this->refuse($this->invalidStub($stubs->path($stub), "no {$class} class in namespace {$namespace}"));
             }
@@ -208,7 +220,11 @@ class MakeCrudCommand extends Command
             }
         }
 
-        if ($permissions !== null && ($error = $this->permissionsStubError($stubs, $generated, $names, $api, $web)) !== null) {
+        if ($permissions !== null && ($error = $this->permissionsStubError($stubs, $generated, $names, $api, $web, $owned)) !== null) {
+            return $this->refuse($error);
+        }
+
+        if ($owned && ($error = OwnedCrud::stubError($stubs, $generated, $names, $api, $web)) !== null) {
             return $this->refuse($error);
         }
 
@@ -443,7 +459,7 @@ class MakeCrudCommand extends Command
      *
      * @return array<string, array{string, string, string}>
      */
-    private function expectedClasses(CrudNames $names, bool $permissions = false): array
+    private function expectedClasses(CrudNames $names, bool $permissions = false, bool $owned = false): array
     {
         $ns = $names->moduleNamespace;
         $e = $names->entity;
@@ -452,16 +468,16 @@ class MakeCrudCommand extends Command
             'model' => ["{$ns}\\Models", $e, 'model.stub'],
             'factory' => ["Database\\Factories\\{$names->module}", "{$e}Factory", 'factory.stub'],
             'store' => ["{$ns}\\Requests", "Store{$e}Request", 'request.stub'],
-            'update' => ["{$ns}\\Requests", "Update{$e}Request", 'request.stub'],
+            'update' => ["{$ns}\\Requests", "Update{$e}Request", $owned ? 'request-update-owned.stub' : 'request.stub'],
             'data' => ["{$ns}\\Data", "{$e}Data", 'crud-data.stub'],
-            'create' => ["{$ns}\\Actions", "Create{$e}", 'crud-create-action.stub'],
+            'create' => ["{$ns}\\Actions", "Create{$e}", $owned ? 'crud-create-action-owned.stub' : 'crud-create-action.stub'],
             'updateAction' => ["{$ns}\\Actions", "Update{$e}", 'crud-update-action.stub'],
             'delete' => ["{$ns}\\Actions", "Delete{$e}", 'crud-delete-action.stub'],
-            'query' => ["{$ns}\\Queries", "List{$names->plural}", 'query.stub'],
+            'query' => ["{$ns}\\Queries", "List{$names->plural}", $owned ? 'query-owned.stub' : 'query.stub'],
             'controller' => ["{$ns}\\Controllers", "{$e}Controller", 'controller.stub'],
             'pageController' => ["{$ns}\\Controllers", "{$e}PageController", 'web-controller.stub'],
             'resource' => ["{$ns}\\Resources", "{$e}Resource", 'resource.stub'],
-            'policy' => ["{$ns}\\Policies", "{$e}Policy", $permissions ? 'policy-permissions.stub' : 'policy.stub'],
+            'policy' => ["{$ns}\\Policies", "{$e}Policy", $this->policyStub($permissions, $owned)],
         ];
     }
 
@@ -522,23 +538,29 @@ class MakeCrudCommand extends Command
         $model = "{$ns}\\Models\\{$e}";
         $data = "{$ns}\\Data\\{$e}Data";
         $factory = "Database\\Factories\\{$names->module}\\{$e}Factory";
+        $owner = $permissions !== null && $permissions->owned ? new OwnedCrud($permissions) : null;
+        $user = $owner === null ? [] : [OwnedCrud::userClass()];
+        $controller = OwnedCrud::controllerValues($owner !== null, $names->plural);
+        $updateAbility = "'update', \$this->route('{$names->parameter}')";
 
         $files = [
             $paths['model'] => $render('model.stub', "{$ns}\\Models", [
                 $factory,
                 'Illuminate\\Database\\Eloquent\\Factories\\HasFactory',
                 'Illuminate\\Database\\Eloquent\\Model',
+                ...($owner === null ? [] : OwnedCrud::modelImports()),
             ], [
                 'fillable' => $this->lines($fields, fn (CrudField $f) => "'{$f->column}',", 8),
                 'casts' => $this->casts($fields),
+                'relations' => $owner?->modelRelation() ?? '',
             ]),
             $paths['migration'] => $stubs->render('migration.stub', $common + [
-                'columns' => $this->lines($fields, fn (CrudField $f) => $f->migration().';', 12),
+                'columns' => ($owner?->migrationColumn() ?? '').$this->lines($fields, fn (CrudField $f) => $f->migration().';', 12),
             ]),
             $paths['factory'] => $render('factory.stub', "Database\\Factories\\{$names->module}", [
-                $model, 'Illuminate\\Database\\Eloquent\\Factories\\Factory', ...$date,
+                $model, 'Illuminate\\Database\\Eloquent\\Factories\\Factory', ...$date, ...$user,
             ], [
-                'definition' => $this->lines($fields, fn (CrudField $f) => "'{$f->column}' => {$f->factory()},", 12),
+                'definition' => ($owner?->factoryLine() ?? '').$this->lines($fields, fn (CrudField $f) => "'{$f->column}' => {$f->factory()},", 12),
             ]),
             $paths['store'] => $render('request.stub', "{$ns}\\Requests", [
                 $model, 'Illuminate\\Foundation\\Http\\FormRequest',
@@ -547,13 +569,13 @@ class MakeCrudCommand extends Command
                 'ability' => "'create', {$e}::class",
                 'rules' => $this->rules($fields),
             ]),
-            $paths['update'] => $render('request.stub', "{$ns}\\Requests", [
-                'Illuminate\\Foundation\\Http\\FormRequest',
-            ], [
-                'class' => "Update{$e}Request",
-                'ability' => "'update', \$this->route('{$names->parameter}')",
-                'rules' => $this->rules($fields),
-            ]),
+            $paths['update'] => $owner === null
+                ? $render('request.stub', "{$ns}\\Requests", [
+                    'Illuminate\\Foundation\\Http\\FormRequest',
+                ], ['class' => "Update{$e}Request", 'ability' => $updateAbility, 'rules' => $this->rules($fields)])
+                : $render('request-update-owned.stub', "{$ns}\\Requests", [
+                    'Illuminate\\Auth\\Access\\Response', 'Illuminate\\Foundation\\Http\\FormRequest', 'Illuminate\\Support\\Facades\\Gate',
+                ], ['class' => "Update{$e}Request", 'ability' => $updateAbility, 'rules' => $this->rules($fields)]),
             $paths['data'] => $render('crud-data.stub', "{$ns}\\Data", [
                 "{$ns}\\Requests\\Store{$e}Request", "{$ns}\\Requests\\Update{$e}Request", ...$date,
             ], [
@@ -561,18 +583,18 @@ class MakeCrudCommand extends Command
                 'arguments' => $this->lines($fields, fn (CrudField $f) => "{$f->property}: {$f->fromRequest()},", 12),
                 'array' => $this->lines($fields, fn (CrudField $f) => "'{$f->column}' => \$this->{$f->property},", 12),
             ]),
-            $paths['create'] => $render('crud-create-action.stub', "{$ns}\\Actions", [$data, $model, 'Illuminate\\Support\\Facades\\DB']),
+            $paths['create'] => $render($owner === null ? 'crud-create-action.stub' : 'crud-create-action-owned.stub', "{$ns}\\Actions", [$data, $model, 'Illuminate\\Support\\Facades\\DB', ...$user]),
             $paths['updateAction'] => $render('crud-update-action.stub', "{$ns}\\Actions", [$data, $model, 'Illuminate\\Support\\Facades\\DB']),
             $paths['delete'] => $render('crud-delete-action.stub', "{$ns}\\Actions", [$model, 'Illuminate\\Support\\Facades\\DB']),
-            $paths['query'] => $render('query.stub', "{$ns}\\Queries", [$model, 'Illuminate\\Contracts\\Pagination\\LengthAwarePaginator']),
+            $paths['query'] => $render($owner === null ? 'query.stub' : 'query-owned.stub', "{$ns}\\Queries", [$model, 'Illuminate\\Contracts\\Pagination\\LengthAwarePaginator', ...$user]),
             $paths['controller'] => $render('controller.stub', "{$ns}\\Controllers", [
                 "{$ns}\\Actions\\Create{$e}", "{$ns}\\Actions\\Delete{$e}", "{$ns}\\Actions\\Update{$e}",
                 $data, $model, "{$ns}\\Queries\\List{$names->plural}",
                 "{$ns}\\Requests\\Store{$e}Request", "{$ns}\\Requests\\Update{$e}Request",
                 "{$ns}\\Resources\\{$e}Resource",
                 'Illuminate\\Http\\JsonResponse', 'Illuminate\\Http\\Resources\\Json\\AnonymousResourceCollection',
-                'Illuminate\\Http\\Response', 'Illuminate\\Support\\Facades\\Gate',
-            ]),
+                'Illuminate\\Http\\Response', 'Illuminate\\Support\\Facades\\Gate', ...$controller['imports'],
+            ], $controller['values']),
             $paths['resource'] => $render('resource.stub', "{$ns}\\Resources", [
                 $model, 'Illuminate\\Http\\Request', 'Illuminate\\Http\\Resources\\Json\\JsonResource',
             ], [
@@ -582,7 +604,9 @@ class MakeCrudCommand extends Command
             ]),
             $paths['policy'] => $permissions === null
                 ? $render('policy.stub', "{$ns}\\Policies", [$model, 'App\\Models\\User'])
-                : $render('policy-permissions.stub', "{$ns}\\Policies", [$model, 'App\\Models\\User'], $permissions->policyValues()),
+                : $render($this->policyStub(true, $owner !== null), "{$ns}\\Policies", [
+                    $model, 'App\\Models\\User', ...($owner === null ? [] : ['Illuminate\\Auth\\Access\\Response']),
+                ], $permissions->policyValues()),
             $paths['test'] => $stubs->render($names->tenant ? 'test-tenant.stub' : 'test.stub', $common + [
                 'imports' => $this->imports([
                     ...($names->tenant
@@ -594,6 +618,7 @@ class MakeCrudCommand extends Command
                 'validation' => $this->validationTest($names, $fields),
                 'featureSetup' => $feature === null ? '' : "    app(FeatureAdmin::class)->enable('{$feature}');\n",
                 'featureTest' => $feature === null ? '' : $this->featureTest($names, $feature),
+                'factoryOwner' => OwnedCrud::factoryOwner($owner !== null),
             ] + CrudPermissions::testValues($permissions, web: false)),
         ];
 
@@ -613,8 +638,8 @@ class MakeCrudCommand extends Command
             "{$ns}\\Actions\\Create{$e}", "{$ns}\\Actions\\Delete{$e}", "{$ns}\\Actions\\Update{$e}",
             $data, $model, "{$ns}\\Queries\\List{$names->plural}",
             "{$ns}\\Requests\\Store{$e}Request", "{$ns}\\Requests\\Update{$e}Request",
-            'Illuminate\\Contracts\\View\\View', 'Illuminate\\Http\\RedirectResponse', 'Illuminate\\Support\\Facades\\Gate',
-        ], $web);
+            'Illuminate\\Contracts\\View\\View', 'Illuminate\\Http\\RedirectResponse', 'Illuminate\\Support\\Facades\\Gate', ...$controller['imports'],
+        ], $web + $controller['values']);
         $files[$paths['viewIndex']] = $stubs->render('view-index.stub', $common + $web + [
             'headerCells' => $this->lines($fields, fn (CrudField $f) => "<th>{{ __('".Str::headline($f->column)."') }}</th>", 20),
             'rowCells' => $this->lines($fields, fn (CrudField $f) => '<td>'.$f->display($v).'</td>', 24),
@@ -640,6 +665,7 @@ class MakeCrudCommand extends Command
             'validation' => $this->webValidationTest($names, $fields),
             'featureSetup' => $feature === null ? '' : "    app(FeatureAdmin::class)->enable('{$feature}');\n",
             'featureTest' => $feature === null ? '' : $this->webFeatureTest($names, $feature),
+            'factoryOwner' => OwnedCrud::factoryOwner($owner !== null),
         ] + CrudPermissions::testValues($permissions, web: true, formInput: $formInput));
 
         return $files;
@@ -853,15 +879,28 @@ class MakeCrudCommand extends Command
     /**
      * When adding a side, it must use permissions exactly when the existing CRUD's policy does.
      */
-    private function permissionsMismatch(CrudNames $names, bool $permissions): ?string
+    private function permissionsMismatch(CrudNames $names, bool $permissions, bool $owned): ?string
     {
         $policy = $this->existingFile($names, 'policy');
-        $existing = $policy !== null && CrudPermissions::usedBy((string) file_get_contents(base_path($policy)));
+        $source = $policy === null ? '' : (string) file_get_contents(base_path($policy));
+        $existing = CrudPermissions::usedBy($source);
+        $existingOwned = $existing && OwnedCrud::usedBy($source);
 
         return match (true) {
-            $existing && ! $permissions => "The existing {$names->entity} CRUD uses permissions; add --permissions.",
+            $existing && ! $permissions => "The existing {$names->entity} CRUD uses permissions; add --permissions".($existingOwned ? ' --owned.' : '.'),
             ! $existing && $permissions => "The existing {$names->entity} CRUD does not use permissions; leave --permissions out.",
+            $existingOwned && ! $owned => "The existing {$names->entity} CRUD is owned; add --owned.",
+            ! $existingOwned && $owned => "The existing {$names->entity} CRUD is not owned; leave --owned out.",
             default => null,
+        };
+    }
+
+    private function policyStub(bool $permissions, bool $owned): string
+    {
+        return match (true) {
+            $owned => 'policy-owned.stub',
+            $permissions => 'policy-permissions.stub',
+            default => 'policy.stub',
         };
     }
 
@@ -901,12 +940,12 @@ class MakeCrudCommand extends Command
      *
      * @param  array<string, string>  $generated
      */
-    private function permissionsStubError(StubRenderer $stubs, array $generated, CrudNames $names, bool $api, bool $web): ?string
+    private function permissionsStubError(StubRenderer $stubs, array $generated, CrudNames $names, bool $api, bool $web, bool $owned): ?string
     {
         $policy = $generated[$names->files()['policy']] ?? null;
 
         if ($policy !== null && ! CrudPermissions::usedBy($policy)) {
-            return "Stub {$stubs->path('policy-permissions.stub')} did not produce a valid policy (no checkPermissionTo). Update or delete it, then re-run.";
+            return "Stub {$stubs->path($this->policyStub(true, $owned))} did not produce a valid policy (no checkPermissionTo). Update or delete it, then re-run.";
         }
 
         foreach (array_keys(array_filter(['test' => $api, 'webTest' => $web])) as $key) {

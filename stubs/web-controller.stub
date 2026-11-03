@@ -7,11 +7,11 @@ namespace {{ namespace }};
 {{ imports }}
 final class {{ entity }}PageController
 {
-    public function index(List{{ plural }} $query): View
+    public function index({{ indexParameters }}): View
     {
         Gate::authorize('viewAny', {{ entity }}::class);
 
-        return view('{{ viewPath }}.index', ['{{ variablePlural }}' => $query->handle()]);
+        return view('{{ viewPath }}.index', ['{{ variablePlural }}' => $query->handle({{ listArguments }})]);
     }
 
     public function create(): View
@@ -23,7 +23,7 @@ final class {{ entity }}PageController
 
     public function store(Store{{ entity }}Request $request, Create{{ entity }} $action): RedirectResponse
     {
-        ${{ variable }} = $action->handle({{ entity }}Data::fromRequest($request));
+        ${{ variable }} = $action->handle({{ entity }}Data::fromRequest($request){{ createArguments }});
 
         return redirect()->route('{{ routeName }}.show', ${{ variable }})->with('status', __(':item created.', ['item' => __('{{ headline }}')]));
     }

@@ -15,7 +15,7 @@ final class {{ entity }} extends Model
      */
     protected $fillable = [
 {{ fillable }}    ];
-{{ casts }}
+{{ casts }}{{ relations }}
     protected static function newFactory(): {{ entity }}Factory
     {
         return {{ entity }}Factory::new();
