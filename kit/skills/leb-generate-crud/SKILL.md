@@ -16,6 +16,7 @@ When the `best/laravel-engineering-blueprint` package is installed, never hand-f
 | Module (`Provider.php`, optional routes) | `php artisan make:module Orders --api --web` |
 | Data class | `php artisan make:dto Orders OrderData --fields="name:string,quantity:int,note:?string"` |
 | Action | `php artisan make:action Orders CreateOrder --data=OrderData --transaction` |
+| Full API CRUD (model, migration, factory, requests, data, actions, query, controller, resource, policy, route, Pest tests) | `php artisan make:module Orders --api` then `php artisan make:crud Orders Order --fields="name:string,quantity:int,note:?string"` |
 
 Run `php artisan engineering:install` first if the project has no profile. `module-provider.stub`, `module-routes-*.stub`, `dto.stub` and `action.stub` are rendered by these commands; their placeholders are filled by PHP and cannot be filled by hand.
 
@@ -25,37 +26,16 @@ Target module layout: `docs/ARCHITECTURE.md` (`Requests/`, `Controllers/`, `rout
 
 - Module name (PascalCase): `Orders`
 - Entity name (PascalCase): `Order`
-- Options: `--api`, `--web`, `--soft-deletes`, `--parent=Order`, feature key if gated
+- Entity must be singular. Fields: `--fields="name:string,quantity:int,price:?float,active:bool,tags:array,shippedAt:?Carbon\CarbonImmutable"` (types: string, int, float, bool, array, Carbon\CarbonImmutable; `?` = nullable)
 
-## Remaining manual stubs (until `make:crud`)
+## Customizing output
 
-Create under `app/Modules/{Module}/` by filling the stubs in `laravel-engineering-blueprint/stubs/`:
-
-| Artifact | Stub |
-|----------|------|
-| Model | `model.stub` |
-| Migration | `migration.stub` |
-| Store/Update requests | `request.stub` (duplicate for Update*) |
-| DTOs | `make:dto` (above) |
-| Actions | `make:action` (above) — Create, Update, Delete, … |
-| Controllers | `controller.stub` |
-| Resource | `resource.stub` |
-| Policy | `policy.stub` |
-| Routes | `route.stub` |
-| Feature test | `test.stub` |
-
-## Placeholders
-
-Replace in the manual stubs (model, migration, request, controller, resource, policy, route, test):
-
-- `{{ module }}`, `{{ moduleNamespace }}`
-- `{{ model }}`, `{{ modelVariable }}`, `{{ table }}`
-- `{{ featureKey }}` (optional middleware comment)
+All stubs are rendered by the commands above. To customize them, run `php artisan vendor:publish --tag=blueprint-stubs` and edit `stubs/blueprint/*.stub` in the project; never hand-fill placeholders.
 
 ## Routes
 
 - API: `Route::apiResource` with `only`/`except` as needed.
-- Apply `feature:` middleware or equivalent when `featureKey` is set.
+- `make:crud` adds `Route::apiResource(...)`; routes are protected by the generated policy (guests get 403). Add `auth:sanctum` in the module's `routes/api.php` for token APIs.
 
 ## After scaffold
 
@@ -63,4 +43,4 @@ Run pint/tests when the host project exists. Match `laravel-engineering` skill f
 
 ## Future
 
-`php artisan make:crud` (Phase 5) will render the remaining stubs — keep filenames stable.
+Web screens (Blade/Livewire/Vue) are not generated yet; `make:crud` is API-only.
