@@ -2,6 +2,7 @@
 
 use Best\Blueprint\Testing\InteractsWithTenancy;
 use Best\Blueprint\Tests\Fixtures\TestPermissions;
+use Best\Blueprint\Tests\MysqlIntegration\MysqlEnvironment;
 use Best\Blueprint\Tests\MysqlIntegration\MysqlSpatieTenancyTestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -44,6 +45,8 @@ final class PtmCentralPermissions
 }
 
 beforeEach(function () {
+    MysqlEnvironment::freshCentralTenancySchema($this);
+
     require_once __DIR__.'/../Fixtures/TestPermissions.php';
     config()->set('blueprint.permissions', TestPermissions::class);
     config()->set('blueprint.central_permissions', PtmCentralPermissions::class);

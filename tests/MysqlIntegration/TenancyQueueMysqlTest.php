@@ -2,6 +2,7 @@
 
 use Best\Blueprint\Testing\InteractsWithTenancy;
 use Best\Blueprint\Tests\Fixtures\RecordTenantJob;
+use Best\Blueprint\Tests\MysqlIntegration\MysqlEnvironment;
 use Best\Blueprint\Tests\MysqlIntegration\MysqlTenancyTestCase;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Schema;
 uses(MysqlTenancyTestCase::class, InteractsWithTenancy::class);
 
 beforeEach(function (): void {
+    MysqlEnvironment::freshCentralTenancySchema($this);
     $this->tenantMigrationsDir = database_path('migrations/tenant');
     File::copyDirectory(__DIR__.'/../Fixtures/tenant-migrations', $this->tenantMigrationsDir);
 });

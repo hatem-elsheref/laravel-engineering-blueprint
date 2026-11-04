@@ -1,6 +1,7 @@
 <?php
 
 use Best\Blueprint\Testing\InteractsWithTenancy;
+use Best\Blueprint\Tests\MysqlIntegration\MysqlEnvironment;
 use Best\Blueprint\Tests\MysqlIntegration\MysqlTenancyTestCase;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Console\ClosureCommand;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\File;
 uses(MysqlTenancyTestCase::class, InteractsWithTenancy::class);
 
 beforeEach(function (): void {
+    MysqlEnvironment::freshCentralTenancySchema($this);
     $this->tenantMigrationsDir = database_path('migrations/tenant');
     File::copyDirectory(__DIR__.'/../Fixtures/tenant-migrations', $this->tenantMigrationsDir);
 });

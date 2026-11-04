@@ -48,10 +48,6 @@ abstract class MysqlTenancyTestCase extends MysqlTestCase
     {
         parent::setUp();
 
-        $this->loadMigrationsFrom(__DIR__.'/../../vendor/stancl/tenancy/assets/migrations');
-
-        $this->artisan('migrate:fresh', ['--database' => 'testing', '--force' => true])->assertExitCode(0);
-
         Event::listen(TenancyInitialized::class, BootstrapTenancy::class);
         Event::listen(TenancyEnded::class, RevertToCentralContext::class);
     }
