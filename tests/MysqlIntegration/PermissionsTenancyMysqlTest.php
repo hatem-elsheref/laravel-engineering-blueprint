@@ -74,6 +74,8 @@ afterEach(function () {
 it('syncs tenant and central permission tables on mysql', function (): void {
     $tenant = $this->createTestTenant('sync');
 
+    $this->artisan('tenants:migrate', ['--tenants' => [$tenant->id], '--force' => true])->assertExitCode(0);
+
     $this->artisan('permissions:sync')
         ->expectsOutputToContain('added 3 permission(s)')
         ->assertExitCode(0);

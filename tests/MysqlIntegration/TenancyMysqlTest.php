@@ -24,9 +24,7 @@ it('keeps tenant tables off the central mysql database', function (): void {
 
     expect(Schema::connection('testing')->hasTable('tenant_probe'))->toBeFalse();
 
-    tenancy()->initialize($tenant);
+    expect($tenant->run(fn () => DB::select('SELECT 1 AS ok FROM tenant_probe')))->not->toBeEmpty();
 
-    expect(DB::select('SELECT 1 AS ok FROM tenant_probe'))->not->toBeEmpty();
-
-    DB::statement('DROP TABLE tenant_probe');
+    $tenant->run(fn () => DB::statement('DROP TABLE tenant_probe'));
 });
