@@ -1,11 +1,16 @@
 <?php
 
 use Best\Blueprint\Testing\InteractsWithTenancy;
+use Best\Blueprint\Tests\MysqlIntegration\MysqlEnvironment;
 use Best\Blueprint\Tests\MysqlIntegration\MysqlTenancyTestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 uses(MysqlTenancyTestCase::class, InteractsWithTenancy::class);
+
+beforeEach(function (): void {
+    MysqlEnvironment::freshCentralTenancySchema($this);
+});
 
 it('keeps tenant tables off the central mysql database', function (): void {
     $tenant = $this->createTestTenant('shop');

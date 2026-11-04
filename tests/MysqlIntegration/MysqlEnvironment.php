@@ -5,9 +5,31 @@ declare(strict_types=1);
 namespace Best\Blueprint\Tests\MysqlIntegration;
 
 use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Testing\TestCase as LaravelTestCase;
+use Illuminate\Support\Facades\Schema;
 
 final class MysqlEnvironment
 {
+    public static function freshCentralTenancySchema(LaravelTestCase $test): void
+    {
+        $path = realpath(__DIR__.'/../../vendor/stancl/tenancy/assets/migrations');
+
+        if ($path === false) {
+            $test->fail('Stancl tenancy migrations directory is missing.');
+        }
+
+        $test->artisan('migrate:fresh', [
+            '--database' => 'testing',
+            '--path' => $path,
+            '--realpath' => true,
+            '--force' => true,
+        ])->assertExitCode(0);
+
+        if (! Schema::connection('testing')->hasTable('tenants')) {
+            $test->fail('Central tenants table missing after stancl migrate:fresh.');
+        }
+    }
+
     public static function enabled(): bool
     {
         return filter_var(getenv('LEB_MYSQL') ?: '', FILTER_VALIDATE_BOOL);

@@ -35,6 +35,10 @@ YAML);
 });
 
 afterEach(function (): void {
+    if (! isset($this->app)) {
+        return;
+    }
+
     if (isset($this->schema) && is_file($this->schema)) {
         @unlink($this->schema);
     }
