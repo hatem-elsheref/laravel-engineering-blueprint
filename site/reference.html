@@ -55,6 +55,7 @@
                         <tr><td><a href="#make-module"><code>make:module</code></a></td><td>Create a business module in app/Modules and register its provider</td></tr>
                         <tr><td><a href="#make-dto"><code>make:dto</code></a></td><td>Create a Data class (typed, immutable) in a module</td></tr>
                         <tr><td><a href="#make-action"><code>make:action</code></a></td><td>Create an Action (one business operation) in a module</td></tr>
+                        <tr><td><a href="#make-service"><code>make:service</code></a></td><td>Create a Service (shared business capability) in a module</td></tr>
                         <tr><td><a href="#make-crud"><code>make:crud</code></a></td><td>Create a CRUD for an entity in a module: JSON API (--api), Blade pages (--web) or both</td></tr>
                         <tr><td><a href="#make-nested-crud"><code>make:nested-crud</code></a></td><td>Nested JSON API CRUD under a parent entity (see docs/NESTED-RESOURCES.md)</td></tr>
                         <tr><td><a href="#tenant-create"><code>tenant:create</code></a></td><td>Create a tenant: records, domain, database, migrations and seed data (safe to re-run)</td></tr>
@@ -177,6 +178,22 @@
                     <li><span class="stamp">Refused</span> <code>Data classes must be in this module (got "&lt;data&gt;"). Pass a class name from &lt;module_path&gt;/&lt;Module&gt;/Data.</code></li>
                     <li><span class="stamp">Refused</span> <code>Data class "&lt;data&gt;" not found in &lt;module_path&gt;/&lt;Module&gt;/Data. Create it with php artisan make:dto &lt;Module&gt; &lt;data&gt;.</code></li>
                 </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="make-service">
+                <h3 class="index-card__title" id="make-service">make:service</h3>
+<pre><code><span class="prompt">$ </span>php artisan make:service &lt;module&gt; &lt;name&gt; [--data=CLASS]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Argument / option</th><th scope="col">Meaning</th><th scope="col">Default</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>module</code></td><td>Module name, e.g. <code>Orders</code></td><td>required</td></tr>
+                            <tr><td><code>name</code></td><td>Class name, e.g. <code>OrderPricing</code></td><td>required</td></tr>
+                            <tr><td><code>--data=</code></td><td>Data class in this module, e.g. <code>OrderData</code>; becomes the <code>handle()</code> parameter</td><td>none (no parameter)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>Writes <code>&lt;module_path&gt;/&lt;Module&gt;/Services/&lt;Name&gt;.php</code>. Use when several Actions share non-trivial logic; inject the service from Actions. Same module, name, data and existing-file refusals as <a href="#make-action">make:action</a> (without <code>--transaction</code>).</p>
             </section>
 
             <section class="index-card" aria-labelledby="make-crud">

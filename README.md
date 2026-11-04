@@ -53,6 +53,7 @@ Options: `--profile=basic|modular|saas|tenant-saas`, `--locales=en,ar` (first = 
 | `make:module {name} [--api] [--web] [--central]` | Module with `Provider.php` and optional `routes/api.php`, `routes/web.php`; `--central` = platform module (tenant-saas) |
 | `make:dto {module} {name} [--fields=]` | Typed, immutable Data class |
 | `make:action {module} {name} [--data=] [--transaction]` | Action (one business operation) |
+| `make:service {module} {name} [--data=]` | Service (shared business capability across Actions) |
 | `make:crud {module} {entity} … [--nested-under=Parent]` | Full CRUD; `--schema=` YAML (see `docs/SCHEMA-DSL.md`); nested API: `make:nested-crud` / `--nested-under` |
 | `make:nested-crud {module} {parent} {entity} …` | Child JSON API under a parent (`docs/NESTED-RESOURCES.md`) |
 | `tenant:create {name} [--domain=] [--database=] [--existing-database]` | Create a tenant (tenant-saas), safe to re-run |

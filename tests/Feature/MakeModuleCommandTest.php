@@ -55,7 +55,7 @@ it('creates a minimal module', function () {
     $this->artisan('make:module', ['name' => 'Orders'])
         ->expectsOutputToContain('created app/Modules/Orders/Provider.php')
         ->expectsOutputToContain('registered App\Modules\Orders\Provider in bootstrap/providers.php')
-        ->expectsOutputToContain('Next: add Actions, Models and Controllers as you need them (php artisan make:action, make:dto).')
+        ->expectsOutputToContain('Next: add Actions, Models and Controllers as you need them (php artisan make:action, make:service, make:dto).')
         ->assertExitCode(0);
 
     expect(moduleFile('Orders/Provider.php'))->toBe(<<<'PHP'

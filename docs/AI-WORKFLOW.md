@@ -7,7 +7,7 @@ Part of the **AI Engineering Kit** ([PRODUCT.md](./PRODUCT.md)). Agents should f
 1. **Understand architecture** — Read [CONSTITUTION.md](./CONSTITUTION.md), [ENGINEERING-AUDIT.md](./ENGINEERING-AUDIT.md) (known gaps), profile from `config/blueprint.php`, [MODULE-BOUNDARIES.md](./MODULE-BOUNDARIES.md).
 2. **Identify module** — Confirm target under `app/Modules/{Name}/` and central vs tenant module (`--central`).
 3. **Read rules** — [DOCUMENT-HIERARCHY.md](./DOCUMENT-HIERARCHY.md); tenancy/features/settings/permissions as applicable.
-4. **Generate code** — Use Artisan only (`make:module`, `make:dto`, `make:action`, `make:crud`); prefer `--permissions` for production paths.
+4. **Generate code** — Use Artisan only (`make:module`, `make:dto`, `make:action`, `make:service`, `make:crud`); prefer `--permissions` for production paths.
 5. **Run verification** — `composer test`, `./vendor/bin/phpstan`, `./vendor/bin/pint --test` (or project equivalents). Apps should include `vendor/best/laravel-engineering-blueprint/phpstan/blueprint-module-boundaries.neon` in PHPStan for cross-module references beyond `use` lines.
 6. **Architecture check** — `php artisan engineering:architecture` (module boundaries); no business logic in controllers; migrations only in global paths.
 7. **Report gaps** — List anything not generated safely (schema unsupported, auth not configured, missing idempotency, inventory transaction needed manual Action).

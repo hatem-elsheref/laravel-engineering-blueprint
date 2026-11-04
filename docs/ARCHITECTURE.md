@@ -130,7 +130,7 @@ Not every operation needs every layer. Use only what the operation needs.
 
 ## 1.7 Generated Code
 
-Create modules and classes with the package commands (`make:module`, `make:dto`, `make:action`, `make:crud`), not by hand from stubs.
+Create modules and classes with the package commands (`make:module`, `make:dto`, `make:action`, `make:service`, `make:crud`), not by hand from stubs.
 
 `make:crud` has two sides that share one backend:
 

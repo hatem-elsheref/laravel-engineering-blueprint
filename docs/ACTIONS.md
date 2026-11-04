@@ -17,6 +17,11 @@ One class = **one business operation** (create order, cancel shipment, sync inve
 - `php artisan make:action {Module} {Name}` — optional `--data=`, `--transaction`.
 - `make:crud` emits Create / Update / Delete actions wired from the controller.
 
+### Service generator
+
+- `php artisan make:service {Module} {Name}` — optional `--data=` (same module Data rules as `make:action`).
+- Inject the service into Actions that share the capability; keep transactions and HTTP boundaries in Actions, not Services.
+
 ### Transactions
 
 Use `make:action --transaction` or wrap in `DB::transaction()` when:

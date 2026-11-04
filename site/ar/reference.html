@@ -56,6 +56,7 @@
                         <tr><td><a href="#make-module"><code>make:module</code></a></td><td>ينشئ وحدة أعمال في <code>app/Modules</code> ويسجّل مزوّد الخدمة الخاص بها</td></tr>
                         <tr><td><a href="#make-dto"><code>make:dto</code></a></td><td>ينشئ صنف بيانات (محدد الأنواع، غير قابل للتغيير) في وحدة</td></tr>
                         <tr><td><a href="#make-action"><code>make:action</code></a></td><td>ينشئ إجراء (عملية أعمال واحدة) في وحدة</td></tr>
+                        <tr><td><a href="#make-service"><code>make:service</code></a></td><td>ينشئ خدمة (قدرة أعمال مشتركة) في وحدة</td></tr>
                         <tr><td><a href="#make-crud"><code>make:crud</code></a></td><td>ينشئ <bdi>CRUD</bdi> لكيان في وحدة: <bdi>JSON API</bdi> (<code>--api</code>)، أو صفحات <bdi>Blade</bdi> (<code>--web</code>)، أو كليهما</td></tr>
                         <tr><td><a href="#make-nested-crud"><code>make:nested-crud</code></a></td><td><bdi>CRUD</bdi> متداخل تحت كيان أب (<bdi>API</bdi> فقط)</td></tr>
                         <tr><td><a href="#tenant-create"><code>tenant:create</code></a></td><td>ينشئ مستأجرًا: السجلات، والنطاق، وقاعدة البيانات، والترحيلات، والبيانات الأولية (إعادة تشغيله آمنة)</td></tr>
@@ -178,6 +179,22 @@
                     <li><span class="stamp">مرفوض</span> <code>Data classes must be in this module (got "&lt;data&gt;"). Pass a class name from &lt;module_path&gt;/&lt;Module&gt;/Data.</code></li>
                     <li><span class="stamp">مرفوض</span> <code>Data class "&lt;data&gt;" not found in &lt;module_path&gt;/&lt;Module&gt;/Data. Create it with php artisan make:dto &lt;Module&gt; &lt;data&gt;.</code></li>
                 </ul>
+            </section>
+
+            <section class="index-card" aria-labelledby="make-service">
+                <h3 class="index-card__title" id="make-service">make:service</h3>
+<pre><code><span class="prompt">$ </span>php artisan make:service &lt;module&gt; &lt;name&gt; [--data=CLASS]</code></pre>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">الوسيط / الخيار</th><th scope="col">المعنى</th><th scope="col">الافتراضي</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>module</code></td><td>اسم الوحدة، مثل <code>Orders</code></td><td>إلزامي</td></tr>
+                            <tr><td><code>name</code></td><td>اسم الصنف، مثل <code>OrderPricing</code></td><td>إلزامي</td></tr>
+                            <tr><td><code>--data=</code></td><td>صنف بيانات من هذه الوحدة، مثل <code>OrderData</code>، ويصبح معامل <code>handle()</code></td><td>لا شيء (بلا معامل)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>يكتب <code>&lt;module_path&gt;/&lt;Module&gt;/Services/&lt;Name&gt;.php</code>. استخدمه عندما يشارك عدة إجراءات منطقًا غير تافه؛ حقن الخدمة من الإجراءات. له حالات الرفض نفسها في <a href="#make-action"><code>make:action</code></a> (بدون <code>--transaction</code>).</p>
             </section>
 
             <section class="index-card" aria-labelledby="make-crud">

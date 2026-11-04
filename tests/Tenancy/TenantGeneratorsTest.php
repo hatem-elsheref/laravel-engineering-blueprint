@@ -173,6 +173,7 @@ it('refuses every generator in tenant-saas without stancl', function (string $co
     ['make:crud', ['module' => 'Orders', 'entity' => 'Order']],
     ['make:dto', ['module' => 'Orders', 'name' => 'OrderData']],
     ['make:action', ['module' => 'Orders', 'name' => 'CreateOrder']],
+    ['make:service', ['module' => 'Orders', 'name' => 'OrderPricing']],
 ]);
 
 it('refuses modules made before tenant-saas', function () {

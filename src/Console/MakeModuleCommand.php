@@ -98,7 +98,7 @@ class MakeModuleCommand extends Command
 
         $routes = array_keys(array_filter(['api' => $this->option('api'), 'web' => $this->option('web')]));
         $this->line(match ($routes) {
-            [] => 'Next: add Actions, Models and Controllers as you need them (php artisan make:action, make:dto).',
+            [] => 'Next: add Actions, Models and Controllers as you need them (php artisan make:action, make:service, make:dto).',
             ['api'] => "Next: php artisan make:crud {$name} <Entity> --fields=\"name:string\"",
             ['web'] => "Next: php artisan make:crud {$name} <Entity> --web --fields=\"name:string\"",
             default => "Next: php artisan make:crud {$name} <Entity> --api --web --fields=\"name:string\"",

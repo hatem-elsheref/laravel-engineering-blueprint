@@ -134,6 +134,7 @@ class BlueprintServiceProvider extends ServiceProvider
             Console\MakeModuleCommand::class,
             Console\MakeDtoCommand::class,
             Console\MakeActionCommand::class,
+            Console\MakeServiceCommand::class,
             Console\MakeCrudCommand::class,
             Console\MakeNestedCrudCommand::class,
             Console\TenantCreateCommand::class,

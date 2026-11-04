@@ -29,6 +29,7 @@ Use Artisan; do not hand-copy stubs ([../README.md](../README.md)):
 php artisan make:module Orders --api --web
 php artisan make:dto Orders OrderData --fields="name:string,quantity:int"
 php artisan make:action Orders CancelOrder --data=OrderData --transaction
+php artisan make:service Orders OrderPricing --data=OrderData
 php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web --permissions
 php artisan make:crud Orders Order --schema=orders/order.yaml --api   # enums, FKs, indexes — SCHEMA-DSL.md
 php artisan make:crud Orders Order --api --auth=sanctum --permissions   # or set blueprint.route_auth in config

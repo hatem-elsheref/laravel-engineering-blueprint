@@ -23,6 +23,7 @@ Package `best/laravel-engineering-blueprint`. Never hand-fill or copy stubs; run
 php artisan make:module Orders --api --web
 php artisan make:dto Orders OrderData --fields="name:string,quantity:int,note:?string"
 php artisan make:action Orders CancelOrder --data=OrderData --transaction
+php artisan make:service Orders OrderPricing --data=OrderData
 php artisan make:crud Orders Order --fields="name:string,quantity:int"          # API (default)
 php artisan make:crud Orders Order --fields="name:string,quantity:int" --web    # Blade pages
 php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web

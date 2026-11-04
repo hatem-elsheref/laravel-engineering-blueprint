@@ -28,6 +28,7 @@ php artisan engineering:install --profile=modular   # basic | modular | saas | t
 php artisan make:module Orders --api --web
 php artisan make:dto Orders OrderData --fields="name:string,quantity:int"
 php artisan make:action Orders CancelOrder --data=OrderData --transaction
+php artisan make:service Orders OrderPricing --data=OrderData
 php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web --permissions
 ```
 
@@ -42,7 +43,7 @@ For CRUD details use skill **leb-generate-crud**. To change generated code, run 
 - **Controller** — request/response only.
 - **Request** — validation + authorization.
 - **Data** — typed transfer (native PHP DTOs).
-- **Action / Query** — write vs read operations.
+- **Action / Query** — write vs read operations; **Service** when several Actions share non-trivial logic (`make:service`).
 - **Flow:** Route → Middleware → Request → Data → Controller → Action|Query → Model|Service → Resource|View (use only needed layers).
 
 ## Naming

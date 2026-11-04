@@ -38,6 +38,7 @@ Never hand-fill or copy stubs. Run the package commands:
 php artisan make:module Orders --api --web
 php artisan make:dto Orders OrderData --fields="name:string,quantity:int"
 php artisan make:action Orders CancelOrder --data=OrderData --transaction
+php artisan make:service Orders OrderPricing --data=OrderData
 php artisan make:crud Orders Order --fields="name:string,quantity:int"          # JSON API (default)
 php artisan make:crud Orders Order --fields="name:string,quantity:int" --web    # Blade pages
 php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web --permissions

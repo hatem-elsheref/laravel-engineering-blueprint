@@ -15,6 +15,7 @@ Phase 0 is approved and the package `best/laravel-engineering-blueprint` does th
 | Platform module (tenant-saas, central domains only) | `php artisan make:module Plans --central --api` |
 | Data class | `php artisan make:dto Orders OrderData --fields="name:string,quantity:int,note:?string"` |
 | Action | `php artisan make:action Orders CreateOrder --data=OrderData --transaction` |
+| Service (shared across Actions) | `php artisan make:service Orders OrderPricing --data=OrderData` |
 | CRUD, JSON API (default) | `php artisan make:crud Orders Order --fields="name:string,quantity:int,note:?string"` |
 | CRUD, Blade pages | `php artisan make:crud Orders Order --fields="name:string,quantity:int" --web` |
 | CRUD, both sides | `php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web` |

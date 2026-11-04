@@ -65,6 +65,7 @@
       "make:module",
       "make:dto",
       "make:action",
+      "make:service",
       "make:crud",
       "tenant:create",
       "feature:list",

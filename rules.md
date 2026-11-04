@@ -24,6 +24,7 @@ php artisan engineering:install --profile=modular   # basic | modular | saas | t
 php artisan make:module Orders --api --web
 php artisan make:dto Orders OrderData --fields="name:string,quantity:int"
 php artisan make:action Orders CancelOrder --data=OrderData --transaction
+php artisan make:service Orders OrderPricing --data=OrderData
 php artisan make:crud Orders Order --fields="name:string,quantity:int" --api --web --permissions
 php artisan make:crud Orders Order --schema=orders/order.yaml --api    # enums, FKs, indexes — see SCHEMA-DSL.md
 # Local demo without permissions: add --open-policy (not for production)

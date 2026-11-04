@@ -13,6 +13,7 @@ The copy of this folder that `bin/leb-install` puts in `laravel-engineering-blue
 | `module-routes-web.stub` | `make:module --web` — `routes/web.php` |
 | `dto.stub` | `make:dto` — Data class |
 | `action.stub` | `make:action` — Action class |
+| `service.stub` | `make:service` — Service class |
 | `model.stub` | `make:crud` — Eloquent model (`{{ relations }}`: the `user()` relation with `--owned`, empty otherwise) |
 | `migration.stub` | `make:crud` — create-table migration |
 | `factory.stub` | `make:crud` — model factory |
