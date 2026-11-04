@@ -56,4 +56,10 @@ abstract class MysqlTenancyTestCase extends MysqlTestCase
     {
         $this->loadMigrationsFrom(__DIR__.'/../../vendor/stancl/tenancy/assets/migrations');
     }
+
+    /** Registered before migrate:fresh when tests use DatabaseMigrations / RefreshDatabase. */
+    protected function beforeRefreshingDatabase()
+    {
+        $this->loadMigrationsFrom(__DIR__.'/../../vendor/stancl/tenancy/assets/migrations');
+    }
 }
