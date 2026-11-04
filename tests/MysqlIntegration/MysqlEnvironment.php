@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Best\Blueprint\Tests\MysqlIntegration;
 
 use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Testing\TestCase as LaravelTestCase;
 use Illuminate\Support\Facades\Schema;
 
 final class MysqlEnvironment
 {
-    public static function freshCentralTenancySchema(LaravelTestCase $test): void
+    /** @param  MysqlTestCase  $test */
+    public static function freshCentralTenancySchema(object $test): void
     {
         $path = realpath(__DIR__.'/../../vendor/stancl/tenancy/assets/migrations');
 
