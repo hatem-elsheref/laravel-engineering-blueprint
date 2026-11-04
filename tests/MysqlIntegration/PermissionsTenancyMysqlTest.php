@@ -1,13 +1,13 @@
 <?php
 
-use Best\Blueprint\Testing\InteractsWithTenancy;
+use Best\Blueprint\Tenancy\TenantSetup;
 use Best\Blueprint\Tests\Fixtures\TestPermissions;
 use Best\Blueprint\Tests\MysqlIntegration\MysqlEnvironment;
 use Best\Blueprint\Tests\MysqlIntegration\MysqlSpatieTenancyTestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
-uses(MysqlSpatieTenancyTestCase::class, InteractsWithTenancy::class);
+uses(MysqlSpatieTenancyTestCase::class);
 
 const PTM_USERS_MIGRATION = <<<'PHP'
 <?php
@@ -61,9 +61,23 @@ beforeEach(function () {
     );
 
     (require __DIR__.'/../../vendor/spatie/laravel-permission/database/migrations/create_permission_tables.php.stub')->up();
+
+    app(TenantSetup::class)->run('sync', 'sync.localhost', 'blueprint_test_sync');
 });
 
 afterEach(function () {
+    if (isset($this->app) && tenancy()->find('sync') !== null) {
+        $tenant = tenancy()->find('sync');
+
+        if (tenancy()->initialized) {
+            tenancy()->end();
+        }
+
+        $tenant->database()->manager()->deleteDatabase($tenant);
+        $tenant->domains()->delete();
+        $tenant::withoutEvents(fn () => $tenant->delete());
+    }
+
     $dir = $this->tenantMigrationsDir ?? null;
 
     if (is_string($dir) && is_dir($dir)) {
@@ -72,12 +86,12 @@ afterEach(function () {
 });
 
 it('syncs tenant and central permission tables on mysql', function (): void {
-    $tenant = $this->createTestTenant('sync');
+    $tenant = tenancy()->find('sync');
 
-    $this->artisan('tenants:migrate', ['--tenants' => [$tenant->id], '--force' => true])->assertExitCode(0);
+    $tenant->run(fn () => DB::table('permissions')->delete());
 
     $this->artisan('permissions:sync')
-        ->expectsOutputToContain('added 3 permission(s)')
+        ->expectsOutputToContain('tenant "sync": added 3 permission(s)')
         ->assertExitCode(0);
 
     $tenantNames = $tenant->run(
@@ -85,8 +99,6 @@ it('syncs tenant and central permission tables on mysql', function (): void {
     );
 
     expect($tenantNames)->toBe(['orders.view', 'products.update', 'products.view']);
-
-    tenancy()->end();
 
     $this->artisan('permissions:sync', ['--central' => true])
         ->expectsOutputToContain('central: added 2 permission(s)')

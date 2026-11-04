@@ -18,13 +18,14 @@ it('keeps tenant tables off the central mysql database', function (): void {
     expect(tenancy()->initialized)->toBeTrue()
         ->and(DB::getDefaultConnection())->toBe('tenant');
 
-    DB::statement('CREATE TABLE tenant_probe (id INT PRIMARY KEY)');
+    Schema::create('tenant_probe', function ($table) {
+        $table->integer('id')->primary();
+    });
 
     tenancy()->end();
 
-    expect(Schema::connection('testing')->hasTable('tenant_probe'))->toBeFalse();
+    expect(Schema::connection('testing')->hasTable('tenant_probe'))->toBeFalse()
+        ->and($tenant->run(fn () => Schema::hasTable('tenant_probe')))->toBeTrue();
 
-    expect($tenant->run(fn () => DB::select('SELECT 1 AS ok FROM tenant_probe')))->not->toBeEmpty();
-
-    $tenant->run(fn () => DB::statement('DROP TABLE tenant_probe'));
+    $tenant->run(fn () => Schema::dropIfExists('tenant_probe'));
 });
