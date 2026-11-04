@@ -6,7 +6,6 @@ namespace Best\Blueprint\Tests\MysqlIntegration;
 
 use App\Models\Tenant;
 use Best\Blueprint\BlueprintServiceProvider;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\Event;
 use Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper;
 use Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper;
@@ -18,8 +17,6 @@ use Stancl\Tenancy\TenancyServiceProvider;
 
 abstract class MysqlTenancyTestCase extends MysqlTestCase
 {
-    use DatabaseMigrations;
-
     protected function getPackageProviders($app): array
     {
         require_once __DIR__.'/../Fixtures/Tenant.php';
@@ -51,18 +48,11 @@ abstract class MysqlTenancyTestCase extends MysqlTestCase
     {
         parent::setUp();
 
+        $this->loadMigrationsFrom(__DIR__.'/../../vendor/stancl/tenancy/assets/migrations');
+
+        $this->artisan('migrate:fresh', ['--database' => 'testing', '--force' => true])->assertExitCode(0);
+
         Event::listen(TenancyInitialized::class, BootstrapTenancy::class);
         Event::listen(TenancyEnded::class, RevertToCentralContext::class);
-    }
-
-    protected function defineDatabaseMigrations(): void
-    {
-        $this->loadMigrationsFrom(__DIR__.'/../../vendor/stancl/tenancy/assets/migrations');
-    }
-
-    /** Registered before migrate:fresh when tests use DatabaseMigrations / RefreshDatabase. */
-    protected function beforeRefreshingDatabase()
-    {
-        $this->loadMigrationsFrom(__DIR__.'/../../vendor/stancl/tenancy/assets/migrations');
     }
 }
