@@ -65,6 +65,11 @@ abstract class TenancyTestCase extends TestCase
         $this->loadMigrationsFrom(__DIR__.'/../vendor/stancl/tenancy/assets/migrations');
     }
 
+    protected function beforeRefreshingDatabase()
+    {
+        $this->loadMigrationsFrom(__DIR__.'/../vendor/stancl/tenancy/assets/migrations');
+    }
+
     protected function tearDown(): void
     {
         if (function_exists('tenancy') && $this->app && tenancy()->initialized) {
