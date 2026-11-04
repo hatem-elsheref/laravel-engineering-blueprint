@@ -6,6 +6,7 @@ namespace Best\Blueprint\Tests\MysqlIntegration;
 
 use App\Models\Tenant;
 use Best\Blueprint\BlueprintServiceProvider;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\Event;
 use Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper;
 use Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper;
@@ -17,6 +18,8 @@ use Stancl\Tenancy\TenancyServiceProvider;
 
 abstract class MysqlTenancyTestCase extends MysqlTestCase
 {
+    use DatabaseMigrations;
+
     protected function getPackageProviders($app): array
     {
         require_once __DIR__.'/../Fixtures/Tenant.php';

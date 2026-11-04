@@ -4,12 +4,11 @@ use Best\Blueprint\Testing\InteractsWithTenancy;
 use Best\Blueprint\Tests\Fixtures\RecordTenantJob;
 use Best\Blueprint\Tests\MysqlIntegration\MysqlTenancyTestCase;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
-uses(MysqlTenancyTestCase::class, InteractsWithTenancy::class, DatabaseMigrations::class);
+uses(MysqlTenancyTestCase::class, InteractsWithTenancy::class);
 
 beforeEach(function (): void {
     $this->tenantMigrationsDir = database_path('migrations/tenant');

@@ -2,11 +2,10 @@
 
 use Best\Blueprint\Testing\InteractsWithTenancy;
 use Best\Blueprint\Tests\MysqlIntegration\MysqlTenancyTestCase;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-uses(MysqlTenancyTestCase::class, InteractsWithTenancy::class, DatabaseMigrations::class);
+uses(MysqlTenancyTestCase::class, InteractsWithTenancy::class);
 
 it('keeps tenant tables off the central mysql database', function (): void {
     $tenant = $this->createTestTenant('shop');

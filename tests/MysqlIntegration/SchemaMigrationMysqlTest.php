@@ -15,22 +15,33 @@ beforeEach(function (): void {
 
     $this->providersPath = app()->getBootstrapProvidersPath();
     $this->providers = file_get_contents($this->providersPath);
-    $this->schema = dirname(__DIR__, 2).'/schemas/examples/orders/order.yaml';
+    $this->schema = sys_get_temp_dir().'/leb-mysql-schema-'.uniqid('', true).'.yaml';
+    file_put_contents($this->schema, <<<'YAML'
+softDeletes: true
+fields:
+  - name: code
+    type: string
+    unique: true
+YAML);
 
-    $this->artisan('make:module', ['name' => 'Orders', '--api' => true])->assertExitCode(0);
+    $this->artisan('make:module', ['name' => 'Inventory', '--api' => true])->assertExitCode(0);
     $this->artisan('make:crud', [
-        'module' => 'Orders',
-        'entity' => 'Order',
+        'module' => 'Inventory',
+        'entity' => 'Sku',
         '--schema' => $this->schema,
     ])->assertExitCode(0);
 
-    $this->ordersMigration = glob(database_path('migrations/*_create_orders_table.php'))[0] ?? null;
+    $this->migration = glob(database_path('migrations/*_create_skus_table.php'))[0] ?? null;
 });
 
 afterEach(function (): void {
+    if (isset($this->schema) && is_file($this->schema)) {
+        @unlink($this->schema);
+    }
+
     File::deleteDirectory(app_path('Modules'));
     File::cleanDirectory(database_path('migrations'));
-    File::deleteDirectory(database_path('factories/Orders'));
+    File::deleteDirectory(database_path('factories/Inventory'));
     File::deleteDirectory(base_path('tests/Feature/Modules'));
 
     if (isset($this->providersPath, $this->providers)) {
@@ -38,30 +49,22 @@ afterEach(function (): void {
     }
 });
 
-it('migrates a schema dsl orders table on mysql', function (): void {
-    expect($this->ordersMigration)->not->toBeNull();
+it('migrates a schema dsl table on mysql', function (): void {
+    expect($this->migration)->not->toBeNull();
 
     $this->artisan('migrate')->assertExitCode(0);
 
-    expect(Schema::hasTable('orders'))->toBeTrue()
-        ->and(Schema::hasColumn('orders', 'deleted_at'))->toBeTrue();
+    expect(Schema::hasTable('skus'))->toBeTrue()
+        ->and(Schema::hasColumn('skus', 'deleted_at'))->toBeTrue();
 
-    DB::table('orders')->insert([
-        'name' => 'Wire-1',
-        'quantity' => 1,
-        'tags' => '[]',
-        'total' => '19.99',
-        'status' => 'pending',
+    DB::table('skus')->insert([
+        'code' => 'Wire-1',
         'created_at' => now(),
         'updated_at' => now(),
     ]);
 
-    expect(fn () => DB::table('orders')->insert([
-        'name' => 'Wire-1',
-        'quantity' => 1,
-        'tags' => '[]',
-        'total' => '9.99',
-        'status' => 'paid',
+    expect(fn () => DB::table('skus')->insert([
+        'code' => 'Wire-1',
         'created_at' => now(),
         'updated_at' => now(),
     ]))->toThrow(QueryException::class);

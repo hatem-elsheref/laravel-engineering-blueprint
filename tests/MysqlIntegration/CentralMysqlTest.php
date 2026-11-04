@@ -2,11 +2,21 @@
 
 use Best\Blueprint\Tests\MysqlIntegration\MysqlTestCase;
 use Illuminate\Database\QueryException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-uses(MysqlTestCase::class, RefreshDatabase::class);
+uses(MysqlTestCase::class);
+
+afterEach(function (): void {
+    if (! isset($this->app)) {
+        return;
+    }
+
+    Schema::dropIfExists('pets');
+    Schema::dropIfExists('owners');
+    Schema::dropIfExists('skus');
+    Schema::dropIfExists('ledger');
+});
 
 it('rolls back a transaction on mysql', function (): void {
     Schema::create('ledger', function ($table) {

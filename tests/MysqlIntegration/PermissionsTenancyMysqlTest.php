@@ -3,11 +3,10 @@
 use Best\Blueprint\Testing\InteractsWithTenancy;
 use Best\Blueprint\Tests\Fixtures\TestPermissions;
 use Best\Blueprint\Tests\MysqlIntegration\MysqlSpatieTenancyTestCase;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
-uses(MysqlSpatieTenancyTestCase::class, InteractsWithTenancy::class, DatabaseMigrations::class);
+uses(MysqlSpatieTenancyTestCase::class, InteractsWithTenancy::class);
 
 const PTM_USERS_MIGRATION = <<<'PHP'
 <?php

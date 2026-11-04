@@ -4,11 +4,10 @@ use Best\Blueprint\Testing\InteractsWithTenancy;
 use Best\Blueprint\Tests\MysqlIntegration\MysqlTenancyTestCase;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Console\ClosureCommand;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
-uses(MysqlTenancyTestCase::class, InteractsWithTenancy::class, DatabaseMigrations::class);
+uses(MysqlTenancyTestCase::class, InteractsWithTenancy::class);
 
 beforeEach(function (): void {
     $this->tenantMigrationsDir = database_path('migrations/tenant');
